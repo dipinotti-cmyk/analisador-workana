@@ -328,15 +328,16 @@ async function deleteCRMItem(id) {
   } catch(e) { console.error("Erro ao excluir", e); }
 }
 
-// Claude API
+// API via Edge Function (chave protegida no servidor)
 async function callClaude(prompt) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch("/api/chat", {
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1000, messages:[{role:"user",content:prompt}] })
+    body: JSON.stringify({ prompt })
   });
+  if (!res.ok) throw new Error("Erro na API");
   const data = await res.json();
-  return data.content?.[0]?.text || "";
+  return data.text || "";
 }
 
 // Análise
