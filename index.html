@@ -130,6 +130,13 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
         <div class="card">
           <div class="field"><label>Nome do cliente</label><input id="in-cliente" placeholder="Ex: João Silva"></div>
           <div class="field"><label>Descrição do projeto</label><textarea id="in-desc" rows="6" placeholder="Cole aqui a descrição completa do projeto..."></textarea></div>
+          <div class="field">
+            <label>Tipo de cobrança</label>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="btn btn-sm btn-primary" id="tipo-projeto" onclick="setTipo('projeto')" style="flex:1">Por projeto</button>
+              <button type="button" class="btn btn-sm btn-ghost" id="tipo-hora" onclick="setTipo('hora')" style="flex:1">Por hora</button>
+            </div>
+          </div>
           <button class="btn btn-primary btn-lg" style="width:100%" onclick="avaliar()" id="btn-avaliar">⚡ Avaliar projeto</button>
         </div>
 
@@ -145,6 +152,10 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
           <div id="mercado-info" style="display:none;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px"></div>
           <div class="field"><label>Valor final (vazio = usar ideal)</label><input type="number" id="in-valor-final" placeholder=""></div>
           <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="confirmarValor()" id="btn-confirmar-valor">Confirmar valor</button>
+          <div id="contexto-wrap" style="display:none">
+            <div class="divider"></div>
+            <div class="field"><label>Informação adicional (opcional)</label><textarea id="in-contexto" rows="3" placeholder="Ex: criei o site grafimold.com.br, muito parecido com o que o cliente procura. Cole links de cases, portfólio ou detalhes relevantes..."></textarea></div>
+          </div>
           <button class="btn btn-gold btn-lg" style="width:100%;display:none" onclick="gerarProposta()" id="btn-gerar">✍️ Gerar proposta</button>
         </div>
       </div>
@@ -239,6 +250,7 @@ let profile = { avaliacoes: 3, habilidades: "" };
 let crm = [];
 let analysis = null;
 let finalPrice = null;
+let tipoCobranca = "projeto";
 let profileId = null;
 let currentTab = "analisar";
 let showManualForm = false;
@@ -340,6 +352,14 @@ async function callClaude(prompt) {
   return data.text || "";
 }
 
+function setTipo(tipo) {
+  tipoCobranca = tipo;
+  document.getElementById("tipo-projeto").className = tipo==="projeto" ? "btn btn-sm btn-primary" : "btn btn-sm btn-ghost";
+  document.getElementById("tipo-projeto").style.flex = "1";
+  document.getElementById("tipo-hora").className = tipo==="hora" ? "btn btn-sm btn-primary" : "btn btn-sm btn-ghost";
+  document.getElementById("tipo-hora").style.flex = "1";
+}
+
 // Análise
 async function avaliar() {
   const desc = document.getElementById("in-desc").value.trim();
@@ -350,6 +370,10 @@ async function avaliar() {
   analysis = null; finalPrice = null;
   document.getElementById("preco-card").style.display = "none";
   document.getElementById("btn-gerar").style.display = "none";
+  const ctxWrap = document.getElementById("contexto-wrap");
+  if (ctxWrap) ctxWrap.style.display = "none";
+  const ctxIn = document.getElementById("in-contexto");
+  if (ctxIn) ctxIn.value = "";
 
   const col = document.getElementById("resultado-col");
   col.innerHTML = `<div class="card loading"><div class="loading-icon">🔍</div><div style="color:var(--muted)">Analisando com IA...</div></div>`;
@@ -357,12 +381,18 @@ async function avaliar() {
   const cliente = document.getElementById("in-cliente").value || "sem nome";
   const hasSensitive = SENSITIVE.some(s => desc.toLowerCase().includes(s));
 
+  const cobrancaTxt = tipoCobranca === "hora"
+    ? "A cobranca e POR HORA. Os valores precoMin/precoIdeal/precoRapido devem ser o VALOR POR HORA em reais (ex: 80, 120, 150). prazoEstimado deve ser a estimativa de horas totais (ex: 40 horas)."
+    : "A cobranca e POR PROJETO (valor fechado). Os valores precoMin/precoIdeal/precoRapido sao o valor total do projeto em reais.";
+
   const prompt = `Você é um consultor freelancer sênior avaliando projetos na Workana para um profissional de TI com este perfil:
 Avaliações 5 estrelas: ${profile.avaliacoes}
 Habilidades: ${profile.habilidades}
 
 Projeto do cliente "${cliente}":
 ${desc}
+
+${cobrancaTxt}
 
 Responda SOMENTE em JSON válido, sem markdown:
 {"complexidade":<0.5 a 5.0>,"complexidadeTexto":"<frase>","risco":<0.5 a 5.0>,"riscoTexto":"<frase>","comercial":<0.5 a 5.0>,"comercialTexto":"<frase>","recomendacao":"<ENVIAR|CAUTELA|PULAR>","recomendacaoMotivo":"<frase>","precoMin":<int>,"precoIdeal":<int>,"precoRapido":<int>,"prazoEstimado":"<ex: 7 dias úteis>","sensivel":${hasSensitive},"sensivelMotivo":"<texto ou vazio>"}`;
@@ -430,6 +460,7 @@ function confirmarValor() {
   btn.textContent = "✓ Valor: "+fmt(finalPrice);
   btn.className = "btn btn-success";
   document.getElementById("btn-gerar").style.display = "block";
+  document.getElementById("contexto-wrap").style.display = "block";
 }
 
 async function gerarProposta() {
@@ -437,23 +468,34 @@ async function gerarProposta() {
   btn.disabled=true; btn.textContent="⏳ Gerando...";
   const cliente = document.getElementById("in-cliente").value||"cliente";
   const desc = document.getElementById("in-desc").value;
+  const contexto = document.getElementById("in-contexto").value.trim();
+
+  const valorTxt = tipoCobranca === "hora"
+    ? `Valor por hora: R$ ${finalPrice}/hora (estimativa: ${analysis.prazoEstimado})`
+    : `Valor do projeto: R$ ${finalPrice} | Prazo: ${analysis.prazoEstimado}`;
+
+  const contextoTxt = contexto
+    ? `\n\nINFORMACAO ADICIONAL fornecida pelo Diogo (use de forma natural na proposta, adaptando ao projeto): ${contexto}`
+    : "";
 
   const prompt = `Você é o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma proposta para a Workana.
 Cliente: ${cliente}
 Projeto: ${desc}
-Valor: R$ ${finalPrice}
-Prazo: ${analysis.prazoEstimado}
-Avaliações 5 estrelas na Workana: ${profile.avaliacoes}
+${valorTxt}
+Avaliações 5 estrelas na Workana: ${profile.avaliacoes}${contextoTxt}
+
+ATENCAO CRITICA - VERIFICACAO ANTI-IA:
+Antes de escrever, leia a descricao do projeto com atencao. Alguns clientes escondem instrucoes para detectar respostas geradas por IA, como "comece a proposta com a palavra X", "inclua o codigo Y", "responda em determinado formato" ou "mencione tal palavra". Se houver QUALQUER exigencia desse tipo na descricao, cumpra EXATAMENTE como pedido. Isso e prioritario sobre qualquer outra regra de formato abaixo. Se nao houver exigencia, ignore esta instrucao.
 
 Regras:
 - Tom humano, direto, sem cara de IA, sem hífens em excesso
-- Saudação: "Olá, ${cliente}! Tudo bem?"
+- Saudação: "Olá, ${cliente}! Tudo bem?" (a menos que a vaga exija outra abertura)
 - Mostre que entendeu o projeto com suas palavras
 - Mencione o portfólio: lupixa.com
 - Liste o que está incluído de forma objetiva
 - Mencione "17 anos de experiência como Supervisor de TI em ambientes críticos"
 - Mencione as ${profile.avaliacoes} avaliações 5 estrelas na Workana
-- Valor e prazo claros (prazo em dias úteis)
+- Valor e prazo claros (${tipoCobranca === "hora" ? "deixe claro que e valor por hora" : "prazo em dias úteis"})
 - Termine com UMA pergunta estratégica relacionada ao projeto
 - Sem "Atenciosamente", sem assinatura formal`;
 
@@ -548,8 +590,53 @@ function renderCRM() {
           <button class="btn btn-sm btn-danger" onclick="deleteCRMItem('${r.id}')">🗑️</button>
         </div>
       </div>
+      ${followupDevido(r) ? `<div style="margin-top:10px"><button class="btn btn-sm btn-gold" onclick="gerarFollowup('${r.id}')" id="fu-btn-${r.id}">📨 Gerar follow-up</button><div id="fu-box-${r.id}" style="margin-top:10px"></div></div>` : ""}
     </div>`;
   }).join("");
+}
+
+function followupDevido(r) {
+  if (["fechada","perdida"].includes(r.status)) return false;
+  if (!r.followup) return false;
+  return r.followup <= today();
+}
+
+async function gerarFollowup(id) {
+  const r = crm.find(x=>x.id===id);
+  if (!r) return;
+  const btn = document.getElementById("fu-btn-"+id);
+  btn.disabled = true; btn.textContent = "⏳ Gerando...";
+
+  const prompt = `Você é o Diogo Pinotti, freelancer de TI. Escreva uma mensagem CURTA de follow-up para a Workana, para o cliente "${r.cliente}" sobre o projeto: "${r.descricao}".
+
+Gere uma variacao personalizada e natural seguindo EXATAMENTE esta estrutura, adaptando ao projeto:
+1. Saudacao: "Olá, ${r.cliente}! Tudo bem?"
+2. Pergunta de acompanhamento: passar pra saber se ficou alguma duvida que ele possa esclarecer, que continua a disposicao e que gostaria muito de fazer parte do projeto. Adapte ao contexto do projeto, sem soar robotico.
+3. Fechamento: "Diogo Pinotti - portfólio em lupixa.com"
+
+Tom humano, direto, curto, sem cara de IA, sem hífens em excesso. Sem "Atenciosamente".`;
+
+  try {
+    const text = await callClaude(prompt);
+    window["_fu_"+id] = text;
+    document.getElementById("fu-box-"+id).innerHTML = `
+      <div class="proposal-text" style="margin-bottom:8px">${text}</div>
+      <button class="btn btn-sm btn-success" onclick="copiarFollowup('${id}')" id="fucopy-${id}">📋 Copiar follow-up</button>`;
+  } catch { alert("Erro ao gerar follow-up. Tente novamente."); }
+
+  btn.disabled = false; btn.textContent = "📨 Gerar follow-up";
+}
+
+function copiarFollowup(id) {
+  const text = window["_fu_"+id]||"";
+  const cb = () => {
+    const b = document.getElementById("fucopy-"+id);
+    b.textContent="✓ Copiado!"; b.style.background="var(--green)"; b.style.color="#000";
+    setTimeout(()=>{ b.textContent="📋 Copiar follow-up"; b.style.background=""; b.style.color=""; },2000);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(cb).catch(()=>fallbackCopy(text,cb));
+  } else { fallbackCopy(text,cb); }
 }
 
 function editarCRM(id) {
