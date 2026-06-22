@@ -347,8 +347,10 @@ async function callClaude(prompt) {
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({ prompt })
   });
-  if (!res.ok) throw new Error("Erro na API");
   const data = await res.json();
+  if (!res.ok || data.error) {
+    throw new Error(data.error || ("Erro " + res.status));
+  }
   return data.text || "";
 }
 
@@ -407,7 +409,7 @@ Responda SOMENTE em JSON válido, sem markdown:
     document.getElementById("p-rapido").textContent = fmt(analysis.precoRapido);
     document.getElementById("in-valor-final").placeholder = "Ideal: "+fmt(analysis.precoIdeal);
   } catch(e) {
-    col.innerHTML = `<div class="card"><div style="color:var(--red)">Erro ao analisar. Tente novamente.</div></div>`;
+    col.innerHTML = `<div class="card"><div style="color:var(--red)">Erro: ${e.message}</div></div>`;
   }
 
   btn.disabled = false;
