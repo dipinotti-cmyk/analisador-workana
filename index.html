@@ -480,25 +480,65 @@ async function gerarProposta() {
     ? `\n\nINFORMACAO ADICIONAL fornecida pelo Diogo (use de forma natural na proposta, adaptando ao projeto): ${contexto}`
     : "";
 
-  const prompt = `Você é o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma proposta para a Workana.
+  const diferencialTxt = tipoCobranca === "projeto"
+    ? `\n\n7. Diferencial\nComo diferencial, ofereço até 3 revisões sem custo adicional durante os 3 meses após a entrega, para ajustes pontuais relacionados ao escopo desenvolvido.`
+    : "";
+
+  const valorBloco = tipoCobranca === "hora"
+    ? `6. Valor e Prazo\nValor por hora: R$ ${finalPrice}/hora\nEstimativa: ${analysis.prazoEstimado}`
+    : `6. Valor e Prazo\nValor da proposta: R$ ${finalPrice}\nPrazo estimado: ${analysis.prazoEstimado}`;
+
+  const prompt = `Você é o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma proposta para a Workana seguindo EXATAMENTE a estrutura abaixo.
+
+DADOS:
 Cliente: ${cliente}
 Projeto: ${desc}
-${valorTxt}
 Avaliações 5 estrelas na Workana: ${profile.avaliacoes}${contextoTxt}
 
-ATENCAO CRITICA - VERIFICACAO ANTI-IA:
-Antes de escrever, leia a descricao do projeto com atencao. Alguns clientes escondem instrucoes para detectar respostas geradas por IA, como "comece a proposta com a palavra X", "inclua o codigo Y", "responda em determinado formato" ou "mencione tal palavra". Se houver QUALQUER exigencia desse tipo na descricao, cumpra EXATAMENTE como pedido. Isso e prioritario sobre qualquer outra regra de formato abaixo. Se nao houver exigencia, ignore esta instrucao.
+VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA):
+Leia a descricao do projeto com atencao. Alguns clientes escondem instrucoes para detectar IA (ex: "comece com a palavra X", "inclua o codigo Y", "responda em determinado formato"). Se houver QUALQUER exigencia desse tipo, cumpra EXATAMENTE como pedido, acima de qualquer outra regra. Se nao houver, ignore.
 
-Regras:
-- Tom humano, direto, sem cara de IA, sem hífens em excesso
-- Saudação: "Olá, ${cliente}! Tudo bem?" (a menos que a vaga exija outra abertura)
-- Mostre que entendeu o projeto com suas palavras
-- Mencione o portfólio: lupixa.com
-- Liste o que está incluído de forma objetiva
-- Mencione "17 anos de experiência como Supervisor de TI em ambientes críticos"
-- Mencione as ${profile.avaliacoes} avaliações 5 estrelas na Workana
-- Valor e prazo claros (${tipoCobranca === "hora" ? "deixe claro que e valor por hora" : "prazo em dias úteis"})
-- Termine com UMA pergunta estratégica relacionada ao projeto
+LINGUAGEM: natural, objetiva e profissional. Sempre demonstre entendimento do objetivo ANTES de falar de experiencia.
+NUNCA use frases genericas como "Acredito que posso ajudar", "Tenho interesse no projeto", "Sera um prazer trabalhar com voce", "Sou a melhor opcao".
+
+ESTRUTURA OBRIGATORIA:
+
+1. Saudacao
+Olá, ${cliente}! Tudo bem?
+
+2. Entendimento do Projeto
+Li seu projeto e entendi que o objetivo é [resuma o objetivo principal do cliente em uma ou duas frases].
+
+3. Portfólio
+Você pode conhecer meu portfólio completo em lupixa.com.
+
+4. O que está incluído
+Gere uma lista objetiva baseada no escopo informado, formato:
+• Item 1
+• Item 2
+• Item 3
+• Item 4
+• Item 5
+
+5. Experiência
+Tenho 17 anos de experiência como Supervisor de TI em ambientes críticos e atualmente atuo no desenvolvimento de soluções digitais, sites, automações e integrações para empresas.
+Na Workana, mantenho avaliações 5 estrelas, resultado de entregas consistentes, comunicação clara e foco na qualidade em cada projeto.
+
+${valorBloco}${diferencialTxt}
+
+8. Pergunta Final
+Gere uma pergunta inteligente e especifica relacionada ao projeto, para estimular resposta do cliente e aprofundar o entendimento da necessidade. Nunca generica.
+
+REGRAS OBRIGATORIAS:
+- Nunca mencionar inteligencia artificial
+- Nunca dizer que analisou tecnicamente o projeto
+- Nunca exagerar experiencia
+- Nunca usar excesso de hifens
+- Nunca criar textos longos
+- Nunca repetir informacoes
+- Nao utilizar emojis
+- Manter tom humano e direto
+- Adaptar o texto ao contexto especifico do projeto
 - Sem "Atenciosamente", sem assinatura formal`;
 
   try {
