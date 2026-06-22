@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0f14">
+<title>Analisador Workana — Lupixa</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--surface:#141720;--card:#1a1f2e;--border:#252b3b;
+  --accent:#5b8ef0;--gold:#f5a623;--gold-dim:#3a2c0a;
+  --green:#3ecf8e;--green-dim:#0d2b1e;--red:#f56565;--red-dim:#2d1515;
+  --yellow:#f0c040;--text:#e8ecf5;--muted:#8892a4;--faint:#4a5568;
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+input,textarea,select{font-family:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;width:100%;outline:none;font-size:14px;transition:border-color .2s}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:80px;line-height:1.6}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:8px;font-size:14px;font-weight:600;transition:background .2s}
+label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.field{margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.btn{padding:10px 18px;font-size:14px}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-lg{padding:13px 20px;font-size:15px}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#4a7de8}
+.btn-ghost{background:transparent;color:var(--muted)}.btn-ghost:hover{background:var(--surface)}
+.btn-success{background:var(--green-dim);color:var(--green)}.btn-success:hover{background:#142b1e}
+.btn-danger{background:var(--red-dim);color:var(--red)}.btn-danger:hover{background:#3d1a1a}
+.btn-gold{background:var(--gold-dim);color:var(--gold)}.btn-gold:hover{background:#4a3512}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em}
+.divider{border-top:1px solid var(--border);margin:14px 0}
+.stars{color:var(--gold);font-size:16px;letter-spacing:2px}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;position:sticky;top:0;background:var(--bg);z-index:100}
+.header-title{font-size:18px;font-weight:800}
+.header-sub{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Layout */
+.main{padding:16px;max-width:1200px;margin:0 auto}
+.two-col{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+.col{display:flex;flex-direction:column;gap:14px}
+
+/* Cards especiais */
+.rec-card{border-radius:12px;padding:16px}
+.price-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.price-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 8px;text-align:center}
+.price-label{font-size:10px;color:var(--muted);margin-bottom:4px}
+.price-val{font-size:13px;font-weight:700}
+.analysis-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.proposal-text{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;line-height:1.8;white-space:pre-wrap;max-height:380px;overflow-y:auto}
+.crm-item{border-left:3px solid var(--border);border-radius:12px;padding:14px;background:var(--card);margin-bottom:10px}
+.dash-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.dash-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.dash-stat{text-align:center;padding:18px 12px}
+.dash-val{font-size:26px;font-weight:800;margin-bottom:4px}
+.dash-label{font-size:11px;color:var(--muted)}
+.dash-icon{font-size:22px;margin-bottom:6px}
+.metric-card{padding:18px}
+.metric-label{font-size:11px;color:var(--muted);margin-bottom:6px}
+.metric-val{font-size:20px;font-weight:800}
+.status-dist{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.status-chip{background:var(--surface);border-radius:8px;padding:8px 14px}
+.status-chip-label{font-size:10px;text-transform:uppercase;margin-bottom:2px}
+.status-chip-val{font-size:18px;font-weight:700}
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.alert{border-radius:12px;padding:14px 16px;margin-bottom:4px}
+.loading{text-align:center;padding:48px 20px}
+.loading-icon{font-size:32px;margin-bottom:10px}
+.sync-bar{display:flex;align-items:center;gap:8px;font-size:12px;padding:8px 12px;background:var(--surface);border-radius:8px;margin-bottom:12px}
+.manual-form{border:1px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:14px}
+.manual-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.crm-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.crm-meta{font-size:11px;color:var(--faint);margin-top:4px}
+.crm-desc{font-size:12px;color:var(--muted);margin-top:2px}
+
+@media(max-width:700px){
+  .two-col{grid-template-columns:1fr}
+  .dash-grid-4{grid-template-columns:repeat(2,1fr)}
+  .analysis-grid{grid-template-columns:1fr}
+  .manual-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-sub">Lupixa — Diogo Pinotti</div>
+    <div class="header-title">Analisador <span style="color:var(--accent)">Workana</span></div>
+  </div>
+  <div class="tabs">
+    <button class="btn btn-sm btn-primary" onclick="setTab('analisar')" id="tab-analisar">⚡ Analisar</button>
+    <button class="btn btn-sm btn-ghost" onclick="setTab('crm')" id="tab-crm">📋 CRM</button>
+    <button class="btn btn-sm btn-ghost" onclick="setTab('dashboard')" id="tab-dashboard">📊 Dashboard</button>
+    <button class="btn btn-sm btn-ghost" onclick="setTab('backup')" id="tab-backup">💾 Backup</button>
+  </div>
+</div>
+
+<div class="main">
+  <div id="sync-status" class="sync-bar" style="display:none"></div>
+
+  <!-- ANALISAR -->
+  <div id="page-analisar">
+    <div class="two-col">
+      <div class="col">
+        <!-- Perfil -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleProfile()">
+            <span style="font-weight:600;font-size:14px">👤 Perfil profissional</span>
+            <span style="color:var(--muted);font-size:12px" id="profile-toggle-label">▼ editar</span>
+          </div>
+          <div id="profile-panel" style="display:none">
+            <div class="divider"></div>
+            <div class="field"><label>Avaliações 5★ na Workana</label><input type="number" id="p-avaliacoes" min="0" onchange="saveProfile()"></div>
+            <div class="field"><label>Habilidades e experiências</label><textarea rows="9" id="p-habilidades" onchange="saveProfile()"></textarea></div>
+            <div style="font-size:11px;color:var(--green)" id="profile-saved"></div>
+          </div>
+        </div>
+
+        <!-- Projeto -->
+        <div class="card">
+          <div class="field"><label>Nome do cliente</label><input id="in-cliente" placeholder="Ex: João Silva"></div>
+          <div class="field"><label>Descrição do projeto</label><textarea id="in-desc" rows="6" placeholder="Cole aqui a descrição completa do projeto..."></textarea></div>
+          <button class="btn btn-primary btn-lg" style="width:100%" onclick="avaliar()" id="btn-avaliar">⚡ Avaliar projeto</button>
+        </div>
+
+        <!-- Precificação -->
+        <div class="card" id="preco-card" style="display:none">
+          <div style="font-weight:600;margin-bottom:14px;font-size:14px">💰 Precificação</div>
+          <div class="price-grid">
+            <div class="price-item"><div class="price-label">Mínimo</div><div class="price-val" style="color:var(--muted)" id="p-min"></div></div>
+            <div class="price-item"><div class="price-label">Ideal</div><div class="price-val" style="color:var(--accent)" id="p-ideal"></div></div>
+            <div class="price-item"><div class="price-label">Rápido</div><div class="price-val" style="color:var(--green)" id="p-rapido"></div></div>
+          </div>
+          <div class="field"><label>Média dos concorrentes (opcional)</label><input type="number" id="in-mercado" placeholder="Ex: 800" oninput="calcMercado()"></div>
+          <div id="mercado-info" style="display:none;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px"></div>
+          <div class="field"><label>Valor final (vazio = usar ideal)</label><input type="number" id="in-valor-final" placeholder=""></div>
+          <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="confirmarValor()" id="btn-confirmar-valor">Confirmar valor</button>
+          <button class="btn btn-gold btn-lg" style="width:100%;display:none" onclick="gerarProposta()" id="btn-gerar">✍️ Gerar proposta</button>
+        </div>
+      </div>
+
+      <div class="col" id="resultado-col">
+        <div class="card empty" id="empty-state">
+          <div class="empty-icon">⚡</div>
+          <div>Preencha os dados e clique em <strong>Avaliar projeto</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CRM -->
+  <div id="page-crm" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <h2 style="font-size:18px;font-weight:700">📋 CRM de Propostas</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge" id="crm-count" style="background:#1e2d52;color:var(--accent)"></span>
+        <button class="btn btn-sm btn-primary" onclick="toggleManual()" id="btn-manual">+ Adicionar manualmente</button>
+      </div>
+    </div>
+
+    <div id="manual-form" style="display:none" class="manual-form">
+      <div style="font-weight:600;color:var(--accent);margin-bottom:12px">➕ Nova proposta</div>
+      <div class="manual-grid">
+        <div class="field"><label>Cliente *</label><input id="m-cliente" placeholder="Nome do cliente"></div>
+        <div class="field"><label>Valor (R$)</label><input type="number" id="m-valor" placeholder="Ex: 800"></div>
+        <div class="field"><label>Data de envio</label><input type="date" id="m-envio"></div>
+        <div class="field"><label>Follow-up</label><input type="date" id="m-followup"></div>
+        <div class="field"><label>Status</label>
+          <select id="m-status">
+            <option value="enviada">enviada</option>
+            <option value="visualizada">visualizada</option>
+            <option value="respondida">respondida</option>
+            <option value="negociação">negociação</option>
+            <option value="fechada">fechada</option>
+            <option value="perdida">perdida</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Descrição</label><textarea rows="2" id="m-descricao" placeholder="Descreva brevemente o projeto..."></textarea></div>
+      <div class="field"><label>Notas</label><input id="m-notas" placeholder="Observações..."></div>
+      <button class="btn btn-success" style="width:100%" onclick="salvarManual()">✓ Salvar no CRM</button>
+    </div>
+
+    <div id="crm-list"></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" style="display:none">
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">📊 Dashboard</h2>
+    <div class="dash-grid-4" id="dash-top"></div>
+    <div class="dash-grid-2" id="dash-valores"></div>
+    <div class="dash-grid-2" id="dash-tickets"></div>
+    <div class="card" id="dash-dist" style="display:none">
+      <div style="font-weight:600;margin-bottom:10px">Distribuição por status</div>
+      <div class="status-dist" id="dash-status-list"></div>
+    </div>
+  </div>
+
+  <!-- BACKUP -->
+  <div id="page-backup" style="display:none">
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">💾 Backup</h2>
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-weight:600;margin-bottom:6px">Exportar</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Baixa JSON com perfil e CRM completo.</div>
+      <button class="btn btn-success" onclick="exportar()">⬇️ Exportar backup</button>
+    </div>
+    <div class="card">
+      <div style="font-weight:600;margin-bottom:6px">Importar</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Restaura dados de um backup JSON. Dados atuais serão substituídos.</div>
+      <input type="file" accept=".json" onchange="importar(event)" style="color:var(--text)">
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://sxfixxirixbmcvsswpvh.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4Zml4eGlyaXhibWN2c3N3cHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODc0MTEsImV4cCI6MjA5NzY2MzQxMX0.3VpPtZ-zaSmNM60LX7GAI9vB9PavG8tPqUzzM7XKwBI";
+const CLAUDE_KEY_PLACEHOLDER = ""; // Não necessário — usa proxy do artifact
+
+const STATUS_COLORS = {
+  enviada:"#5b8ef0", visualizada:"#f5a623", respondida:"#f0c040",
+  "negociação":"#a78bfa", fechada:"#3ecf8e", perdida:"#f56565"
+};
+
+const SENSITIVE = ["saas","marketplace","erp","financeiro","multi-tenant","app mobile","ia complexa","integrações críticas","automação avançada","sistema de pagamento","ecommerce","loja virtual","inteligência artificial","machine learning"];
+
+// Estado
+let profile = { avaliacoes: 3, habilidades: "" };
+let crm = [];
+let analysis = null;
+let finalPrice = null;
+let profileId = null;
+let currentTab = "analisar";
+let showManualForm = false;
+let showProfile = false;
+
+// Utilitários
+const fmt = n => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n||0);
+const fmtDate = d => { try { return new Date(d+"T12:00:00").toLocaleDateString("pt-BR"); } catch { return d; } };
+const today = () => new Date().toISOString().split("T")[0];
+const addDays = (d,n) => { const r = new Date(d+"T12:00:00"); r.setDate(r.getDate()+n); return r.toISOString().split("T")[0]; };
+
+function syncStatus(msg, color="#8892a4") {
+  const el = document.getElementById("sync-status");
+  if (!msg) { el.style.display="none"; return; }
+  el.style.display="flex";
+  el.innerHTML = `<span style="color:${color}">${msg}</span>`;
+}
+
+// Supabase helpers
+async function sbFetch(path, opts={}) {
+  const res = await fetch(SUPABASE_URL+path, {
+    ...opts,
+    headers: { "Content-Type":"application/json", "apikey": SUPABASE_KEY, "Authorization":"Bearer "+SUPABASE_KEY, "Prefer":"return=representation", ...(opts.headers||{}) }
+  });
+  if (!res.ok) { const e = await res.text(); throw new Error(e); }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function loadProfile() {
+  try {
+    const data = await sbFetch("/rest/v1/perfil?limit=1");
+    if (data && data.length > 0) {
+      profileId = data[0].id;
+      profile.avaliacoes = data[0].avaliacoes;
+      profile.habilidades = data[0].habilidades;
+    }
+    document.getElementById("p-avaliacoes").value = profile.avaliacoes;
+    document.getElementById("p-habilidades").value = profile.habilidades;
+  } catch(e) { console.error("Erro ao carregar perfil", e); }
+}
+
+async function saveProfile() {
+  profile.avaliacoes = parseInt(document.getElementById("p-avaliacoes").value)||3;
+  profile.habilidades = document.getElementById("p-habilidades").value;
+  try {
+    if (profileId) {
+      await sbFetch("/rest/v1/perfil?id=eq."+profileId, { method:"PATCH", body: JSON.stringify({ avaliacoes: profile.avaliacoes, habilidades: profile.habilidades, atualizado_em: new Date().toISOString() }) });
+    } else {
+      const d = await sbFetch("/rest/v1/perfil", { method:"POST", body: JSON.stringify({ avaliacoes: profile.avaliacoes, habilidades: profile.habilidades }) });
+      if (d && d[0]) profileId = d[0].id;
+    }
+    document.getElementById("profile-saved").textContent = "✓ Salvo no Supabase";
+    setTimeout(()=>{ document.getElementById("profile-saved").textContent=""; }, 2000);
+  } catch(e) { console.error("Erro ao salvar perfil", e); }
+}
+
+async function loadCRM() {
+  try {
+    const data = await sbFetch("/rest/v1/crm?order=criado_em.desc");
+    crm = data || [];
+    renderCRM();
+    renderDashboard();
+    document.getElementById("crm-count").textContent = crm.length+" registros";
+  } catch(e) { console.error("Erro ao carregar CRM", e); }
+}
+
+async function addCRMItem(item) {
+  try {
+    await sbFetch("/rest/v1/crm", { method:"POST", body: JSON.stringify(item) });
+    await loadCRM();
+  } catch(e) { console.error("Erro ao salvar no CRM", e); }
+}
+
+async function updateCRMItem(id, fields) {
+  try {
+    await sbFetch("/rest/v1/crm?id=eq."+id, { method:"PATCH", body: JSON.stringify(fields) });
+    await loadCRM();
+  } catch(e) { console.error("Erro ao atualizar CRM", e); }
+}
+
+async function deleteCRMItem(id) {
+  if (!confirm("Excluir essa proposta?")) return;
+  try {
+    await sbFetch("/rest/v1/crm?id=eq."+id, { method:"DELETE" });
+    await loadCRM();
+  } catch(e) { console.error("Erro ao excluir", e); }
+}
+
+// Claude API
+async function callClaude(prompt) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1000, messages:[{role:"user",content:prompt}] })
+  });
+  const data = await res.json();
+  return data.content?.[0]?.text || "";
+}
+
+// Análise
+async function avaliar() {
+  const desc = document.getElementById("in-desc").value.trim();
+  if (!desc) return;
+  const btn = document.getElementById("btn-avaliar");
+  btn.disabled = true;
+  btn.textContent = "⏳ Analisando...";
+  analysis = null; finalPrice = null;
+  document.getElementById("preco-card").style.display = "none";
+  document.getElementById("btn-gerar").style.display = "none";
+
+  const col = document.getElementById("resultado-col");
+  col.innerHTML = `<div class="card loading"><div class="loading-icon">🔍</div><div style="color:var(--muted)">Analisando com IA...</div></div>`;
+
+  const cliente = document.getElementById("in-cliente").value || "sem nome";
+  const hasSensitive = SENSITIVE.some(s => desc.toLowerCase().includes(s));
+
+  const prompt = `Você é um consultor freelancer sênior avaliando projetos na Workana para um profissional de TI com este perfil:
+Avaliações 5 estrelas: ${profile.avaliacoes}
+Habilidades: ${profile.habilidades}
+
+Projeto do cliente "${cliente}":
+${desc}
+
+Responda SOMENTE em JSON válido, sem markdown:
+{"complexidade":<0.5 a 5.0>,"complexidadeTexto":"<frase>","risco":<0.5 a 5.0>,"riscoTexto":"<frase>","comercial":<0.5 a 5.0>,"comercialTexto":"<frase>","recomendacao":"<ENVIAR|CAUTELA|PULAR>","recomendacaoMotivo":"<frase>","precoMin":<int>,"precoIdeal":<int>,"precoRapido":<int>,"prazoEstimado":"<ex: 7 dias úteis>","sensivel":${hasSensitive},"sensivelMotivo":"<texto ou vazio>"}`;
+
+  try {
+    const raw = await callClaude(prompt);
+    analysis = JSON.parse(raw.replace(/```json|```/g,"").trim());
+    renderAnalysis();
+    document.getElementById("preco-card").style.display = "block";
+    document.getElementById("p-min").textContent = fmt(analysis.precoMin);
+    document.getElementById("p-ideal").textContent = fmt(analysis.precoIdeal);
+    document.getElementById("p-rapido").textContent = fmt(analysis.precoRapido);
+    document.getElementById("in-valor-final").placeholder = "Ideal: "+fmt(analysis.precoIdeal);
+  } catch(e) {
+    col.innerHTML = `<div class="card"><div style="color:var(--red)">Erro ao analisar. Tente novamente.</div></div>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = "⚡ Avaliar projeto";
+}
+
+function renderAnalysis() {
+  const a = analysis;
+  const recColors = { ENVIAR:["var(--green-dim)","var(--green)","✅"], CAUTELA:["#2d2510","var(--gold)","⚠️"], PULAR:["var(--red-dim)","var(--red)","🚫"] };
+  const [bg,color,icon] = recColors[a.recomendacao]||["var(--card)","var(--text)","❓"];
+
+  let html = "";
+  if (a.sensivel && a.sensivelMotivo) {
+    html += `<div class="alert" style="background:var(--gold-dim);border:1px solid var(--gold)"><div style="font-weight:700;color:var(--gold);margin-bottom:4px">⚠️ Escopo sensível identificado</div><div style="font-size:13px">${a.sensivelMotivo}</div></div>`;
+  }
+  html += `<div class="rec-card" style="background:${bg};border:1px solid ${color}">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:26px">${icon}</span>
+      <div><div style="font-weight:700;font-size:16px;color:${color}">${a.recomendacao}</div><div style="font-size:13px;margin-top:2px">${a.recomendacaoMotivo}</div></div>
+    </div>
+  </div>`;
+
+  html += `<div class="analysis-grid">`;
+  [["🔧 Complexidade",a.complexidade,a.complexidadeTexto],["⚠️ Risco",a.risco,a.riscoTexto],["🎯 Chance comercial",a.comercial,a.comercialTexto]].forEach(([t,v,txt])=>{
+    const stars = Array.from({length:5},(_,i)=>i<Math.round(v)?"★":"☆").join("");
+    html += `<div class="card"><div style="font-size:12px;color:var(--muted);margin-bottom:6px">${t}</div><div class="stars">${stars}<span style="color:var(--muted);font-size:12px;margin-left:6px">${Number(v).toFixed(1)}</span></div><div style="font-size:12px;margin-top:8px;line-height:1.6">${txt}</div></div>`;
+  });
+  html += `</div>`;
+  html += `<div class="card" style="padding:12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--muted);font-size:13px">⏱️ Prazo estimado</span><span style="font-weight:700;color:var(--accent)">${a.prazoEstimado}</span></div></div>`;
+
+  document.getElementById("resultado-col").innerHTML = html;
+}
+
+function calcMercado() {
+  if (!analysis) return;
+  const mkt = parseInt(document.getElementById("in-mercado").value)||0;
+  const el = document.getElementById("mercado-info");
+  if (!mkt) { el.style.display="none"; return; }
+  const pos = mkt < analysis.precoIdeal*0.85 ? "abaixo" : mkt > analysis.precoIdeal*1.15 ? "acima" : "alinhado";
+  const colors = { abaixo:["var(--red-dim)","var(--red)"], alinhado:["var(--green-dim)","var(--green)"], acima:["var(--gold-dim)","var(--gold)"] };
+  const [bg,c] = colors[pos];
+  el.style.display="block"; el.style.background=bg;
+  el.innerHTML = `Mercado <strong style="color:${c}">${pos} do recomendado</strong> — média: ${fmt(mkt)}`;
+}
+
+function confirmarValor() {
+  const manual = parseInt(document.getElementById("in-valor-final").value)||0;
+  finalPrice = manual || analysis.precoIdeal;
+  const btn = document.getElementById("btn-confirmar-valor");
+  btn.textContent = "✓ Valor: "+fmt(finalPrice);
+  btn.className = "btn btn-success";
+  document.getElementById("btn-gerar").style.display = "block";
+}
+
+async function gerarProposta() {
+  const btn = document.getElementById("btn-gerar");
+  btn.disabled=true; btn.textContent="⏳ Gerando...";
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const desc = document.getElementById("in-desc").value;
+
+  const prompt = `Você é o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma proposta para a Workana.
+Cliente: ${cliente}
+Projeto: ${desc}
+Valor: R$ ${finalPrice}
+Prazo: ${analysis.prazoEstimado}
+Avaliações 5 estrelas na Workana: ${profile.avaliacoes}
+
+Regras:
+- Tom humano, direto, sem cara de IA, sem hífens em excesso
+- Saudação: "Olá, ${cliente}! Tudo bem?"
+- Mostre que entendeu o projeto com suas palavras
+- Mencione o portfólio: lupixa.com
+- Liste o que está incluído de forma objetiva
+- Mencione "17 anos de experiência como Supervisor de TI em ambientes críticos"
+- Mencione as ${profile.avaliacoes} avaliações 5 estrelas na Workana
+- Valor e prazo claros (prazo em dias úteis)
+- Termine com UMA pergunta estratégica relacionada ao projeto
+- Sem "Atenciosamente", sem assinatura formal`;
+
+  try {
+    const text = await callClaude(prompt);
+    const col = document.getElementById("resultado-col");
+    // Mantém análise e adiciona proposta
+    const propHtml = `<div class="card" id="proposta-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-weight:600">✍️ Proposta gerada</div>
+        <button class="btn btn-sm btn-success" onclick="copiarProposta()" id="btn-copiar">📋 Copiar</button>
+      </div>
+      <div class="proposal-text" id="proposal-text">${text}</div>
+      <div class="divider"></div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Enviou essa proposta na Workana?</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm btn-success" onclick="salvarPropostaCRM('${cliente.replace(/'/g,"\\'")}')">✓ Sim, salvar no CRM</button>
+        <button class="btn btn-sm btn-ghost" onclick="document.getElementById('crm-prompt').style.display='none'">Não agora</button>
+      </div>
+    </div>`;
+    col.innerHTML += propHtml;
+    window._proposalText = text;
+  } catch { alert("Erro ao gerar proposta. Tente novamente."); }
+
+  btn.disabled=false; btn.textContent="✍️ Gerar proposta";
+}
+
+function copiarProposta() {
+  const text = window._proposalText||"";
+  const copy = () => {
+    const btn = document.getElementById("btn-copiar");
+    btn.textContent="✓ Copiada!"; btn.style.background="var(--green)"; btn.style.color="#000";
+    setTimeout(()=>{ btn.textContent="📋 Copiar"; btn.style.background=""; btn.style.color=""; },2000);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(copy).catch(()=>fallbackCopy(text,copy));
+  } else { fallbackCopy(text,copy); }
+}
+
+function fallbackCopy(text,cb) {
+  const ta=document.createElement("textarea"); ta.value=text;
+  ta.style.cssText="position:fixed;top:0;left:0;opacity:0;pointer-events:none;";
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{document.execCommand("copy");cb();}catch{}
+  document.body.removeChild(ta);
+}
+
+async function salvarPropostaCRM(cliente) {
+  const desc = document.getElementById("in-desc").value;
+  await addCRMItem({
+    id: Date.now().toString(),
+    cliente, descricao: desc.slice(0,120)+(desc.length>120?"…":""),
+    valor: finalPrice, status:"enviada",
+    envio: today(), followup: addDays(today(),2), notas:""
+  });
+  // Substitui o prompt por confirmação
+  const card = document.getElementById("proposta-card");
+  if (card) {
+    const div = card.querySelector(".divider").nextElementSibling;
+    card.querySelector(".divider").remove();
+    div?.remove();
+    const div2 = card.querySelector("div:last-child");
+    div2?.remove();
+    card.insertAdjacentHTML("beforeend",`<div style="font-size:12px;color:var(--green);margin-top:10px">✓ Salvo no CRM</div>`);
+  }
+}
+
+// CRM
+function renderCRM() {
+  const list = document.getElementById("crm-list");
+  document.getElementById("crm-count").textContent = crm.length+" registros";
+  if (!crm.length) { list.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div>Nenhuma proposta ainda.</div></div>`; return; }
+
+  list.innerHTML = crm.map(r => {
+    const c = STATUS_COLORS[r.status]||"var(--faint)";
+    return `<div class="crm-item" style="border-left-color:${c}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-weight:700;font-size:15px">${r.cliente||"Sem nome"}</span>
+            <span class="badge" style="background:${c}22;color:${c}">${r.status}</span>
+            <span style="color:var(--accent);font-weight:700;font-size:13px">${fmt(r.valor)}</span>
+          </div>
+          <div class="crm-desc">${r.descricao||""}</div>
+          <div class="crm-meta">Envio: ${fmtDate(r.envio)} · Follow-up: ${fmtDate(r.followup)}${r.notas?" · "+r.notas:""}</div>
+        </div>
+        <div class="crm-actions">
+          <select onchange="updateCRMItem('${r.id}',{status:this.value})" style="width:auto;padding:4px 6px;font-size:12px">
+            ${Object.keys(STATUS_COLORS).map(s=>`<option value="${s}"${s===r.status?" selected":""}>${s}</option>`).join("")}
+          </select>
+          <button class="btn btn-sm btn-ghost" onclick="editarCRM('${r.id}')">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteCRMItem('${r.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function editarCRM(id) {
+  const r = crm.find(x=>x.id===id);
+  if (!r) return;
+  const novoCliente = prompt("Cliente:", r.cliente)||r.cliente;
+  const novoValor = prompt("Valor (R$):", r.valor)||r.valor;
+  const novasNotas = prompt("Notas:", r.notas)||r.notas;
+  updateCRMItem(id, { cliente:novoCliente, valor:parseInt(novoValor)||0, notas:novasNotas });
+}
+
+function toggleManual() {
+  showManualForm = !showManualForm;
+  document.getElementById("manual-form").style.display = showManualForm?"block":"none";
+  document.getElementById("btn-manual").textContent = showManualForm?"✕ Cancelar":"+ Adicionar manualmente";
+  document.getElementById("btn-manual").className = showManualForm?"btn btn-sm btn-ghost":"btn btn-sm btn-primary";
+  if (showManualForm) {
+    document.getElementById("m-envio").value = today();
+    document.getElementById("m-followup").value = addDays(today(),2);
+  }
+}
+
+async function salvarManual() {
+  const cliente = document.getElementById("m-cliente").value.trim();
+  if (!cliente) { alert("Informe o nome do cliente"); return; }
+  await addCRMItem({
+    id: Date.now().toString(),
+    cliente,
+    descricao: document.getElementById("m-descricao").value,
+    valor: parseInt(document.getElementById("m-valor").value)||0,
+    status: document.getElementById("m-status").value,
+    envio: document.getElementById("m-envio").value||today(),
+    followup: document.getElementById("m-followup").value||addDays(today(),2),
+    notas: document.getElementById("m-notas").value,
+  });
+  document.getElementById("m-cliente").value="";
+  document.getElementById("m-valor").value="";
+  document.getElementById("m-descricao").value="";
+  document.getElementById("m-notas").value="";
+  toggleManual();
+}
+
+// Dashboard
+function renderDashboard() {
+  const fechadas = crm.filter(r=>r.status==="fechada");
+  const total = crm.length;
+  const nFechadas = fechadas.length;
+  const perdidas = crm.filter(r=>r.status==="perdida").length;
+  const conversao = total ? ((nFechadas/total)*100).toFixed(1) : "0.0";
+  const valorTotal = crm.reduce((s,r)=>s+(r.valor||0),0);
+  const valorFechado = fechadas.reduce((s,r)=>s+(r.valor||0),0);
+  const ticketMedio = total ? valorTotal/total : 0;
+  const ticketConv = nFechadas ? valorFechado/nFechadas : 0;
+
+  document.getElementById("dash-top").innerHTML = [
+    ["📤","Total enviadas",total,"var(--accent)"],
+    ["✅","Fechadas",nFechadas,"var(--green)"],
+    ["❌","Perdidas",perdidas,"var(--red)"],
+    ["🎯","Conversão",conversao+"%","var(--gold)"],
+  ].map(([icon,label,val,color])=>`<div class="card dash-stat"><div class="dash-icon">${icon}</div><div class="dash-val" style="color:${color}">${val}</div><div class="dash-label">${label}</div></div>`).join("");
+
+  document.getElementById("dash-valores").innerHTML = [
+    ["Valor total enviado",fmt(valorTotal),"var(--accent)"],
+    ["Valor total fechado",fmt(valorFechado),"var(--green)"],
+  ].map(([l,v,c])=>`<div class="card metric-card"><div class="metric-label">${l}</div><div class="metric-val" style="color:${c}">${v}</div></div>`).join("");
+
+  document.getElementById("dash-tickets").innerHTML = [
+    ["Ticket médio (enviadas)",fmt(ticketMedio),"var(--muted)"],
+    ["Ticket médio (fechadas)",nFechadas?fmt(ticketConv):"—","var(--gold)"],
+  ].map(([l,v,c])=>`<div class="card metric-card"><div class="metric-label">${l}</div><div class="metric-val" style="color:${c}">${v}</div></div>`).join("");
+
+  const distEl = document.getElementById("dash-dist");
+  const listEl = document.getElementById("dash-status-list");
+  const counts = Object.keys(STATUS_COLORS).map(s=>({ s, n:crm.filter(r=>r.status===s).length })).filter(x=>x.n>0);
+  if (counts.length) {
+    distEl.style.display="block";
+    listEl.innerHTML = counts.map(({s,n})=>`<div class="status-chip" style="border:1px solid ${STATUS_COLORS[s]}44"><div class="status-chip-label" style="color:${STATUS_COLORS[s]}">${s}</div><div class="status-chip-val">${n}</div></div>`).join("");
+  } else { distEl.style.display="none"; }
+}
+
+// Backup
+function exportar() {
+  const blob = new Blob([JSON.stringify({profile,crm},null,2)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `lupixa-backup-${today()}.json`;
+  a.click();
+}
+
+async function importar(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = async ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (d.profile) {
+        profile = d.profile;
+        document.getElementById("p-avaliacoes").value = profile.avaliacoes;
+        document.getElementById("p-habilidades").value = profile.habilidades;
+        await saveProfile();
+      }
+      if (d.crm && d.crm.length) {
+        for (const item of d.crm) {
+          await sbFetch("/rest/v1/crm?id=eq."+item.id, {method:"DELETE"}).catch(()=>{});
+          await addCRMItem(item);
+        }
+      }
+      alert("Importação concluída!");
+    } catch { alert("Arquivo inválido."); }
+  };
+  r.readAsText(f);
+}
+
+// Perfil UI
+function toggleProfile() {
+  showProfile = !showProfile;
+  document.getElementById("profile-panel").style.display = showProfile?"block":"none";
+  document.getElementById("profile-toggle-label").textContent = showProfile?"▲ fechar":"▼ editar";
+}
+
+// Tabs
+function setTab(tab) {
+  currentTab = tab;
+  ["analisar","crm","dashboard","backup"].forEach(t => {
+    document.getElementById("page-"+t).style.display = t===tab?"block":"none";
+    const btn = document.getElementById("tab-"+t);
+    btn.className = t===tab?"btn btn-sm btn-primary":"btn btn-sm btn-ghost";
+  });
+  if (tab==="dashboard") renderDashboard();
+}
+
+// Init
+async function init() {
+  syncStatus("⏳ Conectando ao Supabase...", "var(--gold)");
+  try {
+    await loadProfile();
+    await loadCRM();
+    syncStatus("✓ Conectado ao Supabase", "var(--green)");
+    setTimeout(()=>syncStatus(""),3000);
+  } catch(e) {
+    syncStatus("⚠️ Erro de conexão — usando modo local", "var(--red)");
+  }
+}
+
+init();
+</script>
+</body>
+</html>
