@@ -11,7 +11,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0d0f14;--surface:#141720;--card:#1a1f2e;--border:#252b3b;
-  --accent:#5b8ef0;--gold:#f5a623;--gold-dim:#3a2c0a;
+  --accent:#5b8ef0;--accent-dim:#1e2d52;--gold:#f5a623;--gold-dim:#3a2c0a;
   --green:#3ecf8e;--green-dim:#0d2b1e;--red:#f56565;--red-dim:#2d1515;
   --yellow:#f0c040;--text:#e8ecf5;--muted:#8892a4;--faint:#4a5568;
 }
@@ -36,24 +36,14 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
 .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em}
 .divider{border-top:1px solid var(--border);margin:14px 0}
 .stars{color:var(--gold);font-size:16px;letter-spacing:2px}
-
-/* Header */
 .header{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;position:sticky;top:0;background:var(--bg);z-index:100}
 .header-title{font-size:18px;font-weight:800}
 .header-sub{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
 .tabs{display:flex;gap:6px;flex-wrap:wrap}
-
-/* Layout */
 .main{padding:16px;max-width:1200px;margin:0 auto}
 .two-col{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
 .col{display:flex;flex-direction:column;gap:14px}
-
-/* Cards especiais */
 .rec-card{border-radius:12px;padding:16px}
-.price-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
-.price-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 8px;text-align:center}
-.price-label{font-size:10px;color:var(--muted);margin-bottom:4px}
-.price-val{font-size:13px;font-weight:700}
 .analysis-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .proposal-text{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;line-height:1.8;white-space:pre-wrap;max-height:380px;overflow-y:auto}
 .crm-item{border-left:3px solid var(--border);border-radius:12px;padding:14px;background:var(--card);margin-bottom:10px}
@@ -81,7 +71,6 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
 .crm-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
 .crm-meta{font-size:11px;color:var(--faint);margin-top:4px}
 .crm-desc{font-size:12px;color:var(--muted);margin-top:2px}
-
 @media(max-width:700px){
   .two-col{grid-template-columns:1fr}
   .dash-grid-4{grid-template-columns:repeat(2,1fr)}
@@ -112,7 +101,6 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
   <div id="page-analisar">
     <div class="two-col">
       <div class="col">
-        <!-- Perfil -->
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleProfile()">
             <span style="font-weight:600;font-size:14px">👤 Perfil profissional</span>
@@ -126,7 +114,6 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
           </div>
         </div>
 
-        <!-- Projeto -->
         <div class="card">
           <div class="field"><label>Nome do cliente</label><input id="in-cliente" placeholder="Ex: João Silva"></div>
           <div class="field"><label>Descrição do projeto</label><textarea id="in-desc" rows="6" placeholder="Cole aqui a descrição completa do projeto..."></textarea></div>
@@ -140,17 +127,11 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
           <button class="btn btn-primary btn-lg" style="width:100%" onclick="avaliar()" id="btn-avaliar">⚡ Avaliar projeto</button>
         </div>
 
-        <!-- Precificação -->
         <div class="card" id="preco-card" style="display:none">
-          <div style="font-weight:600;margin-bottom:14px;font-size:14px">💰 Precificação</div>
-          <div class="price-grid">
-            <div class="price-item"><div class="price-label">Mínimo</div><div class="price-val" style="color:var(--muted)" id="p-min"></div></div>
-            <div class="price-item"><div class="price-label">Ideal</div><div class="price-val" style="color:var(--accent)" id="p-ideal"></div></div>
-            <div class="price-item"><div class="price-label">Rápido</div><div class="price-val" style="color:var(--green)" id="p-rapido"></div></div>
-          </div>
-          <div class="field"><label>Média dos concorrentes (opcional)</label><input type="number" id="in-mercado" placeholder="Ex: 800" oninput="calcMercado()"></div>
-          <div id="mercado-info" style="display:none;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px"></div>
-          <div class="field"><label>Valor final (vazio = usar ideal)</label><input type="number" id="in-valor-final" placeholder=""></div>
+          <div style="font-weight:600;margin-bottom:12px;font-size:14px">💰 Decisão de precificação</div>
+          <div id="preco-decisao"></div>
+          <div class="divider"></div>
+          <div class="field"><label>Valor que você vai usar (R$)</label><input type="number" id="in-valor-final" placeholder="Digite o valor da sua proposta"></div>
           <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="confirmarValor()" id="btn-confirmar-valor">Confirmar valor</button>
           <div id="contexto-wrap" style="display:none">
             <div class="divider"></div>
@@ -227,7 +208,7 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
     </div>
     <div class="card">
       <div style="font-weight:600;margin-bottom:6px">Importar</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Restaura dados de um backup JSON. Dados atuais serão substituídos.</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Restaura dados de um backup JSON. Os dados atuais serão substituídos.</div>
       <input type="file" accept=".json" onchange="importar(event)" style="color:var(--text)">
     </div>
   </div>
@@ -236,7 +217,6 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
 <script>
 const SUPABASE_URL = "https://sxfixxirixbmcvsswpvh.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4Zml4eGlyaXhibWN2c3N3cHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODc0MTEsImV4cCI6MjA5NzY2MzQxMX0.3VpPtZ-zaSmNM60LX7GAI9vB9PavG8tPqUzzM7XKwBI";
-const CLAUDE_KEY_PLACEHOLDER = ""; // Não necessário — usa proxy do artifact
 
 const STATUS_COLORS = {
   enviada:"#5b8ef0", visualizada:"#f5a623", respondida:"#f0c040",
@@ -245,42 +225,42 @@ const STATUS_COLORS = {
 
 const SENSITIVE = ["saas","marketplace","erp","financeiro","multi-tenant","app mobile","ia complexa","integrações críticas","automação avançada","sistema de pagamento","ecommerce","loja virtual","inteligência artificial","machine learning"];
 
-// Estado
 let profile = { avaliacoes: 3, habilidades: "" };
 let crm = [];
 let analysis = null;
 let finalPrice = null;
 let tipoCobranca = "projeto";
 let profileId = null;
-let currentTab = "analisar";
 let showManualForm = false;
 let showProfile = false;
 
-// Utilitários
 const fmt = n => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n||0);
 const fmtDate = d => { try { return new Date(d+"T12:00:00").toLocaleDateString("pt-BR"); } catch { return d; } };
 const today = () => new Date().toISOString().split("T")[0];
 const addDays = (d,n) => { const r = new Date(d+"T12:00:00"); r.setDate(r.getDate()+n); return r.toISOString().split("T")[0]; };
 
-function syncStatus(msg, color="#8892a4") {
+function syncStatus(msg, color){
   const el = document.getElementById("sync-status");
   if (!msg) { el.style.display="none"; return; }
   el.style.display="flex";
-  el.innerHTML = `<span style="color:${color}">${msg}</span>`;
+  el.innerHTML = '<span style="color:'+(color||"#8892a4")+'">'+msg+'</span>';
 }
 
-// Supabase helpers
-async function sbFetch(path, opts={}) {
-  const res = await fetch(SUPABASE_URL+path, {
-    ...opts,
-    headers: { "Content-Type":"application/json", "apikey": SUPABASE_KEY, "Authorization":"Bearer "+SUPABASE_KEY, "Prefer":"return=representation", ...(opts.headers||{}) }
-  });
-  if (!res.ok) { const e = await res.text(); throw new Error(e); }
+async function sbFetch(path, opts){
+  opts = opts || {};
+  const headers = Object.assign({
+    "Content-Type":"application/json",
+    "apikey": SUPABASE_KEY,
+    "Authorization":"Bearer "+SUPABASE_KEY,
+    "Prefer":"return=representation"
+  }, opts.headers||{});
+  const res = await fetch(SUPABASE_URL+path, Object.assign({}, opts, { headers }));
+  if (!res.ok) { throw new Error(await res.text()); }
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
 
-async function loadProfile() {
+async function loadProfile(){
   try {
     const data = await sbFetch("/rest/v1/perfil?limit=1");
     if (data && data.length > 0) {
@@ -290,10 +270,10 @@ async function loadProfile() {
     }
     document.getElementById("p-avaliacoes").value = profile.avaliacoes;
     document.getElementById("p-habilidades").value = profile.habilidades;
-  } catch(e) { console.error("Erro ao carregar perfil", e); }
+  } catch(e) { console.error(e); }
 }
 
-async function saveProfile() {
+async function saveProfile(){
   profile.avaliacoes = parseInt(document.getElementById("p-avaliacoes").value)||3;
   profile.habilidades = document.getElementById("p-habilidades").value;
   try {
@@ -304,57 +284,45 @@ async function saveProfile() {
       if (d && d[0]) profileId = d[0].id;
     }
     document.getElementById("profile-saved").textContent = "✓ Salvo no Supabase";
-    setTimeout(()=>{ document.getElementById("profile-saved").textContent=""; }, 2000);
-  } catch(e) { console.error("Erro ao salvar perfil", e); }
+    setTimeout(function(){ document.getElementById("profile-saved").textContent=""; }, 2000);
+  } catch(e) { console.error(e); }
 }
 
-async function loadCRM() {
+async function loadCRM(){
   try {
     const data = await sbFetch("/rest/v1/crm?order=criado_em.desc");
     crm = data || [];
     renderCRM();
     renderDashboard();
-    document.getElementById("crm-count").textContent = crm.length+" registros";
-  } catch(e) { console.error("Erro ao carregar CRM", e); }
+  } catch(e) { console.error(e); }
 }
 
-async function addCRMItem(item) {
-  try {
-    await sbFetch("/rest/v1/crm", { method:"POST", body: JSON.stringify(item) });
-    await loadCRM();
-  } catch(e) { console.error("Erro ao salvar no CRM", e); }
+async function addCRMItem(item){
+  try { await sbFetch("/rest/v1/crm", { method:"POST", body: JSON.stringify(item) }); await loadCRM(); }
+  catch(e) { console.error(e); }
 }
-
-async function updateCRMItem(id, fields) {
-  try {
-    await sbFetch("/rest/v1/crm?id=eq."+id, { method:"PATCH", body: JSON.stringify(fields) });
-    await loadCRM();
-  } catch(e) { console.error("Erro ao atualizar CRM", e); }
+async function updateCRMItem(id, fields){
+  try { await sbFetch("/rest/v1/crm?id=eq."+id, { method:"PATCH", body: JSON.stringify(fields) }); await loadCRM(); }
+  catch(e) { console.error(e); }
 }
-
-async function deleteCRMItem(id) {
+async function deleteCRMItem(id){
   if (!confirm("Excluir essa proposta?")) return;
-  try {
-    await sbFetch("/rest/v1/crm?id=eq."+id, { method:"DELETE" });
-    await loadCRM();
-  } catch(e) { console.error("Erro ao excluir", e); }
+  try { await sbFetch("/rest/v1/crm?id=eq."+id, { method:"DELETE" }); await loadCRM(); }
+  catch(e) { console.error(e); }
 }
 
-// API via Edge Function (chave protegida no servidor)
-async function callClaude(prompt) {
+async function callClaude(prompt){
   const res = await fetch("/api/chat", {
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body: JSON.stringify({ prompt })
   });
   const data = await res.json();
-  if (!res.ok || data.error) {
-    throw new Error(data.error || ("Erro " + res.status));
-  }
+  if (!res.ok || data.error) { throw new Error(data.error || ("Erro "+res.status)); }
   return data.text || "";
 }
 
-function setTipo(tipo) {
+function setTipo(tipo){
   tipoCobranca = tipo;
   document.getElementById("tipo-projeto").className = tipo==="projeto" ? "btn btn-sm btn-primary" : "btn btn-sm btn-ghost";
   document.getElementById("tipo-projeto").style.flex = "1";
@@ -362,13 +330,11 @@ function setTipo(tipo) {
   document.getElementById("tipo-hora").style.flex = "1";
 }
 
-// Análise
-async function avaliar() {
+async function avaliar(){
   const desc = document.getElementById("in-desc").value.trim();
   if (!desc) return;
   const btn = document.getElementById("btn-avaliar");
-  btn.disabled = true;
-  btn.textContent = "⏳ Analisando...";
+  btn.disabled = true; btn.textContent = "⏳ Analisando...";
   analysis = null; finalPrice = null;
   document.getElementById("preco-card").style.display = "none";
   document.getElementById("btn-gerar").style.display = "none";
@@ -378,311 +344,284 @@ async function avaliar() {
   if (ctxIn) ctxIn.value = "";
 
   const col = document.getElementById("resultado-col");
-  col.innerHTML = `<div class="card loading"><div class="loading-icon">🔍</div><div style="color:var(--muted)">Analisando com IA...</div></div>`;
+  col.innerHTML = '<div class="card loading"><div class="loading-icon">🔍</div><div style="color:var(--muted)">Analisando com IA...</div></div>';
 
   const cliente = document.getElementById("in-cliente").value || "sem nome";
-  const hasSensitive = SENSITIVE.some(s => desc.toLowerCase().includes(s));
+  const hasSensitive = SENSITIVE.some(function(s){ return desc.toLowerCase().includes(s); });
 
   const cobrancaTxt = tipoCobranca === "hora"
-    ? "A cobranca e POR HORA. Os valores precoMin/precoIdeal/precoRapido devem ser o VALOR POR HORA em reais (ex: 80, 120, 150). prazoEstimado deve ser a estimativa de horas totais (ex: 40 horas)."
-    : "A cobranca e POR PROJETO (valor fechado). Os valores precoMin/precoIdeal/precoRapido sao o valor total do projeto em reais.";
+    ? "A cobranca e POR HORA. Nos cenarios de preco, os valores devem ser VALOR POR HORA em reais."
+    : "A cobranca e POR PROJETO (valor fechado). Os cenarios de preco sao o valor total do projeto.";
 
-  const prompt = `Você é um consultor freelancer sênior avaliando projetos na Workana para um profissional de TI com este perfil:
-Avaliações 5 estrelas: ${profile.avaliacoes}
-Habilidades: ${profile.habilidades}
-
-Projeto do cliente "${cliente}":
-${desc}
-
-${cobrancaTxt}
-
-Responda SOMENTE em JSON válido, sem markdown:
-{"complexidade":<0.5 a 5.0>,"complexidadeTexto":"<frase>","risco":<0.5 a 5.0>,"riscoTexto":"<frase>","comercial":<0.5 a 5.0>,"comercialTexto":"<frase>","recomendacao":"<ENVIAR|CAUTELA|PULAR>","recomendacaoMotivo":"<frase>","precoMin":<int>,"precoIdeal":<int>,"precoRapido":<int>,"prazoEstimado":"<ex: 7 dias úteis>","sensivel":${hasSensitive},"sensivelMotivo":"<texto ou vazio>"}`;
+  const prompt = "Voce e um consultor de precificacao para freelancers da Workana, plataforma brasileira de projetos freelance. Avalie o projeto abaixo para um profissional de TI com este perfil:\n"
+    + "Avaliacoes 5 estrelas: " + profile.avaliacoes + "\n"
+    + "Habilidades: " + profile.habilidades + "\n\n"
+    + 'Projeto do cliente "' + cliente + '":\n'
+    + desc + "\n\n"
+    + cobrancaTxt + "\n\n"
+    + "INSTRUCOES DE PRECIFICACAO (CRITICO):\n"
+    + "NAO invente um numero unico de preco. Preco de freelance depende de negociacao e percepcao de valor. Sua tarefa e ANALISAR a situacao e dar uma DECISAO ASSISTIDA.\n"
+    + "1. Detecte se o cliente sinalizou um orcamento ou faixa na descricao. Se sim, extraia.\n"
+    + "2. Avalie se esse orcamento e COERENTE com o escopo. Clientes na Workana frequentemente colocam orcamento muito baixo (ex: 250 reais para um e-commerce) como ANCORA para atrair propostas e negociar. Detecte essa incoerencia.\n"
+    + "3. Liste fatores que puxam o preco para cima ou para baixo nesta vaga (complexidade, urgencia, perfil do cliente, responsabilidade, amplitude do escopo).\n"
+    + "4. De TRES cenarios de valor baseados no mercado brasileiro da Workana: piso (minimo que compensa o esforco), competitivo (alinhado ao mercado), alto (se o cliente perceber alto valor na entrega).\n"
+    + "5. De uma recomendacao honesta sobre vale a pena enviar proposta e com que expectativa.\n\n"
+    + "Responda SOMENTE em JSON valido, sem markdown, com EXATAMENTE estes campos:\n"
+    + '{"complexidade":NUMERO de 0.5 a 5.0,"complexidadeTexto":"frase curta","risco":NUMERO de 0.5 a 5.0,"riscoTexto":"frase curta","comercial":NUMERO de 0.5 a 5.0,"comercialTexto":"frase curta","recomendacao":"ENVIAR ou CAUTELA ou PULAR","recomendacaoMotivo":"frase curta","prazoEstimado":"ex: 7 dias uteis","orcamentoCliente":"faixa que o cliente sinalizou ou nao informado","coerenciaOrcamento":"analise se o orcamento bate com o escopo em 1 ou 2 frases, alerte se for ancora baixa","fatoresPreco":["fator iniciando com seta para cima ou para baixo","fator 2","fator 3"],"precoPiso":NUMERO inteiro,"precoCompetitivo":NUMERO inteiro,"precoAlto":NUMERO inteiro,"recomendacaoPreco":"recomendacao honesta em 1 ou 2 frases","sensivel":' + hasSensitive + ',"sensivelMotivo":"texto ou vazio"}';
 
   try {
     const raw = await callClaude(prompt);
     analysis = JSON.parse(raw.replace(/```json|```/g,"").trim());
     renderAnalysis();
+    renderDecisao();
     document.getElementById("preco-card").style.display = "block";
-    document.getElementById("p-min").textContent = fmt(analysis.precoMin);
-    document.getElementById("p-ideal").textContent = fmt(analysis.precoIdeal);
-    document.getElementById("p-rapido").textContent = fmt(analysis.precoRapido);
-    document.getElementById("in-valor-final").placeholder = "Ideal: "+fmt(analysis.precoIdeal);
   } catch(e) {
-    col.innerHTML = `<div class="card"><div style="color:var(--red)">Erro: ${e.message}</div></div>`;
+    col.innerHTML = '<div class="card"><div style="color:var(--red)">Erro: '+e.message+'</div></div>';
   }
-
-  btn.disabled = false;
-  btn.textContent = "⚡ Avaliar projeto";
+  btn.disabled = false; btn.textContent = "⚡ Avaliar projeto";
 }
 
-function renderAnalysis() {
+function renderAnalysis(){
   const a = analysis;
   const recColors = { ENVIAR:["var(--green-dim)","var(--green)","✅"], CAUTELA:["#2d2510","var(--gold)","⚠️"], PULAR:["var(--red-dim)","var(--red)","🚫"] };
-  const [bg,color,icon] = recColors[a.recomendacao]||["var(--card)","var(--text)","❓"];
-
+  const rc = recColors[a.recomendacao] || ["var(--card)","var(--text)","❓"];
   let html = "";
   if (a.sensivel && a.sensivelMotivo) {
-    html += `<div class="alert" style="background:var(--gold-dim);border:1px solid var(--gold)"><div style="font-weight:700;color:var(--gold);margin-bottom:4px">⚠️ Escopo sensível identificado</div><div style="font-size:13px">${a.sensivelMotivo}</div></div>`;
+    html += '<div class="alert" style="background:var(--gold-dim);border:1px solid var(--gold)"><div style="font-weight:700;color:var(--gold);margin-bottom:4px">⚠️ Escopo sensível identificado</div><div style="font-size:13px">'+a.sensivelMotivo+'</div></div>';
   }
-  html += `<div class="rec-card" style="background:${bg};border:1px solid ${color}">
-    <div style="display:flex;align-items:center;gap:12px">
-      <span style="font-size:26px">${icon}</span>
-      <div><div style="font-weight:700;font-size:16px;color:${color}">${a.recomendacao}</div><div style="font-size:13px;margin-top:2px">${a.recomendacaoMotivo}</div></div>
-    </div>
-  </div>`;
-
-  html += `<div class="analysis-grid">`;
-  [["🔧 Complexidade",a.complexidade,a.complexidadeTexto],["⚠️ Risco",a.risco,a.riscoTexto],["🎯 Chance comercial",a.comercial,a.comercialTexto]].forEach(([t,v,txt])=>{
-    const stars = Array.from({length:5},(_,i)=>i<Math.round(v)?"★":"☆").join("");
-    html += `<div class="card"><div style="font-size:12px;color:var(--muted);margin-bottom:6px">${t}</div><div class="stars">${stars}<span style="color:var(--muted);font-size:12px;margin-left:6px">${Number(v).toFixed(1)}</span></div><div style="font-size:12px;margin-top:8px;line-height:1.6">${txt}</div></div>`;
+  html += '<div class="rec-card" style="background:'+rc[0]+';border:1px solid '+rc[1]+'">'
+    + '<div style="display:flex;align-items:center;gap:12px"><span style="font-size:26px">'+rc[2]+'</span>'
+    + '<div><div style="font-weight:700;font-size:16px;color:'+rc[1]+'">'+a.recomendacao+'</div>'
+    + '<div style="font-size:13px;margin-top:2px">'+a.recomendacaoMotivo+'</div></div></div></div>';
+  html += '<div class="analysis-grid">';
+  const cards = [["🔧 Complexidade",a.complexidade,a.complexidadeTexto],["⚠️ Risco",a.risco,a.riscoTexto],["🎯 Chance comercial",a.comercial,a.comercialTexto]];
+  cards.forEach(function(c){
+    const v = c[1];
+    let stars = "";
+    for (let i=0;i<5;i++){ stars += (i < Math.round(v)) ? "★" : "☆"; }
+    html += '<div class="card"><div style="font-size:12px;color:var(--muted);margin-bottom:6px">'+c[0]+'</div>'
+      + '<div class="stars">'+stars+'<span style="color:var(--muted);font-size:12px;margin-left:6px">'+Number(v).toFixed(1)+'</span></div>'
+      + '<div style="font-size:12px;margin-top:8px;line-height:1.6">'+c[2]+'</div></div>';
   });
-  html += `</div>`;
-  html += `<div class="card" style="padding:12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--muted);font-size:13px">⏱️ Prazo estimado</span><span style="font-weight:700;color:var(--accent)">${a.prazoEstimado}</span></div></div>`;
-
+  html += '</div>';
+  html += '<div class="card" style="padding:12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--muted);font-size:13px">⏱️ Prazo estimado</span><span style="font-weight:700;color:var(--accent)">'+a.prazoEstimado+'</span></div></div>';
   document.getElementById("resultado-col").innerHTML = html;
 }
 
-function calcMercado() {
-  if (!analysis) return;
-  const mkt = parseInt(document.getElementById("in-mercado").value)||0;
-  const el = document.getElementById("mercado-info");
-  if (!mkt) { el.style.display="none"; return; }
-  const pos = mkt < analysis.precoIdeal*0.85 ? "abaixo" : mkt > analysis.precoIdeal*1.15 ? "acima" : "alinhado";
-  const colors = { abaixo:["var(--red-dim)","var(--red)"], alinhado:["var(--green-dim)","var(--green)"], acima:["var(--gold-dim)","var(--gold)"] };
-  const [bg,c] = colors[pos];
-  el.style.display="block"; el.style.background=bg;
-  el.innerHTML = `Mercado <strong style="color:${c}">${pos} do recomendado</strong> — média: ${fmt(mkt)}`;
+function renderDecisao(){
+  const a = analysis;
+  const unidade = tipoCobranca === "hora" ? "/h" : "";
+  let html = "";
+
+  html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px">'
+    + '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Orçamento sinalizado pelo cliente</div>'
+    + '<div style="font-size:14px;font-weight:600">'+(a.orcamentoCliente||"Não informado")+'</div></div>';
+
+  if (a.coerenciaOrcamento) {
+    const alerta = /ancor|âncor|baixo|abaixo|incoeren|irreal|nao bate|não bate/i.test(a.coerenciaOrcamento);
+    html += '<div style="background:'+(alerta?"var(--gold-dim)":"var(--surface)")+';border:1px solid '+(alerta?"var(--gold)":"var(--border)")+';border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:13px;line-height:1.5">'
+      + (alerta?"⚠️ ":"")+a.coerenciaOrcamento+'</div>';
+  }
+
+  if (a.fatoresPreco && a.fatoresPreco.length) {
+    html += '<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Fatores nesta vaga</div>';
+    a.fatoresPreco.forEach(function(f){ html += '<div style="font-size:13px;padding:3px 0;line-height:1.4">'+f+'</div>'; });
+    html += '</div>';
+  }
+
+  html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Cenários para decidir</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'
+    + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 6px;text-align:center;cursor:pointer" onclick="usarCenario('+a.precoPiso+')"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">PISO</div><div style="font-size:13px;font-weight:700;color:var(--muted)">'+fmt(a.precoPiso)+unidade+'</div></div>'
+    + '<div style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:10px 6px;text-align:center;cursor:pointer" onclick="usarCenario('+a.precoCompetitivo+')"><div style="font-size:10px;color:var(--accent);margin-bottom:3px">COMPETITIVO</div><div style="font-size:13px;font-weight:700;color:var(--accent)">'+fmt(a.precoCompetitivo)+unidade+'</div></div>'
+    + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 6px;text-align:center;cursor:pointer" onclick="usarCenario('+a.precoAlto+')"><div style="font-size:10px;color:var(--gold);margin-bottom:3px">ALTO</div><div style="font-size:13px;font-weight:700;color:var(--gold)">'+fmt(a.precoAlto)+unidade+'</div></div>'
+    + '</div>'
+    + '<div style="font-size:11px;color:var(--faint);margin-bottom:10px">Toque num cenário para preencher, ou digite o valor abaixo.</div>';
+
+  if (a.recomendacaoPreco) {
+    html += '<div style="background:var(--surface);border-left:3px solid var(--accent);border-radius:6px;padding:10px 12px;font-size:13px;line-height:1.5"><strong style="color:var(--accent)">Recomendação:</strong> '+a.recomendacaoPreco+'</div>';
+  }
+
+  document.getElementById("preco-decisao").innerHTML = html;
 }
 
-function confirmarValor() {
+function usarCenario(valor){
+  document.getElementById("in-valor-final").value = valor;
+}
+
+function confirmarValor(){
   const manual = parseInt(document.getElementById("in-valor-final").value)||0;
-  finalPrice = manual || analysis.precoIdeal;
+  if (!manual) { alert("Digite o valor da proposta ou toque num cenário."); return; }
+  finalPrice = manual;
   const btn = document.getElementById("btn-confirmar-valor");
-  btn.textContent = "✓ Valor: "+fmt(finalPrice);
+  btn.textContent = "✓ Valor definido: "+fmt(finalPrice);
   btn.className = "btn btn-success";
   document.getElementById("btn-gerar").style.display = "block";
   document.getElementById("contexto-wrap").style.display = "block";
 }
 
-async function gerarProposta() {
+async function gerarProposta(){
+  if (!analysis || !finalPrice) return;
   const btn = document.getElementById("btn-gerar");
   btn.disabled=true; btn.textContent="⏳ Gerando...";
   const cliente = document.getElementById("in-cliente").value||"cliente";
   const desc = document.getElementById("in-desc").value;
   const contexto = document.getElementById("in-contexto").value.trim();
 
-  const valorTxt = tipoCobranca === "hora"
-    ? `Valor por hora: R$ ${finalPrice}/hora (estimativa: ${analysis.prazoEstimado})`
-    : `Valor do projeto: R$ ${finalPrice} | Prazo: ${analysis.prazoEstimado}`;
-
   const contextoTxt = contexto
-    ? `\n\nINFORMACAO ADICIONAL fornecida pelo Diogo (use de forma natural na proposta, adaptando ao projeto): ${contexto}`
-    : "";
-
-  const diferencialTxt = tipoCobranca === "projeto"
-    ? `\n\n7. Diferencial\nComo diferencial, ofereço até 3 revisões sem custo adicional durante os 3 meses após a entrega, para ajustes pontuais relacionados ao escopo desenvolvido.`
+    ? "\n\nINFORMACAO ADICIONAL fornecida pelo Diogo (use de forma natural, adaptando ao projeto): " + contexto
     : "";
 
   const valorBloco = tipoCobranca === "hora"
-    ? `6. Valor e Prazo\nValor por hora: R$ ${finalPrice}/hora\nEstimativa: ${analysis.prazoEstimado}`
-    : `6. Valor e Prazo\nValor da proposta: R$ ${finalPrice}\nPrazo estimado: ${analysis.prazoEstimado}`;
+    ? "6. Valor e Prazo\nValor por hora: R$ " + finalPrice + "/hora\nEstimativa: " + analysis.prazoEstimado
+    : "6. Valor e Prazo\nValor da proposta: R$ " + finalPrice + "\nPrazo estimado: " + analysis.prazoEstimado;
 
-  const prompt = `Você é o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma proposta para a Workana seguindo EXATAMENTE a estrutura abaixo.
+  const diferencialTxt = tipoCobranca === "projeto"
+    ? "\n\n7. Diferencial\nComo diferencial, ofereco ate 3 revisoes sem custo adicional durante os 3 meses apos a entrega, para ajustes pontuais relacionados ao escopo desenvolvido."
+    : "";
 
-DADOS:
-Cliente: ${cliente}
-Projeto: ${desc}
-Avaliações 5 estrelas na Workana: ${profile.avaliacoes}${contextoTxt}
-
-VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA):
-Leia a descricao do projeto com atencao. Alguns clientes escondem instrucoes para detectar IA (ex: "comece com a palavra X", "inclua o codigo Y", "responda em determinado formato"). Se houver QUALQUER exigencia desse tipo, cumpra EXATAMENTE como pedido, acima de qualquer outra regra. Se nao houver, ignore.
-
-LINGUAGEM: natural, objetiva e profissional. Sempre demonstre entendimento do objetivo ANTES de falar de experiencia.
-NUNCA use frases genericas como "Acredito que posso ajudar", "Tenho interesse no projeto", "Sera um prazer trabalhar com voce", "Sou a melhor opcao".
-
-ESTRUTURA OBRIGATORIA:
-
-1. Saudacao
-Olá, ${cliente}! Tudo bem?
-
-2. Entendimento do Projeto
-Li seu projeto e entendi que o objetivo é [resuma o objetivo principal do cliente em uma ou duas frases].
-
-3. Portfólio
-Você pode conhecer meu portfólio completo em lupixa.com.
-
-4. O que está incluído
-Gere uma lista objetiva baseada no escopo informado, formato:
-• Item 1
-• Item 2
-• Item 3
-• Item 4
-• Item 5
-
-5. Experiência
-Tenho 17 anos de experiência como Supervisor de TI em ambientes críticos e atualmente atuo no desenvolvimento de soluções digitais, sites, automações e integrações para empresas.
-Na Workana, mantenho avaliações 5 estrelas, resultado de entregas consistentes, comunicação clara e foco na qualidade em cada projeto.
-
-${valorBloco}${diferencialTxt}
-
-8. Pergunta Final
-Gere uma pergunta inteligente e especifica relacionada ao projeto, para estimular resposta do cliente e aprofundar o entendimento da necessidade. Nunca generica.
-
-REGRAS OBRIGATORIAS:
-- Nunca mencionar inteligencia artificial
-- Nunca dizer que analisou tecnicamente o projeto
-- Nunca exagerar experiencia
-- Nunca usar excesso de hifens
-- Nunca criar textos longos
-- Nunca repetir informacoes
-- Nao utilizar emojis
-- Manter tom humano e direto
-- Adaptar o texto ao contexto especifico do projeto
-- Sem "Atenciosamente", sem assinatura formal`;
+  const prompt = "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma proposta para a Workana seguindo EXATAMENTE a estrutura abaixo.\n\n"
+    + "DADOS:\n"
+    + "Cliente: " + cliente + "\n"
+    + "Projeto: " + desc + "\n"
+    + "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes + contextoTxt + "\n\n"
+    + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA):\n"
+    + "Leia a descricao do projeto com atencao. Alguns clientes escondem instrucoes para detectar IA (ex: comece com a palavra X, inclua o codigo Y, responda em determinado formato). Se houver QUALQUER exigencia desse tipo, cumpra EXATAMENTE como pedido, acima de qualquer outra regra. Se nao houver, ignore.\n\n"
+    + "LINGUAGEM: natural, objetiva e profissional. Sempre demonstre entendimento do objetivo ANTES de falar de experiencia. NUNCA use frases genericas como Acredito que posso ajudar, Tenho interesse no projeto, Sera um prazer trabalhar com voce, Sou a melhor opcao.\n\n"
+    + "ESTRUTURA OBRIGATORIA:\n\n"
+    + "1. Saudacao\nOla, " + cliente + "! Tudo bem?\n\n"
+    + "2. Entendimento do Projeto\nLi seu projeto e entendi que o objetivo e [resuma o objetivo principal do cliente em uma ou duas frases].\n\n"
+    + "3. Portfolio\nVoce pode conhecer meu portfolio completo em lupixa.com.\n\n"
+    + "4. O que esta incluido\nGere uma lista objetiva baseada no escopo informado, formato com marcadores, 4 a 5 itens.\n\n"
+    + "5. Experiencia\nTenho 17 anos de experiencia como Supervisor de TI em ambientes criticos e atualmente atuo no desenvolvimento de solucoes digitais, sites, automacoes e integracoes para empresas. Na Workana, mantenho avaliacoes 5 estrelas, resultado de entregas consistentes, comunicacao clara e foco na qualidade em cada projeto.\n\n"
+    + valorBloco + diferencialTxt + "\n\n"
+    + "8. Pergunta Final\nGere uma pergunta inteligente e especifica relacionada ao projeto, para estimular resposta do cliente. Nunca generica.\n\n"
+    + "REGRAS OBRIGATORIAS:\n"
+    + "- Nunca mencionar inteligencia artificial\n- Nunca dizer que analisou tecnicamente o projeto\n- Nunca exagerar experiencia\n- Nunca usar excesso de hifens\n- Nunca criar textos longos\n- Nunca repetir informacoes\n- Nao utilizar emojis\n- Manter tom humano e direto\n- Adaptar ao contexto especifico do projeto\n- Sem Atenciosamente, sem assinatura formal";
 
   try {
     const text = await callClaude(prompt);
-    const col = document.getElementById("resultado-col");
-    // Mantém análise e adiciona proposta
-    const propHtml = `<div class="card" id="proposta-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-weight:600">✍️ Proposta gerada</div>
-        <button class="btn btn-sm btn-success" onclick="copiarProposta()" id="btn-copiar">📋 Copiar</button>
-      </div>
-      <div class="proposal-text" id="proposal-text">${text}</div>
-      <div class="divider"></div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Enviou essa proposta na Workana?</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-sm btn-success" onclick="salvarPropostaCRM('${cliente.replace(/'/g,"\\'")}')">✓ Sim, salvar no CRM</button>
-        <button class="btn btn-sm btn-ghost" onclick="document.getElementById('crm-prompt').style.display='none'">Não agora</button>
-      </div>
-    </div>`;
-    col.innerHTML += propHtml;
     window._proposalText = text;
-  } catch { alert("Erro ao gerar proposta. Tente novamente."); }
-
+    const col = document.getElementById("resultado-col");
+    const propHtml = '<div class="card" id="proposta-card">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:600">✍️ Proposta gerada</div>'
+      + '<button class="btn btn-sm btn-success" onclick="copiarProposta()" id="btn-copiar">📋 Copiar</button></div>'
+      + '<div class="proposal-text">'+text+'</div>'
+      + '<div class="divider" id="crm-prompt-div"></div>'
+      + '<div id="crm-prompt"><div style="font-size:13px;color:var(--muted);margin-bottom:8px">Enviou essa proposta na Workana?</div>'
+      + '<div style="display:flex;gap:8px"><button class="btn btn-sm btn-success" onclick="salvarPropostaCRM()">✓ Sim, salvar no CRM</button>'
+      + '<button class="btn btn-sm btn-ghost" onclick="document.getElementById(\'crm-prompt\').style.display=\'none\'">Não agora</button></div></div></div>';
+    col.innerHTML += propHtml;
+  } catch(e) { alert("Erro ao gerar proposta: "+e.message); }
   btn.disabled=false; btn.textContent="✍️ Gerar proposta";
 }
 
-function copiarProposta() {
+function copiarProposta(){
   const text = window._proposalText||"";
-  const copy = () => {
-    const btn = document.getElementById("btn-copiar");
-    btn.textContent="✓ Copiada!"; btn.style.background="var(--green)"; btn.style.color="#000";
-    setTimeout(()=>{ btn.textContent="📋 Copiar"; btn.style.background=""; btn.style.color=""; },2000);
+  const cb = function(){
+    const b = document.getElementById("btn-copiar");
+    b.textContent="✓ Copiada!"; b.style.background="var(--green)"; b.style.color="#000";
+    setTimeout(function(){ b.textContent="📋 Copiar"; b.style.background=""; b.style.color=""; },2000);
   };
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).then(copy).catch(()=>fallbackCopy(text,copy));
-  } else { fallbackCopy(text,copy); }
+    navigator.clipboard.writeText(text).then(cb).catch(function(){ fallbackCopy(text,cb); });
+  } else { fallbackCopy(text,cb); }
 }
 
-function fallbackCopy(text,cb) {
+function fallbackCopy(text,cb){
   const ta=document.createElement("textarea"); ta.value=text;
   ta.style.cssText="position:fixed;top:0;left:0;opacity:0;pointer-events:none;";
   document.body.appendChild(ta); ta.focus(); ta.select();
-  try{document.execCommand("copy");cb();}catch{}
+  try{ document.execCommand("copy"); cb(); }catch(e){}
   document.body.removeChild(ta);
 }
 
-async function salvarPropostaCRM(cliente) {
+async function salvarPropostaCRM(){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
   const desc = document.getElementById("in-desc").value;
   await addCRMItem({
     id: Date.now().toString(),
-    cliente, descricao: desc.slice(0,120)+(desc.length>120?"…":""),
+    cliente: cliente,
+    descricao: desc.slice(0,120)+(desc.length>120?"…":""),
     valor: finalPrice, status:"enviada",
     envio: today(), followup: addDays(today(),2), notas:""
   });
-  // Substitui o prompt por confirmação
-  const card = document.getElementById("proposta-card");
-  if (card) {
-    const div = card.querySelector(".divider").nextElementSibling;
-    card.querySelector(".divider").remove();
-    div?.remove();
-    const div2 = card.querySelector("div:last-child");
-    div2?.remove();
-    card.insertAdjacentHTML("beforeend",`<div style="font-size:12px;color:var(--green);margin-top:10px">✓ Salvo no CRM</div>`);
-  }
+  const p = document.getElementById("crm-prompt");
+  const d = document.getElementById("crm-prompt-div");
+  if (p) p.innerHTML = '<div style="font-size:12px;color:var(--green)">✓ Salvo no CRM</div>';
+  if (d) d.remove();
 }
 
-// CRM
-function renderCRM() {
+function renderCRM(){
   const list = document.getElementById("crm-list");
   document.getElementById("crm-count").textContent = crm.length+" registros";
-  if (!crm.length) { list.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div>Nenhuma proposta ainda.</div></div>`; return; }
+  if (!crm.length) { list.innerHTML='<div class="empty"><div class="empty-icon">📭</div><div>Nenhuma proposta ainda.</div></div>'; return; }
 
-  list.innerHTML = crm.map(r => {
+  list.innerHTML = crm.map(function(r){
     const c = STATUS_COLORS[r.status]||"var(--faint)";
-    return `<div class="crm-item" style="border-left-color:${c}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
-            <span style="font-weight:700;font-size:15px">${r.cliente||"Sem nome"}</span>
-            <span class="badge" style="background:${c}22;color:${c}">${r.status}</span>
-            <span style="color:var(--accent);font-weight:700;font-size:13px">${fmt(r.valor)}</span>
-          </div>
-          <div class="crm-desc">${r.descricao||""}</div>
-          <div class="crm-meta">Envio: ${fmtDate(r.envio)} · Follow-up: ${fmtDate(r.followup)}${r.notas?" · "+r.notas:""}</div>
-        </div>
-        <div class="crm-actions">
-          <select onchange="updateCRMItem('${r.id}',{status:this.value})" style="width:auto;padding:4px 6px;font-size:12px">
-            ${Object.keys(STATUS_COLORS).map(s=>`<option value="${s}"${s===r.status?" selected":""}>${s}</option>`).join("")}
-          </select>
-          <button class="btn btn-sm btn-ghost" onclick="editarCRM('${r.id}')">✏️</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteCRMItem('${r.id}')">🗑️</button>
-        </div>
-      </div>
-      ${followupDevido(r) ? `<div style="margin-top:10px"><button class="btn btn-sm btn-gold" onclick="gerarFollowup('${r.id}')" id="fu-btn-${r.id}">📨 Gerar follow-up</button><div id="fu-box-${r.id}" style="margin-top:10px"></div></div>` : ""}
-    </div>`;
+    const fu = followupDevido(r);
+    return '<div class="crm-item" style="border-left-color:'+c+'">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">'
+      + '<span style="font-weight:700;font-size:15px">'+(r.cliente||"Sem nome")+'</span>'
+      + '<span class="badge" style="background:'+c+'22;color:'+c+'">'+r.status+'</span>'
+      + '<span style="color:var(--accent);font-weight:700;font-size:13px">'+fmt(r.valor)+'</span></div>'
+      + '<div class="crm-desc">'+(r.descricao||"")+'</div>'
+      + '<div class="crm-meta">Envio: '+fmtDate(r.envio)+' · Follow-up: '+fmtDate(r.followup)+(r.notas?" · "+r.notas:"")+'</div></div>'
+      + '<div class="crm-actions">'
+      + '<select onchange="updateCRMItem(\''+r.id+'\',{status:this.value})" style="width:auto;padding:4px 6px;font-size:12px">'
+      + Object.keys(STATUS_COLORS).map(function(s){ return '<option value="'+s+'"'+(s===r.status?" selected":"")+'>'+s+'</option>'; }).join("")
+      + '</select>'
+      + '<button class="btn btn-sm btn-ghost" onclick="editarCRM(\''+r.id+'\')">✏️</button>'
+      + '<button class="btn btn-sm btn-danger" onclick="deleteCRMItem(\''+r.id+'\')">🗑️</button></div></div>'
+      + (fu ? '<div style="margin-top:10px"><button class="btn btn-sm btn-gold" onclick="gerarFollowup(\''+r.id+'\')" id="fu-btn-'+r.id+'">📨 Gerar follow-up</button><div id="fu-box-'+r.id+'" style="margin-top:10px"></div></div>' : "")
+      + '</div>';
   }).join("");
 }
 
-function followupDevido(r) {
-  if (["fechada","perdida"].includes(r.status)) return false;
+function followupDevido(r){
+  if (["fechada","perdida"].indexOf(r.status) !== -1) return false;
   if (!r.followup) return false;
   return r.followup <= today();
 }
 
-async function gerarFollowup(id) {
-  const r = crm.find(x=>x.id===id);
+async function gerarFollowup(id){
+  const r = crm.find(function(x){ return x.id===id; });
   if (!r) return;
   const btn = document.getElementById("fu-btn-"+id);
   btn.disabled = true; btn.textContent = "⏳ Gerando...";
 
-  const prompt = `Você é o Diogo Pinotti, freelancer de TI. Escreva uma mensagem CURTA de follow-up para a Workana, para o cliente "${r.cliente}" sobre o projeto: "${r.descricao}".
-
-Gere uma variacao personalizada e natural seguindo EXATAMENTE esta estrutura, adaptando ao projeto:
-1. Saudacao: "Olá, ${r.cliente}! Tudo bem?"
-2. Pergunta de acompanhamento: passar pra saber se ficou alguma duvida que ele possa esclarecer, que continua a disposicao e que gostaria muito de fazer parte do projeto. Adapte ao contexto do projeto, sem soar robotico.
-3. Fechamento: "Diogo Pinotti - portfólio em lupixa.com"
-
-Tom humano, direto, curto, sem cara de IA, sem hífens em excesso. Sem "Atenciosamente".`;
+  const prompt = 'Voce e o Diogo Pinotti, freelancer de TI. Escreva uma mensagem CURTA de follow-up para a Workana, para o cliente "' + r.cliente + '" sobre o projeto: "' + r.descricao + '".\n\n'
+    + "Gere uma variacao personalizada e natural seguindo EXATAMENTE esta estrutura, adaptando ao projeto:\n"
+    + "1. Saudacao: Ola, " + r.cliente + "! Tudo bem?\n"
+    + "2. Pergunta de acompanhamento: passar pra saber se ficou alguma duvida que ele possa esclarecer, que continua a disposicao e que gostaria muito de fazer parte do projeto. Adapte ao contexto, sem soar robotico.\n"
+    + "3. Fechamento: Diogo Pinotti - portfolio em lupixa.com\n\n"
+    + "Tom humano, direto, curto, sem cara de IA, sem hifens em excesso. Sem Atenciosamente.";
 
   try {
     const text = await callClaude(prompt);
     window["_fu_"+id] = text;
-    document.getElementById("fu-box-"+id).innerHTML = `
-      <div class="proposal-text" style="margin-bottom:8px">${text}</div>
-      <button class="btn btn-sm btn-success" onclick="copiarFollowup('${id}')" id="fucopy-${id}">📋 Copiar follow-up</button>`;
-  } catch { alert("Erro ao gerar follow-up. Tente novamente."); }
-
+    document.getElementById("fu-box-"+id).innerHTML =
+      '<div class="proposal-text" style="margin-bottom:8px">'+text+'</div>'
+      + '<button class="btn btn-sm btn-success" onclick="copiarFollowup(\''+id+'\')" id="fucopy-'+id+'">📋 Copiar follow-up</button>';
+  } catch(e) { alert("Erro ao gerar follow-up: "+e.message); }
   btn.disabled = false; btn.textContent = "📨 Gerar follow-up";
 }
 
-function copiarFollowup(id) {
+function copiarFollowup(id){
   const text = window["_fu_"+id]||"";
-  const cb = () => {
+  const cb = function(){
     const b = document.getElementById("fucopy-"+id);
     b.textContent="✓ Copiado!"; b.style.background="var(--green)"; b.style.color="#000";
-    setTimeout(()=>{ b.textContent="📋 Copiar follow-up"; b.style.background=""; b.style.color=""; },2000);
+    setTimeout(function(){ b.textContent="📋 Copiar follow-up"; b.style.background=""; b.style.color=""; },2000);
   };
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).then(cb).catch(()=>fallbackCopy(text,cb));
+    navigator.clipboard.writeText(text).then(cb).catch(function(){ fallbackCopy(text,cb); });
   } else { fallbackCopy(text,cb); }
 }
 
-function editarCRM(id) {
-  const r = crm.find(x=>x.id===id);
+function editarCRM(id){
+  const r = crm.find(function(x){ return x.id===id; });
   if (!r) return;
   const novoCliente = prompt("Cliente:", r.cliente)||r.cliente;
   const novoValor = prompt("Valor (R$):", r.valor)||r.valor;
@@ -690,7 +629,7 @@ function editarCRM(id) {
   updateCRMItem(id, { cliente:novoCliente, valor:parseInt(novoValor)||0, notas:novasNotas });
 }
 
-function toggleManual() {
+function toggleManual(){
   showManualForm = !showManualForm;
   document.getElementById("manual-form").style.display = showManualForm?"block":"none";
   document.getElementById("btn-manual").textContent = showManualForm?"✕ Cancelar":"+ Adicionar manualmente";
@@ -701,18 +640,18 @@ function toggleManual() {
   }
 }
 
-async function salvarManual() {
+async function salvarManual(){
   const cliente = document.getElementById("m-cliente").value.trim();
   if (!cliente) { alert("Informe o nome do cliente"); return; }
   await addCRMItem({
     id: Date.now().toString(),
-    cliente,
+    cliente: cliente,
     descricao: document.getElementById("m-descricao").value,
     valor: parseInt(document.getElementById("m-valor").value)||0,
     status: document.getElementById("m-status").value,
     envio: document.getElementById("m-envio").value||today(),
     followup: document.getElementById("m-followup").value||addDays(today(),2),
-    notas: document.getElementById("m-notas").value,
+    notas: document.getElementById("m-notas").value
   });
   document.getElementById("m-cliente").value="";
   document.getElementById("m-valor").value="";
@@ -721,15 +660,14 @@ async function salvarManual() {
   toggleManual();
 }
 
-// Dashboard
-function renderDashboard() {
-  const fechadas = crm.filter(r=>r.status==="fechada");
+function renderDashboard(){
+  const fechadas = crm.filter(function(r){ return r.status==="fechada"; });
   const total = crm.length;
   const nFechadas = fechadas.length;
-  const perdidas = crm.filter(r=>r.status==="perdida").length;
+  const perdidas = crm.filter(function(r){ return r.status==="perdida"; }).length;
   const conversao = total ? ((nFechadas/total)*100).toFixed(1) : "0.0";
-  const valorTotal = crm.reduce((s,r)=>s+(r.valor||0),0);
-  const valorFechado = fechadas.reduce((s,r)=>s+(r.valor||0),0);
+  const valorTotal = crm.reduce(function(s,r){ return s+(r.valor||0); },0);
+  const valorFechado = fechadas.reduce(function(s,r){ return s+(r.valor||0); },0);
   const ticketMedio = total ? valorTotal/total : 0;
   const ticketConv = nFechadas ? valorFechado/nFechadas : 0;
 
@@ -737,41 +675,40 @@ function renderDashboard() {
     ["📤","Total enviadas",total,"var(--accent)"],
     ["✅","Fechadas",nFechadas,"var(--green)"],
     ["❌","Perdidas",perdidas,"var(--red)"],
-    ["🎯","Conversão",conversao+"%","var(--gold)"],
-  ].map(([icon,label,val,color])=>`<div class="card dash-stat"><div class="dash-icon">${icon}</div><div class="dash-val" style="color:${color}">${val}</div><div class="dash-label">${label}</div></div>`).join("");
+    ["🎯","Conversão",conversao+"%","var(--gold)"]
+  ].map(function(x){ return '<div class="card dash-stat"><div class="dash-icon">'+x[0]+'</div><div class="dash-val" style="color:'+x[3]+'">'+x[2]+'</div><div class="dash-label">'+x[1]+'</div></div>'; }).join("");
 
   document.getElementById("dash-valores").innerHTML = [
     ["Valor total enviado",fmt(valorTotal),"var(--accent)"],
-    ["Valor total fechado",fmt(valorFechado),"var(--green)"],
-  ].map(([l,v,c])=>`<div class="card metric-card"><div class="metric-label">${l}</div><div class="metric-val" style="color:${c}">${v}</div></div>`).join("");
+    ["Valor total fechado",fmt(valorFechado),"var(--green)"]
+  ].map(function(x){ return '<div class="card metric-card"><div class="metric-label">'+x[0]+'</div><div class="metric-val" style="color:'+x[2]+'">'+x[1]+'</div></div>'; }).join("");
 
   document.getElementById("dash-tickets").innerHTML = [
     ["Ticket médio (enviadas)",fmt(ticketMedio),"var(--muted)"],
-    ["Ticket médio (fechadas)",nFechadas?fmt(ticketConv):"—","var(--gold)"],
-  ].map(([l,v,c])=>`<div class="card metric-card"><div class="metric-label">${l}</div><div class="metric-val" style="color:${c}">${v}</div></div>`).join("");
+    ["Ticket médio (fechadas)",nFechadas?fmt(ticketConv):"—","var(--gold)"]
+  ].map(function(x){ return '<div class="card metric-card"><div class="metric-label">'+x[0]+'</div><div class="metric-val" style="color:'+x[2]+'">'+x[1]+'</div></div>'; }).join("");
 
   const distEl = document.getElementById("dash-dist");
   const listEl = document.getElementById("dash-status-list");
-  const counts = Object.keys(STATUS_COLORS).map(s=>({ s, n:crm.filter(r=>r.status===s).length })).filter(x=>x.n>0);
+  const counts = Object.keys(STATUS_COLORS).map(function(s){ return { s:s, n:crm.filter(function(r){ return r.status===s; }).length }; }).filter(function(x){ return x.n>0; });
   if (counts.length) {
     distEl.style.display="block";
-    listEl.innerHTML = counts.map(({s,n})=>`<div class="status-chip" style="border:1px solid ${STATUS_COLORS[s]}44"><div class="status-chip-label" style="color:${STATUS_COLORS[s]}">${s}</div><div class="status-chip-val">${n}</div></div>`).join("");
+    listEl.innerHTML = counts.map(function(x){ return '<div class="status-chip" style="border:1px solid '+STATUS_COLORS[x.s]+'44"><div class="status-chip-label" style="color:'+STATUS_COLORS[x.s]+'">'+x.s+'</div><div class="status-chip-val">'+x.n+'</div></div>'; }).join("");
   } else { distEl.style.display="none"; }
 }
 
-// Backup
-function exportar() {
-  const blob = new Blob([JSON.stringify({profile,crm},null,2)],{type:"application/json"});
+function exportar(){
+  const blob = new Blob([JSON.stringify({profile:profile,crm:crm},null,2)],{type:"application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `lupixa-backup-${today()}.json`;
+  a.download = "lupixa-backup-"+today()+".json";
   a.click();
 }
 
-async function importar(e) {
+async function importar(e){
   const f = e.target.files[0]; if (!f) return;
   const r = new FileReader();
-  r.onload = async ev => {
+  r.onload = async function(ev){
     try {
       const d = JSON.parse(ev.target.result);
       if (d.profile) {
@@ -781,45 +718,41 @@ async function importar(e) {
         await saveProfile();
       }
       if (d.crm && d.crm.length) {
-        for (const item of d.crm) {
-          await sbFetch("/rest/v1/crm?id=eq."+item.id, {method:"DELETE"}).catch(()=>{});
+        for (let i=0;i<d.crm.length;i++){
+          const item = d.crm[i];
+          try { await sbFetch("/rest/v1/crm?id=eq."+item.id, {method:"DELETE"}); } catch(err){}
           await addCRMItem(item);
         }
       }
       alert("Importação concluída!");
-    } catch { alert("Arquivo inválido."); }
+    } catch(err) { alert("Arquivo inválido."); }
   };
   r.readAsText(f);
 }
 
-// Perfil UI
-function toggleProfile() {
+function toggleProfile(){
   showProfile = !showProfile;
   document.getElementById("profile-panel").style.display = showProfile?"block":"none";
   document.getElementById("profile-toggle-label").textContent = showProfile?"▲ fechar":"▼ editar";
 }
 
-// Tabs
-function setTab(tab) {
-  currentTab = tab;
-  ["analisar","crm","dashboard","backup"].forEach(t => {
+function setTab(tab){
+  ["analisar","crm","dashboard","backup"].forEach(function(t){
     document.getElementById("page-"+t).style.display = t===tab?"block":"none";
-    const btn = document.getElementById("tab-"+t);
-    btn.className = t===tab?"btn btn-sm btn-primary":"btn btn-sm btn-ghost";
+    document.getElementById("tab-"+t).className = t===tab?"btn btn-sm btn-primary":"btn btn-sm btn-ghost";
   });
   if (tab==="dashboard") renderDashboard();
 }
 
-// Init
-async function init() {
+async function init(){
   syncStatus("⏳ Conectando ao Supabase...", "var(--gold)");
   try {
     await loadProfile();
     await loadCRM();
     syncStatus("✓ Conectado ao Supabase", "var(--green)");
-    setTimeout(()=>syncStatus(""),3000);
+    setTimeout(function(){ syncStatus(""); },3000);
   } catch(e) {
-    syncStatus("⚠️ Erro de conexão — usando modo local", "var(--red)");
+    syncStatus("⚠️ Erro de conexão", "var(--red)");
   }
 }
 
