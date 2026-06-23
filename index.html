@@ -101,6 +101,7 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
 
   <!-- ANALISAR -->
   <div id="page-analisar">
+    <div id="followup-alert" style="display:none;margin-bottom:16px"></div>
     <div class="two-col">
       <div class="col">
         <div class="card">
@@ -303,7 +304,21 @@ async function loadCRM(){
     crm = data || [];
     renderCRM();
     renderDashboard();
+    renderFollowupAlert();
+    updateCrmBadge();
   } catch(e) { console.error(e); }
+}
+
+function updateCrmBadge(){
+  const pendentes = crm.filter(function(r){ return followupDevido(r) && (r.status==="abertura enviada" || r.status==="proposta enviada"); }).length;
+  const tab = document.getElementById("tab-crm");
+  if (!tab) return;
+  const base = "📋 CRM";
+  if (pendentes > 0) {
+    tab.innerHTML = base + ' <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:2px">'+pendentes+'</span>';
+  } else {
+    tab.innerHTML = base;
+  }
 }
 
 async function addCRMItem(item){
@@ -705,6 +720,94 @@ function followupDevido(r){
   if (["fechada","perdida"].indexOf(r.status) !== -1) return false;
   if (!r.followup) return false;
   return r.followup <= today();
+}
+
+function diasAtraso(r){
+  // quantos dias desde a data de follow-up (0 = hoje, positivo = atrasado)
+  const hoje = new Date(today()+"T12:00:00");
+  const fu = new Date(r.followup+"T12:00:00");
+  return Math.round((hoje - fu) / 86400000);
+}
+
+function renderFollowupAlert(){
+  const el = document.getElementById("followup-alert");
+  if (!el) return;
+  // pega os follow-ups devidos, em abertura ou proposta, ordenados do mais atrasado pro mais recente
+  const pendentes = crm
+    .filter(function(r){ return followupDevido(r) && (r.status==="abertura enviada" || r.status==="proposta enviada"); })
+    .sort(function(a,b){ return diasAtraso(b) - diasAtraso(a); });
+
+  if (!pendentes.length) { el.style.display = "none"; el.innerHTML = ""; return; }
+
+  let html = '<div class="card" style="border:1px solid var(--gold);background:var(--gold-dim)">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+    + '<span style="font-size:22px">🔔</span>'
+    + '<div style="font-weight:700;color:var(--gold);font-size:15px">'+pendentes.length+' follow-up'+(pendentes.length>1?'s':'')+' pendente'+(pendentes.length>1?'s':'')+'</div></div>';
+
+  pendentes.forEach(function(r){
+    const d = diasAtraso(r);
+    const quando = d <= 0 ? "vence hoje" : ("atrasado "+d+" dia"+(d>1?"s":""));
+    const corQuando = d >= 2 ? "var(--red)" : "var(--muted)";
+    const tipoFu = r.status==="abertura enviada" ? "abertura" : "proposta";
+    const tipoLabel = r.status==="abertura enviada" ? "abertura" : "proposta";
+    html += '<div style="border-top:1px solid rgba(245,166,35,.25);padding:10px 0">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-weight:600;font-size:14px">'+(r.cliente||"Sem nome")+' <span style="color:var(--faint);font-weight:400">· '+fmt(r.valor)+'</span></div>'
+      + '<div style="font-size:12px;color:'+corQuando+'">follow-up de '+tipoLabel+' · '+quando+'</div></div>'
+      + '<button class="btn btn-sm btn-gold" onclick="gerarFollowupAlerta(\''+r.id+'\',\''+tipoFu+'\')" id="fa-btn-'+r.id+'">✍️ Gerar texto</button>'
+      + '</div>'
+      + '<div id="fa-box-'+r.id+'" style="margin-top:8px"></div></div>';
+  });
+
+  html += '</div>';
+  el.style.display = "block";
+  el.innerHTML = html;
+}
+
+async function gerarFollowupAlerta(id, tipo){
+  const btn = document.getElementById("fa-btn-"+id);
+  if (btn) { btn.disabled = true; btn.textContent = "⏳ Gerando..."; }
+  const r = crm.find(function(x){ return x.id===id; });
+  if (!r) return;
+
+  let prompt;
+  if (tipo === "abertura") {
+    prompt = 'Voce e o Diogo Pinotti, freelancer de TI. Escreva um follow-up CURTO e sutil no chat da Workana para o cliente "' + r.cliente + '" sobre o projeto: "' + (r.descricao_completa||r.descricao) + '".\n\n'
+      + "Contexto: voce ja mandou uma mensagem de apresentacao com perguntas e ele ainda nao respondeu. Este follow-up reativa a conversa.\n\n"
+      + "ESTRUTURA (texto corrido, sem titulos):\n"
+      + "- Saudacao breve: Ola, " + r.cliente + "! Tudo bem?\n"
+      + "- Retome o projeto e pergunte se ele teve chance de ver suas perguntas.\n"
+      + "- Crie senso de disponibilidade: diga que sua agenda esta abrindo uma janela de inicio imediato esta semana.\n"
+      + "- Fecho leve convidando a alinhar por ali.\n\n"
+      + "REGRAS: maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'.";
+  } else {
+    prompt = 'Voce e o Diogo Pinotti, freelancer de TI. Escreva um follow-up CURTO e sutil no chat da Workana para o cliente "' + r.cliente + '" sobre o projeto: "' + (r.descricao_completa||r.descricao) + '".\n\n'
+      + "Contexto: voce ja enviou a proposta formal e ele ainda nao respondeu. Este follow-up reativa.\n\n"
+      + "ESTRUTURA (texto corrido, sem titulos):\n"
+      + "- Saudacao breve: Ola, " + r.cliente + "! Tudo bem?\n"
+      + "- Pergunte se ele teve chance de analisar a estimativa que voce enviou.\n"
+      + "- Crie senso de urgencia: diga que sua agenda esta abrindo uma janela de inicio imediato esta semana.\n"
+      + "- Fecho leve convidando a alinhar os detalhes por ali.\n\n"
+      + "REGRAS: maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'.";
+  }
+
+  try {
+    const text = await callClaude(prompt);
+    window["_fa_"+id] = text;
+    const box = document.getElementById("fa-box-"+id);
+    if (box) {
+      box.innerHTML = '<div class="gen-text" style="margin-bottom:8px">'+text+'</div>'
+        + '<button class="btn btn-sm btn-success" onclick="copyText(window[\'_fa_'+id+'\'], this)">📋 Copiar follow-up</button> '
+        + '<button class="btn btn-sm btn-ghost" onclick="adiarFollowup(\''+id+'\')">⏰ Adiar +2 dias</button>';
+    }
+  } catch(e) { alert("Erro ao gerar follow-up: "+e.message); }
+  if (btn) { btn.disabled = false; btn.textContent = "✍️ Gerar texto"; }
+}
+
+async function adiarFollowup(id){
+  // empurra a data de follow-up em 2 dias, pra sair do alerta ate la
+  await updateCRMItem(id, { followup: addDays(today(), 2) });
 }
 
 async function gerarPropostaCRM(id){
