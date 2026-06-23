@@ -477,7 +477,7 @@ async function gerarProposta(){
   const contexto = document.getElementById("in-contexto").value.trim();
 
   const contextoTxt = contexto
-    ? "\n\nINFORMACAO ADICIONAL fornecida pelo Diogo (use de forma natural, adaptando ao projeto): " + contexto
+    ? "\n\n=== INFORMACAO ADICIONAL IMPORTANTE (PRIORIDADE) ===\nO Diogo forneceu este contexto pessoal e voce DEVE obrigatoriamente incorpora-lo na proposta de forma natural, como argumento de autoridade ou experiencia relevante. Encaixe da melhor forma (geralmente no entendimento do projeto ou na experiencia), mostrando que ele tem vivencia pratica com o tema. NAO ignore esta informacao:\n" + contexto + "\n=== FIM DA INFORMACAO ADICIONAL ===\n"
     : "";
 
   const prazoUso = finalPrazo || analysis.prazoEstimado;
@@ -504,7 +504,7 @@ async function gerarProposta(){
     + "2. Entendimento do Projeto\nLi seu projeto e entendi que o objetivo e [resuma o objetivo principal do cliente em uma ou duas frases].\n\n"
     + "3. Portfolio\nVoce pode conhecer meu portfolio completo em lupixa.com.\n\n"
     + "4. O que esta incluido\nGere uma lista objetiva baseada no escopo informado, formato com marcadores, 4 a 5 itens.\n\n"
-    + "5. Experiencia\nTenho 17 anos de experiencia como Supervisor de TI em ambientes criticos e atualmente atuo no desenvolvimento de solucoes digitais, sites, automacoes e integracoes para empresas. Na Workana, mantenho avaliacoes 5 estrelas, resultado de entregas consistentes, comunicacao clara e foco na qualidade em cada projeto.\n\n"
+    + "5. Experiencia\nTenho 17 anos de experiencia como Supervisor de TI em ambientes criticos e atualmente atuo no desenvolvimento de solucoes digitais, sites, automacoes e integracoes para empresas. Na Workana, mantenho avaliacoes 5 estrelas, resultado de entregas consistentes, comunicacao clara e foco na qualidade em cada projeto. SE houver INFORMACAO ADICIONAL fornecida acima, incorpore-a aqui ou no entendimento do projeto, de forma natural, como prova de que ja tem vivencia pratica com o tema do cliente.\n\n"
     + valorBloco + diferencialTxt + "\n\nIMPORTANTE: mantenha o valor exatamente como esta escrito acima (ja formatado em reais), nao altere o numero nem o formato.\n\n"
     + "8. Pergunta Final\nGere uma pergunta inteligente e especifica relacionada ao projeto, para estimular resposta do cliente. Nunca generica.\n\n"
     + "REGRAS OBRIGATORIAS:\n"
