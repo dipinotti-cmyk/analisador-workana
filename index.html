@@ -522,7 +522,7 @@ function buildApresentacaoPrompt(comPerguntas){
       + "- Termine dizendo que ja vai enviar a proposta para o projeto dele.\n";
   }
 
-  p += "\nREGRAS: 50 a 90 palavras no maximo. Tom humano e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Inclua de forma natural a frase de que fica a disposicao para qualquer duvida. Texto corrido, so paragrafos curtos.";
+  p += "\nREGRAS: 50 a 90 palavras no maximo. Tom humano e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Inclua de forma natural a frase de que fica a disposicao para qualquer duvida.\n\nFORMATACAO: separe em 2 ou 3 paragrafos curtos, com uma linha em branco entre eles. Se houver perguntas, deixe-as em destaque em seu proprio paragrafo.";
   return p;
 }
 
@@ -559,7 +559,8 @@ function buildPropostaPrompt(respostaCliente){
     + "5. INVESTIMENTO: " + valorLinha + ". Mantenha o valor exatamente assim, ja formatado, nao altere.\n"
     + "6. Mencione o portfolio: lupixa.com.\n"
     + "7. Termine com UMA pergunta especifica e inteligente sobre o projeto, e diga que fica a disposicao para qualquer duvida.\n\n"
-    + "REGRAS: seja ENXUTO (objetivo, sem encher linguica), mas nao vazio. Texto corrido e humano, so paragrafos. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever titulos ou numeros de secao.";
+    + "REGRAS: seja ENXUTO (objetivo, sem encher linguica), mas nao vazio. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever titulos ou numeros de secao.\n\n"
+    + "FORMATACAO OBRIGATORIA: separe o texto em PARAGRAFOS curtos, com UMA LINHA EM BRANCO entre cada paragrafo (use quebras de linha duplas). NUNCA entregue tudo grudado num paragrafo unico. A saudacao fica num paragrafo, o entendimento em outro, a solucao em outro, e assim por diante. Se listar entregaveis, coloque cada item em sua propria linha.";
 }
 
 async function gerarClaro(){
@@ -735,7 +736,8 @@ async function gerarPropostaCRM(id){
     + "5. INVESTIMENTO: " + valorLinha + ". Mantenha o valor exatamente assim, nao altere.\n"
     + "6. Portfolio: lupixa.com.\n"
     + "7. Termine com uma pergunta especifica e diga que fica a disposicao para qualquer duvida.\n\n"
-    + "REGRAS: enxuto mas nao vazio. Texto corrido humano. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. NUNCA escrever titulos ou numeros de secao.";
+    + "REGRAS: enxuto mas nao vazio. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. NUNCA escrever titulos ou numeros de secao.\n\n"
+    + "FORMATACAO OBRIGATORIA: separe o texto em PARAGRAFOS curtos, com UMA LINHA EM BRANCO entre cada paragrafo (quebras de linha duplas). NUNCA entregue tudo grudado num paragrafo unico. Se listar entregaveis, cada item em sua propria linha.";
 
   try {
     const text = await callClaude(prompt);
