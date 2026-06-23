@@ -511,8 +511,9 @@ function buildApresentacaoPrompt(comPerguntas){
     + 'Cliente: ' + cliente + "\n"
     + "Projeto: " + desc + contextoTxt + faltaTxt + "\n\n"
     + "ESTRUTURA (texto corrido, natural, SEM titulos, SEM numeros de secao):\n"
-    + "- Comece reconhecendo o problema ou objetivo do cliente na primeira linha (NUNCA 'tenho interesse' ou 'posso ajudar').\n"
-    + "- Uma frase curta de autoridade conectada ao problema especifico dele.\n";
+    + "- Saudacao breve e calorosa: Ola, " + cliente + "! Tudo bem?\n"
+    + "- Reconheca o objetivo do projeto de forma elegante, mostrando que entendeu o que ele precisa (NAO comece com 'Vejo que voce busca' nem soe invasivo; algo como 'Seu projeto de X esta bem claro' ou 'Entendi que voce precisa de X').\n"
+    + "- APRESENTE-SE de forma natural na sequencia: diga que seu nome e Diogo e que voce atua ha mais de 17 anos em TI gerenciando ambientes criticos, hoje desenvolvendo sites, automacoes e integracoes. Conecte essa autoridade ao problema especifico dele.\n";
 
   if (comPerguntas) {
     p += "- Faca 2 ou 3 perguntas estrategicas e especificas, baseadas nas informacoes que faltam, para voce poder precificar e executar com seguranca. As perguntas sao o coracao da mensagem.\n"
@@ -522,7 +523,7 @@ function buildApresentacaoPrompt(comPerguntas){
       + "- Termine dizendo que ja vai enviar a proposta para o projeto dele.\n";
   }
 
-  p += "\nREGRAS: 50 a 90 palavras no maximo. Tom humano e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Inclua de forma natural a frase de que fica a disposicao para qualquer duvida.\n\nFORMATACAO: separe em 2 ou 3 paragrafos curtos, com uma linha em branco entre eles. Se houver perguntas, deixe-as em destaque em seu proprio paragrafo.";
+  p += "\nREGRAS: 70 a 110 palavras no maximo. Tom humano, caloroso e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Inclua de forma natural a frase de que fica a disposicao para qualquer duvida.\n\nFORMATACAO: separe em 3 paragrafos curtos, com uma linha em branco entre eles. O primeiro junta a saudacao, o reconhecimento do projeto e a sua apresentacao. Se houver perguntas, deixe-as em destaque em seu proprio paragrafo.";
   return p;
 }
 
