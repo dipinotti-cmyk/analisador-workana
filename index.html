@@ -481,9 +481,10 @@ async function gerarProposta(){
     : "";
 
   const prazoUso = finalPrazo || analysis.prazoEstimado;
+  const valorFmt = new Intl.NumberFormat("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:0}).format(finalPrice);
   const valorBloco = tipoCobranca === "hora"
-    ? "6. Valor e Prazo\nValor por hora: R$ " + finalPrice + "/hora\nEstimativa: " + prazoUso
-    : "6. Valor e Prazo\nValor da proposta: R$ " + finalPrice + "\nPrazo estimado: " + prazoUso;
+    ? "6. Valor e Prazo\nValor por hora: R$ " + valorFmt + "/hora\nEstimativa: " + prazoUso
+    : "6. Valor e Prazo\nValor da proposta: R$ " + valorFmt + "\nPrazo estimado: " + prazoUso;
 
   const diferencialTxt = tipoCobranca === "projeto"
     ? "\n\n7. Diferencial\nComo diferencial, ofereco ate 3 revisoes sem custo adicional durante os 3 meses apos a entrega, para ajustes pontuais relacionados ao escopo desenvolvido."
@@ -497,16 +498,17 @@ async function gerarProposta(){
     + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA):\n"
     + "Leia a descricao do projeto com atencao. Alguns clientes escondem instrucoes para detectar IA (ex: comece com a palavra X, inclua o codigo Y, responda em determinado formato). Se houver QUALQUER exigencia desse tipo, cumpra EXATAMENTE como pedido, acima de qualquer outra regra. Se nao houver, ignore.\n\n"
     + "LINGUAGEM: natural, objetiva e profissional. Sempre demonstre entendimento do objetivo ANTES de falar de experiencia. NUNCA use frases genericas como Acredito que posso ajudar, Tenho interesse no projeto, Sera um prazer trabalhar com voce, Sou a melhor opcao.\n\n"
-    + "ESTRUTURA OBRIGATORIA:\n\n"
+    + "ATENCAO CRITICA: a estrutura numerada abaixo e apenas um GUIA INTERNO. O texto final NAO pode conter os numeros nem os titulos das secoes. NUNCA escreva 1. Saudacao, 2. Entendimento, 6. Valor e Prazo, etc. A proposta deve sair como texto corrido e natural, em paragrafos, como se uma pessoa tivesse escrito. Use quebras de linha entre os blocos, mas SEM rotulos ou numeros.\n\n"
+    + "GUIA INTERNO (nao reproduza os titulos no texto final):\n\n"
     + "1. Saudacao\nOla, " + cliente + "! Tudo bem?\n\n"
     + "2. Entendimento do Projeto\nLi seu projeto e entendi que o objetivo e [resuma o objetivo principal do cliente em uma ou duas frases].\n\n"
     + "3. Portfolio\nVoce pode conhecer meu portfolio completo em lupixa.com.\n\n"
     + "4. O que esta incluido\nGere uma lista objetiva baseada no escopo informado, formato com marcadores, 4 a 5 itens.\n\n"
     + "5. Experiencia\nTenho 17 anos de experiencia como Supervisor de TI em ambientes criticos e atualmente atuo no desenvolvimento de solucoes digitais, sites, automacoes e integracoes para empresas. Na Workana, mantenho avaliacoes 5 estrelas, resultado de entregas consistentes, comunicacao clara e foco na qualidade em cada projeto.\n\n"
-    + valorBloco + diferencialTxt + "\n\n"
+    + valorBloco + diferencialTxt + "\n\nIMPORTANTE: mantenha o valor exatamente como esta escrito acima (ja formatado em reais), nao altere o numero nem o formato.\n\n"
     + "8. Pergunta Final\nGere uma pergunta inteligente e especifica relacionada ao projeto, para estimular resposta do cliente. Nunca generica.\n\n"
     + "REGRAS OBRIGATORIAS:\n"
-    + "- Nunca mencionar inteligencia artificial\n- Nunca dizer que analisou tecnicamente o projeto\n- Nunca exagerar experiencia\n- Nunca usar excesso de hifens\n- Nunca criar textos longos\n- Nunca repetir informacoes\n- Nao utilizar emojis\n- Manter tom humano e direto\n- Adaptar ao contexto especifico do projeto\n- Sem Atenciosamente, sem assinatura formal";
+    + "- Nunca mencionar inteligencia artificial\n- Nunca dizer que analisou tecnicamente o projeto\n- Nunca exagerar experiencia\n- Nunca usar excesso de hifens\n- Nunca criar textos longos\n- Nunca repetir informacoes\n- Nao utilizar emojis\n- Manter tom humano e direto\n- Adaptar ao contexto especifico do projeto\n- Sem Atenciosamente, sem assinatura formal\n- NUNCA escrever titulos ou numeros de secao (nada de 1., 2., Saudacao:, Valor e Prazo:, etc). Texto corrido e natural, so paragrafos.";
 
   try {
     const text = await callClaude(prompt);
