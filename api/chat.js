@@ -35,7 +35,7 @@ export default async function handler(req) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }]
       })
