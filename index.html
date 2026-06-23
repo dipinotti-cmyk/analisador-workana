@@ -132,7 +132,8 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
           <div id="preco-decisao"></div>
           <div class="divider"></div>
           <div class="field"><label>Valor que você vai usar (R$)</label><input type="number" id="in-valor-final" placeholder="Digite o valor da sua proposta"></div>
-          <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="confirmarValor()" id="btn-confirmar-valor">Confirmar valor</button>
+          <div class="field"><label>Prazo de entrega (editável)</label><input type="text" id="in-prazo" placeholder="Ex: 3 dias úteis"></div>
+          <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="confirmarValor()" id="btn-confirmar-valor">Confirmar valor e prazo</button>
           <div id="contexto-wrap" style="display:none">
             <div class="divider"></div>
             <div class="field"><label>Informação adicional (opcional)</label><textarea id="in-contexto" rows="3" placeholder="Ex: criei o site grafimold.com.br, muito parecido com o que o cliente procura. Cole links de cases, portfólio ou detalhes relevantes..."></textarea></div>
@@ -229,6 +230,7 @@ let profile = { avaliacoes: 3, habilidades: "" };
 let crm = [];
 let analysis = null;
 let finalPrice = null;
+let finalPrazo = "";
 let tipoCobranca = "projeto";
 let profileId = null;
 let showManualForm = false;
@@ -342,6 +344,8 @@ async function avaliar(){
   if (ctxWrap) ctxWrap.style.display = "none";
   const ctxIn = document.getElementById("in-contexto");
   if (ctxIn) ctxIn.value = "";
+  const prazoIn = document.getElementById("in-prazo");
+  if (prazoIn) prazoIn.value = "";
 
   const col = document.getElementById("resultado-col");
   col.innerHTML = '<div class="card loading"><div class="loading-icon">🔍</div><div style="color:var(--muted)">Analisando com IA...</div></div>';
@@ -365,7 +369,8 @@ async function avaliar(){
     + "2. Avalie se esse orcamento e COERENTE com o escopo. Clientes na Workana frequentemente colocam orcamento muito baixo (ex: 250 reais para um e-commerce) como ANCORA para atrair propostas e negociar. Detecte essa incoerencia.\n"
     + "3. Liste fatores que puxam o preco para cima ou para baixo nesta vaga (complexidade, urgencia, perfil do cliente, responsabilidade, amplitude do escopo).\n"
     + "4. De TRES cenarios de valor baseados no mercado brasileiro da Workana: piso (minimo que compensa o esforco), competitivo (alinhado ao mercado), alto (se o cliente perceber alto valor na entrega).\n"
-    + "5. De uma recomendacao honesta sobre vale a pena enviar proposta e com que expectativa.\n\n"
+    + "5. De uma recomendacao honesta sobre vale a pena enviar proposta e com que expectativa.\n"
+    + "6. PRAZO: estime o prazo de entrega assumindo que o Diogo trabalha com Claude (IA), automacao e ferramentas integradas, o que acelera MUITO a execucao comparado a um freelancer manual. Use prazos ENXUTOS e realistas (uma landing page simples sai em 1 a 2 dias uteis, nao 10). Ainda assim, inclua uma pequena folga de seguranca. O campo prazoEstimado deve refletir isso.\n\n"
     + "Responda SOMENTE em JSON valido, sem markdown, com EXATAMENTE estes campos:\n"
     + '{"complexidade":NUMERO de 0.5 a 5.0,"complexidadeTexto":"frase curta","risco":NUMERO de 0.5 a 5.0,"riscoTexto":"frase curta","comercial":NUMERO de 0.5 a 5.0,"comercialTexto":"frase curta","recomendacao":"ENVIAR ou CAUTELA ou PULAR","recomendacaoMotivo":"frase curta","prazoEstimado":"ex: 7 dias uteis","orcamentoCliente":"faixa que o cliente sinalizou ou nao informado","coerenciaOrcamento":"analise se o orcamento bate com o escopo em 1 ou 2 frases, alerte se for ancora baixa","fatoresPreco":["fator iniciando com seta para cima ou para baixo","fator 2","fator 3"],"precoPiso":NUMERO inteiro,"precoCompetitivo":NUMERO inteiro,"precoAlto":NUMERO inteiro,"recomendacaoPreco":"recomendacao honesta em 1 ou 2 frases","sensivel":' + hasSensitive + ',"sensivelMotivo":"texto ou vazio"}';
 
@@ -442,6 +447,9 @@ function renderDecisao(){
   }
 
   document.getElementById("preco-decisao").innerHTML = html;
+  // preenche o prazo sugerido (editável)
+  const prazoInput = document.getElementById("in-prazo");
+  if (prazoInput && !prazoInput.value) { prazoInput.value = a.prazoEstimado || ""; }
 }
 
 function usarCenario(valor){
@@ -452,6 +460,7 @@ function confirmarValor(){
   const manual = parseInt(document.getElementById("in-valor-final").value)||0;
   if (!manual) { alert("Digite o valor da proposta ou toque num cenário."); return; }
   finalPrice = manual;
+  finalPrazo = (document.getElementById("in-prazo").value||"").trim() || (analysis ? analysis.prazoEstimado : "");
   const btn = document.getElementById("btn-confirmar-valor");
   btn.textContent = "✓ Valor definido: "+fmt(finalPrice);
   btn.className = "btn btn-success";
@@ -471,9 +480,10 @@ async function gerarProposta(){
     ? "\n\nINFORMACAO ADICIONAL fornecida pelo Diogo (use de forma natural, adaptando ao projeto): " + contexto
     : "";
 
+  const prazoUso = finalPrazo || analysis.prazoEstimado;
   const valorBloco = tipoCobranca === "hora"
-    ? "6. Valor e Prazo\nValor por hora: R$ " + finalPrice + "/hora\nEstimativa: " + analysis.prazoEstimado
-    : "6. Valor e Prazo\nValor da proposta: R$ " + finalPrice + "\nPrazo estimado: " + analysis.prazoEstimado;
+    ? "6. Valor e Prazo\nValor por hora: R$ " + finalPrice + "/hora\nEstimativa: " + prazoUso
+    : "6. Valor e Prazo\nValor da proposta: R$ " + finalPrice + "\nPrazo estimado: " + prazoUso;
 
   const diferencialTxt = tipoCobranca === "projeto"
     ? "\n\n7. Diferencial\nComo diferencial, ofereco ate 3 revisoes sem custo adicional durante os 3 meses apos a entrega, para ajustes pontuais relacionados ao escopo desenvolvido."
