@@ -799,6 +799,7 @@ async function gerarFollowupAlerta(id, tipo){
     if (box) {
       box.innerHTML = '<div class="gen-text" style="margin-bottom:8px">'+text+'</div>'
         + '<button class="btn btn-sm btn-success" onclick="copyText(window[\'_fa_'+id+'\'], this)">📋 Copiar follow-up</button> '
+        + '<button class="btn btn-sm btn-primary" onclick="marcarFollowupEnviado(\''+id+'\')">✓ Marcar como enviado</button> '
         + '<button class="btn btn-sm btn-ghost" onclick="adiarFollowup(\''+id+'\')">⏰ Adiar +2 dias</button>';
     }
   } catch(e) { alert("Erro ao gerar follow-up: "+e.message); }
@@ -808,6 +809,20 @@ async function gerarFollowupAlerta(id, tipo){
 async function adiarFollowup(id){
   // empurra a data de follow-up em 2 dias, pra sair do alerta ate la
   await updateCRMItem(id, { followup: addDays(today(), 2) });
+}
+
+async function marcarFollowupEnviado(id){
+  // registra que o follow-up foi enviado hoje: anota na nota, conta quantos ja foram,
+  // e empurra o proximo follow-up para daqui a 3 dias. Sai do alerta.
+  const r = crm.find(function(x){ return x.id===id; });
+  if (!r) return;
+  // conta follow-ups ja enviados a partir da nota (formato: "FUx" no inicio)
+  let n = 1;
+  let notaBase = r.notas || "";
+  const match = notaBase.match(/^FU(\d+)\s*·?\s*/);
+  if (match) { n = parseInt(match[1]) + 1; notaBase = notaBase.replace(/^FU\d+\s*·?\s*/, ""); }
+  const novaNota = ("FU" + n + (notaBase ? " · " + notaBase : "")).slice(0,255);
+  await updateCRMItem(id, { followup: addDays(today(), 3), notas: novaNota });
 }
 
 async function gerarPropostaCRM(id){
@@ -886,7 +901,8 @@ async function gerarFollowup(id, tipo){
     window["_fu_"+id] = text;
     document.getElementById("fu-box-"+id).innerHTML =
       '<div class="gen-text" style="margin-bottom:8px">'+text+'</div>'
-      + '<button class="btn btn-sm btn-success" onclick="copyText(window[\'_fu_'+id+'\'], this)">📋 Copiar follow-up</button>';
+      + '<button class="btn btn-sm btn-success" onclick="copyText(window[\'_fu_'+id+'\'], this)">📋 Copiar follow-up</button> '
+      + '<button class="btn btn-sm btn-primary" onclick="marcarFollowupEnviado(\''+id+'\')">✓ Marcar como enviado</button>';
   } catch(e) { alert("Erro ao gerar follow-up: "+e.message); }
   btn.disabled = false; btn.textContent = tipo==="abertura" ? "📨 Gerar follow-up de abertura" : "📨 Gerar follow-up de proposta";
 }
