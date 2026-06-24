@@ -725,10 +725,13 @@ function renderFiltroBotoes(){
   const cont_fechadas = crm.filter(function(r){ return r.status==="fechada"; }).length;
   const cont_perdidas = crm.filter(function(r){ return r.status==="perdida"; }).length;
 
+  const cont_visualizada = crm.filter(function(r){ return r.status==="visualizada"; }).length;
+
   const filtros = [
     ["ativos", "Ativos", cont_ativos],
     ["abertura", "Abertura", cont_abertura],
     ["proposta", "Proposta", cont_proposta],
+    ["visualizada", "Visualizada", cont_visualizada],
     ["negociacao", "Negociação", cont_negoc],
     ["fechadas", "Fechadas", cont_fechadas],
     ["perdidas", "Perdidas", cont_perdidas],
@@ -756,6 +759,7 @@ function crmFiltrado(){
     else if (crmFiltro === "ativos") passa = ehAtivo(r.status);
     else if (crmFiltro === "abertura") passa = r.status === "abertura enviada";
     else if (crmFiltro === "proposta") passa = r.status === "proposta enviada";
+    else if (crmFiltro === "visualizada") passa = r.status === "visualizada";
     else if (crmFiltro === "negociacao") passa = r.status === "negociação";
     else if (crmFiltro === "fechadas") passa = r.status === "fechada";
     else if (crmFiltro === "perdidas") passa = r.status === "perdida";
