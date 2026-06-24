@@ -62,6 +62,12 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
 .status-chip{background:var(--surface);border-radius:8px;padding:8px 14px}
 .status-chip-label{font-size:10px;text-transform:uppercase;margin-bottom:2px}
 .status-chip-val{font-size:18px;font-weight:700}
+.fbar-row{margin-bottom:12px}
+.fbar-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.fbar-label{font-size:13px;font-weight:600}
+.fbar-val{font-size:12px;color:var(--muted)}
+.fbar-track{background:var(--surface);border-radius:6px;height:22px;overflow:hidden}
+.fbar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:700;color:#0d0f14;min-width:24px;transition:width .3s}
 .empty{text-align:center;padding:48px 20px;color:var(--muted)}
 .empty-icon{font-size:36px;margin-bottom:10px}
 .alert{border-radius:12px;padding:14px 16px;margin-bottom:4px}
@@ -191,6 +197,11 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
       <button class="btn btn-success" style="width:100%" onclick="salvarManual()">✓ Salvar no CRM</button>
     </div>
 
+    <div id="crm-filtros" style="margin-bottom:14px">
+      <input id="crm-busca" placeholder="🔍 Buscar por nome do cliente..." oninput="renderCRM()" style="margin-bottom:10px">
+      <div id="crm-filtro-botoes" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+
     <div id="crm-list"></div>
   </div>
 
@@ -200,6 +211,25 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
     <div class="dash-grid-4" id="dash-top"></div>
     <div class="dash-grid-2" id="dash-valores"></div>
     <div class="dash-grid-2" id="dash-tickets"></div>
+
+    <div class="card" id="dash-funil" style="margin-bottom:12px;display:none">
+      <div style="font-weight:700;margin-bottom:4px">🔻 Funil de conversão</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">A jornada das suas oportunidades</div>
+      <div id="dash-funil-barras"></div>
+    </div>
+
+    <div class="card" id="dash-followup" style="margin-bottom:12px;display:none">
+      <div style="font-weight:700;margin-bottom:4px">📨 Follow-up</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">O follow-up está fechando venda?</div>
+      <div class="dash-grid-2" id="dash-followup-metricas"></div>
+      <div id="dash-followup-barra" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card" id="dash-valores-desfecho" style="margin-bottom:12px;display:none">
+      <div style="font-weight:700;margin-bottom:14px">💵 Valores por desfecho</div>
+      <div id="dash-valores-desfecho-barras"></div>
+    </div>
+
     <div class="card" id="dash-dist" style="display:none">
       <div style="font-weight:600;margin-bottom:10px">Distribuição por status</div>
       <div class="status-dist" id="dash-status-list"></div>
@@ -242,6 +272,7 @@ let tipoCobranca = "projeto";
 let profileId = null;
 let showManualForm = false;
 let showProfile = false;
+let crmFiltro = "ativos";
 
 const fmt = n => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n||0);
 const fmtNum = n => new Intl.NumberFormat("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0);
@@ -669,16 +700,89 @@ function fallbackCopy(text,cb){
   document.body.removeChild(ta);
 }
 
+function statusGrupo(status){
+  // mapeia status para grupos de filtro
+  if (status === "fechada") return "fechadas";
+  if (status === "perdida") return "perdidas";
+  if (status === "abertura enviada") return "abertura";
+  if (status === "proposta enviada") return "proposta";
+  if (status === "negociação") return "negociacao";
+  if (status === "visualizada") return "ativos";
+  return "outros";
+}
+
+function ehAtivo(status){
+  return ["abertura enviada","proposta enviada","visualizada","negociação"].indexOf(status) !== -1;
+}
+
+function renderFiltroBotoes(){
+  const cont = document.getElementById("crm-filtro-botoes");
+  if (!cont) return;
+  const cont_ativos = crm.filter(function(r){ return ehAtivo(r.status); }).length;
+  const cont_abertura = crm.filter(function(r){ return r.status==="abertura enviada"; }).length;
+  const cont_proposta = crm.filter(function(r){ return r.status==="proposta enviada"; }).length;
+  const cont_negoc = crm.filter(function(r){ return r.status==="negociação"; }).length;
+  const cont_fechadas = crm.filter(function(r){ return r.status==="fechada"; }).length;
+  const cont_perdidas = crm.filter(function(r){ return r.status==="perdida"; }).length;
+
+  const filtros = [
+    ["ativos", "Ativos", cont_ativos],
+    ["abertura", "Abertura", cont_abertura],
+    ["proposta", "Proposta", cont_proposta],
+    ["negociacao", "Negociação", cont_negoc],
+    ["fechadas", "Fechadas", cont_fechadas],
+    ["perdidas", "Perdidas", cont_perdidas],
+    ["todos", "Todos", crm.length]
+  ];
+
+  cont.innerHTML = filtros.map(function(f){
+    const ativo = crmFiltro === f[0];
+    const cls = ativo ? "btn btn-sm btn-primary" : "btn btn-sm btn-ghost";
+    return '<button class="'+cls+'" onclick="setCrmFiltro(\''+f[0]+'\')">'+f[1]+' ('+f[2]+')</button>';
+  }).join("");
+}
+
+function setCrmFiltro(f){
+  crmFiltro = f;
+  renderCRM();
+}
+
+function crmFiltrado(){
+  const busca = (document.getElementById("crm-busca") ? document.getElementById("crm-busca").value : "").toLowerCase().trim();
+  return crm.filter(function(r){
+    // filtro por status
+    let passa = false;
+    if (crmFiltro === "todos") passa = true;
+    else if (crmFiltro === "ativos") passa = ehAtivo(r.status);
+    else if (crmFiltro === "abertura") passa = r.status === "abertura enviada";
+    else if (crmFiltro === "proposta") passa = r.status === "proposta enviada";
+    else if (crmFiltro === "negociacao") passa = r.status === "negociação";
+    else if (crmFiltro === "fechadas") passa = r.status === "fechada";
+    else if (crmFiltro === "perdidas") passa = r.status === "perdida";
+    if (!passa) return false;
+    // busca por nome
+    if (busca && !(r.cliente||"").toLowerCase().includes(busca)) return false;
+    return true;
+  });
+}
+
 function renderCRM(){
   const list = document.getElementById("crm-list");
   document.getElementById("crm-count").textContent = crm.length+" registros";
+  renderFiltroBotoes();
+
   if (!crm.length) { list.innerHTML='<div class="empty"><div class="empty-icon">📭</div><div>Nenhuma proposta ainda.</div></div>'; return; }
 
-  list.innerHTML = crm.map(function(r){
+  const lista = crmFiltrado();
+  if (!lista.length) { list.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div>Nenhum resultado neste filtro.</div></div>'; return; }
+
+  list.innerHTML = lista.map(function(r){
     const c = STATUS_COLORS[r.status]||"var(--faint)";
     const fuDevido = followupDevido(r);
     const ehAbertura = r.status === "abertura enviada";
     const ehProposta = r.status === "proposta enviada";
+    const nFu = r.followups_enviados || 0;
+    const fuTag = nFu > 0 ? ' · '+nFu+' follow-up'+(nFu>1?'s':'')+' enviado'+(nFu>1?'s':'') : '';
 
     let bloco = '<div class="crm-item" style="border-left-color:'+c+'">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
@@ -688,9 +792,9 @@ function renderCRM(){
       + '<span class="badge" style="background:'+c+'22;color:'+c+'">'+r.status+'</span>'
       + '<span style="color:var(--accent);font-weight:700;font-size:13px">'+fmt(r.valor)+'</span></div>'
       + '<div class="crm-desc">'+(r.descricao||"")+'</div>'
-      + '<div class="crm-meta">Envio: '+fmtDate(r.envio)+' · Follow-up: '+fmtDate(r.followup)+(r.prazo?" · Prazo: "+r.prazo:"")+(r.notas?" · "+r.notas:"")+'</div></div>'
+      + '<div class="crm-meta">Envio: '+fmtDate(r.envio)+' · Follow-up: '+fmtDate(r.followup)+(r.prazo?" · Prazo: "+r.prazo:"")+fuTag+(r.notas?" · "+r.notas:"")+'</div></div>'
       + '<div class="crm-actions">'
-      + '<select onchange="updateCRMItem(\''+r.id+'\',{status:this.value})" style="width:auto;padding:4px 6px;font-size:12px">'
+      + '<select onchange="updateStatus(\''+r.id+'\',this.value)" style="width:auto;padding:4px 6px;font-size:12px">'
       + Object.keys(STATUS_COLORS).map(function(s){ return '<option value="'+s+'"'+(s===r.status?" selected":"")+'>'+s+'</option>'; }).join("")
       + '</select>'
       + '<button class="btn btn-sm btn-ghost" onclick="editarCRM(\''+r.id+'\')">✏️</button>'
@@ -714,6 +818,16 @@ function renderCRM(){
     bloco += '</div>';
     return bloco;
   }).join("");
+}
+
+async function updateStatus(id, novoStatus){
+  // ao mudar status, se virar fechada e ja teve follow-up, marca fechou_apos_followup automaticamente
+  const r = crm.find(function(x){ return x.id===id; });
+  const fields = { status: novoStatus };
+  if (r && novoStatus === "fechada" && (r.followups_enviados||0) > 0) {
+    fields.fechou_apos_followup = true;
+  }
+  await updateCRMItem(id, fields);
 }
 
 function followupDevido(r){
@@ -812,17 +926,16 @@ async function adiarFollowup(id){
 }
 
 async function marcarFollowupEnviado(id){
-  // registra que o follow-up foi enviado hoje: anota na nota, conta quantos ja foram,
-  // e empurra o proximo follow-up para daqui a 3 dias. Sai do alerta.
+  // registra que o follow-up foi enviado hoje: incrementa contador estruturado,
+  // grava a data, e empurra o proximo follow-up para daqui a 3 dias. Sai do alerta.
   const r = crm.find(function(x){ return x.id===id; });
   if (!r) return;
-  // conta follow-ups ja enviados a partir da nota (formato: "FUx" no inicio)
-  let n = 1;
-  let notaBase = r.notas || "";
-  const match = notaBase.match(/^FU(\d+)\s*·?\s*/);
-  if (match) { n = parseInt(match[1]) + 1; notaBase = notaBase.replace(/^FU\d+\s*·?\s*/, ""); }
-  const novaNota = ("FU" + n + (notaBase ? " · " + notaBase : "")).slice(0,255);
-  await updateCRMItem(id, { followup: addDays(today(), 3), notas: novaNota });
+  const n = (r.followups_enviados || 0) + 1;
+  await updateCRMItem(id, {
+    followups_enviados: n,
+    data_ultimo_followup: today(),
+    followup: addDays(today(), 3)
+  });
 }
 
 async function gerarPropostaCRM(id){
@@ -975,6 +1088,76 @@ function renderDashboard(){
     ["Ticket médio (geral)",fmt(ticketMedio),"var(--muted)"],
     ["Ticket médio (fechadas)",nFechadas?fmt(ticketConv):"—","var(--gold)"]
   ].map(function(x){ return '<div class="card metric-card"><div class="metric-label">'+x[0]+'</div><div class="metric-val" style="color:'+x[2]+'">'+x[1]+'</div></div>'; }).join("");
+
+  // ---------- FUNIL DE CONVERSÃO ----------
+  const nAbertura = crm.filter(function(r){ return r.status==="abertura enviada"; }).length;
+  const nProposta = crm.filter(function(r){ return r.status==="proposta enviada"; }).length;
+  const nVisualizada = crm.filter(function(r){ return r.status==="visualizada"; }).length;
+  const nNegoc = crm.filter(function(r){ return r.status==="negociação"; }).length;
+  // etapas cumulativas do funil: quantos chegaram a cada nivel
+  // contato (todos) -> proposta enviada+visualizada+negociacao+fechada (passaram de abertura) -> negociacao+fechada -> fechada
+  const chegaramProposta = nProposta + nVisualizada + nNegoc + nFechadas + perdidas; // todos que viraram ao menos proposta
+  const emNegociacao = nNegoc + nFechadas;
+  const funilEtapas = [
+    ["Contatos abertos", total, "var(--purple)"],
+    ["Viraram proposta", chegaramProposta, "var(--accent)"],
+    ["Em negociação", emNegociacao, "var(--gold)"],
+    ["Fechadas", nFechadas, "var(--green)"]
+  ];
+  const funilMax = total || 1;
+  const funilEl = document.getElementById("dash-funil");
+  if (total > 0) {
+    funilEl.style.display = "block";
+    document.getElementById("dash-funil-barras").innerHTML = funilEtapas.map(function(e){
+      const pct = Math.round((e[1]/funilMax)*100);
+      return '<div class="fbar-row"><div class="fbar-head"><span class="fbar-label">'+e[0]+'</span><span class="fbar-val">'+e[1]+' · '+pct+'%</span></div>'
+        + '<div class="fbar-track"><div class="fbar-fill" style="width:'+Math.max(pct,3)+'%;background:'+e[2]+'">'+(pct>=8?pct+'%':'')+'</div></div></div>';
+    }).join("");
+  } else { funilEl.style.display = "none"; }
+
+  // ---------- FOLLOW-UP ----------
+  const totalFu = crm.reduce(function(s,r){ return s+(r.followups_enviados||0); },0);
+  const clientesComFu = crm.filter(function(r){ return (r.followups_enviados||0) > 0; }).length;
+  const fechadasComFu = fechadas.filter(function(r){ return r.fechou_apos_followup; }).length;
+  const valorFechadoComFu = fechadas.filter(function(r){ return r.fechou_apos_followup; }).reduce(function(s,r){ return s+(r.valor||0); },0);
+  const fuEl = document.getElementById("dash-followup");
+  if (totalFu > 0 || clientesComFu > 0) {
+    fuEl.style.display = "block";
+    document.getElementById("dash-followup-metricas").innerHTML = [
+      ["Follow-ups enviados", totalFu, "var(--accent)"],
+      ["Clientes acompanhados", clientesComFu, "var(--purple)"],
+      ["Fechadas após follow-up", fechadasComFu, "var(--green)"],
+      ["Valor fechado via follow-up", fmt(valorFechadoComFu), "var(--green)"]
+    ].map(function(x){ return '<div class="card metric-card" style="background:var(--surface)"><div class="metric-label">'+x[0]+'</div><div class="metric-val" style="color:'+x[2]+';font-size:18px">'+x[1]+'</div></div>'; }).join("");
+    // barra: das fechadas, quantas vieram de follow-up
+    if (nFechadas > 0) {
+      const pctFu = Math.round((fechadasComFu/nFechadas)*100);
+      document.getElementById("dash-followup-barra").innerHTML =
+        '<div class="fbar-row"><div class="fbar-head"><span class="fbar-label">Fechadas que passaram por follow-up</span><span class="fbar-val">'+fechadasComFu+' de '+nFechadas+' · '+pctFu+'%</span></div>'
+        + '<div class="fbar-track"><div class="fbar-fill" style="width:'+Math.max(pctFu,3)+'%;background:var(--green)">'+(pctFu>=8?pctFu+'%':'')+'</div></div></div>';
+    } else {
+      document.getElementById("dash-followup-barra").innerHTML = "";
+    }
+  } else { fuEl.style.display = "none"; }
+
+  // ---------- VALORES POR DESFECHO ----------
+  const valorAtivo = crm.filter(function(r){ return ehAtivo(r.status); }).reduce(function(s,r){ return s+(r.valor||0); },0);
+  const valorPerdido = crm.filter(function(r){ return r.status==="perdida"; }).reduce(function(s,r){ return s+(r.valor||0); },0);
+  const vdEl = document.getElementById("dash-valores-desfecho");
+  const vdMax = Math.max(valorAtivo, valorFechado, valorPerdido, 1);
+  if (total > 0) {
+    vdEl.style.display = "block";
+    const desfechos = [
+      ["Em aberto (ativos)", valorAtivo, "var(--accent)"],
+      ["Fechado (ganho)", valorFechado, "var(--green)"],
+      ["Perdido", valorPerdido, "var(--red)"]
+    ];
+    document.getElementById("dash-valores-desfecho-barras").innerHTML = desfechos.map(function(d){
+      const pct = Math.round((d[1]/vdMax)*100);
+      return '<div class="fbar-row"><div class="fbar-head"><span class="fbar-label">'+d[0]+'</span><span class="fbar-val">'+fmt(d[1])+'</span></div>'
+        + '<div class="fbar-track"><div class="fbar-fill" style="width:'+Math.max(pct,3)+'%;background:'+d[2]+'"></div></div></div>';
+    }).join("");
+  } else { vdEl.style.display = "none"; }
 
   const distEl = document.getElementById("dash-dist");
   const listEl = document.getElementById("dash-status-list");
