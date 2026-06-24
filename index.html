@@ -553,23 +553,24 @@ function buildApresentacaoPrompt(comPerguntas){
     : "";
 
   let p = "Voce e o Diogo Pinotti, freelancer de TI no Brasil (17 anos como Supervisor de TI em ambientes criticos, hoje desenvolve sites, automacoes e integracoes). Escreva uma MENSAGEM DE ABERTURA curta para enviar no botao 'Fazer uma pergunta' da Workana, ANTES de mandar proposta formal.\n\n"
-    + "OBJETIVO: quebrar o padrao dos outros freelancers que mandam proposta formal de cara. Voce abre uma conversa, mostra que entendeu o problema do cliente e se posiciona como a pessoa certa.\n\n"
+    + "OBJETIVO: quebrar o padrao dos outros freelancers que mandam proposta formal de cara. Voce abre uma conversa, se apresenta e faz as perguntas certas antes de propor.\n\n"
     + 'Cliente: ' + cliente + "\n"
     + "Projeto: " + desc + contextoTxt + faltaTxt + "\n\n"
-    + "ESTRUTURA (texto corrido, natural, SEM titulos, SEM numeros de secao):\n"
-    + "- Saudacao breve e calorosa: Ola, " + cliente + "! Tudo bem?\n"
-    + "- Reconheca o objetivo do projeto de forma elegante, mostrando que entendeu o que ele precisa (NAO comece com 'Vejo que voce busca' nem soe invasivo; algo como 'Seu projeto de X esta bem claro' ou 'Entendi que voce precisa de X').\n"
-    + "- APRESENTE-SE de forma natural na sequencia: diga que seu nome e Diogo e que voce atua ha mais de 17 anos em TI gerenciando ambientes criticos, hoje desenvolvendo sites, automacoes e integracoes. Conecte essa autoridade ao problema especifico dele.\n";
+    + "SIGA EXATAMENTE ESTE MODELO DE ESTRUTURA (cada item e um paragrafo separado por uma linha em branco, texto corrido, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
+    + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
+    + "2. Frase de transicao curta dizendo que antes de enviar uma proposta voce precisa entender alguns pontos e se apresentar. Use uma variacao natural de: 'Antes de enviar uma proposta preciso entender alguns pontos e me apresentar.'\n\n"
+    + "3. Apresentacao curta: comece com 'Sou Diogo e atuo ha mais de 17 anos em TI' e conecte de forma breve a experiencia ao problema do cliente.\n\n";
 
   if (comPerguntas) {
-    p += "- Faca 2 ou 3 perguntas estrategicas e especificas, baseadas nas informacoes que faltam, para voce poder precificar e executar com seguranca. As perguntas sao o coracao da mensagem.\n"
-      + "- Termine dizendo que, com esse alinhamento, ja envia uma proposta ajustada a realidade dele.\n";
+    p += "4. A duvida real: faca 2 ou 3 perguntas estrategicas e especificas baseadas no que falta no escopo, para poder precificar e executar com seguranca. As perguntas sao o coracao da mensagem.\n\n";
   } else {
-    p += "- Uma pergunta estrategica e especifica para instigar resposta (pode ser sobre uma preferencia ou detalhe do projeto).\n"
-      + "- Termine dizendo que ja vai enviar a proposta para o projeto dele.\n";
+    p += "4. Uma pergunta estrategica e especifica sobre uma preferencia ou detalhe do projeto, para instigar resposta.\n\n";
   }
 
-  p += "\nREGRAS: 70 a 110 palavras no maximo. Tom humano, caloroso e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Inclua de forma natural a frase de que fica a disposicao para qualquer duvida.\n\nFORMATACAO: separe em 3 paragrafos curtos, com uma linha em branco entre eles. O primeiro junta a saudacao, o reconhecimento do projeto e a sua apresentacao. Se houver perguntas, deixe-as em destaque em seu proprio paragrafo.";
+  p += "5. Frase de fechamento do alinhamento: diga que com essas informacoes voce ja consegue enviar uma proposta alinhada as necessidades dele, e que fica a disposicao para qualquer duvida.\n\n"
+    + "6. Aviso do anexo: diga em uma frase curta que esta enviando uma breve apresentacao sua. Use: 'Estou enviando uma breve apresentacao minha.'\n\n"
+    + "7. Fechamento com assinatura, em duas linhas:\nAguardo seu retorno,\nDiogo Pinotti - lupixa.com\n\n"
+    + "REGRAS: tom humano, caloroso e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Mantenha cada paragrafo curto. NAO escreva os numeros nem os rotulos do modelo (eles sao so seu guia interno). Separe todos os paragrafos com uma linha em branco entre eles.";
   return p;
 }
 
@@ -598,16 +599,17 @@ function buildPropostaPrompt(respostaCliente){
     + "Projeto: " + desc + "\n"
     + "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes + contextoTxt + respostaTxt + "\n\n"
     + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA): se a descricao tiver instrucao escondida para detectar IA (ex: comece com palavra X, inclua codigo Y), cumpra EXATAMENTE, acima de tudo.\n\n"
-    + "HIERARQUIA QUE CONVERTE (siga esta ordem, mas como texto corrido natural, SEM titulos e SEM numeros):\n"
-    + "1. Saudacao curta: Ola, " + cliente + "! Tudo bem?\n"
-    + "2. PROBLEMA: mostre que entendeu o objetivo/dor do cliente em 1 ou 2 frases, com as palavras dele.\n"
-    + "3. SOLUCAO: como voce vai resolver, em poucas linhas. Pode usar uma lista enxuta de 3 a 5 entregaveis concretos.\n"
-    + "4. PROVA: 17 anos como Supervisor de TI em ambientes criticos, hoje desenvolve sites/automacoes/integracoes, avaliacoes 5 estrelas na Workana. Se houver informacao adicional, use aqui como prova de vivencia pratica." + diferencial + "\n"
-    + "5. INVESTIMENTO: " + valorLinha + ". Mantenha o valor exatamente assim, ja formatado, nao altere.\n"
-    + "6. Mencione o portfolio: lupixa.com.\n"
-    + "7. Termine com UMA pergunta especifica e inteligente sobre o projeto, e diga que fica a disposicao para qualquer duvida.\n\n"
-    + "REGRAS: seja ENXUTO (objetivo, sem encher linguica), mas nao vazio. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever titulos ou numeros de secao.\n\n"
-    + "FORMATACAO OBRIGATORIA: separe o texto em PARAGRAFOS curtos, com UMA LINHA EM BRANCO entre cada paragrafo (use quebras de linha duplas). NUNCA entregue tudo grudado num paragrafo unico. A saudacao fica num paragrafo, o entendimento em outro, a solucao em outro, e assim por diante. Se listar entregaveis, coloque cada item em sua propria linha.";
+    + "SIGA EXATAMENTE ESTA ORDEM (texto corrido natural, cada bloco e um paragrafo separado por uma linha em branco, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
+    + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
+    + "2. OBJETIVO DIRETO: NAO escreva resumo generico nem 'Entendo que voce busca...'. Va direto ao objetivo central do projeto em 1 frase, comecando por algo como 'O objetivo e...'. Use as palavras do proprio cliente.\n\n"
+    + "3. O QUE PROPONHO: frase curta 'Para atender a sua necessidade, proponho:' seguida de uma lista de 3 a 5 entregaveis concretos, cada um em sua propria linha comecando com hifen.\n\n"
+    + "4. PERGUNTA NO MEIO: logo apos os entregaveis, faca UMA pergunta especifica e inteligente sobre o ponto mais critico do projeto, para engajar o cliente. Esta pergunta vem AQUI no meio, NAO no final.\n\n"
+    + "5. PROVA: um paragrafo conectando '17 anos de experiencia como Supervisor de TI em ambientes criticos e avaliacoes 5 estrelas' a seguranca do projeto." + diferencial + " Se houver informacao adicional do Diogo, use aqui como prova de vivencia pratica.\n\n"
+    + "6. INVESTIMENTO: " + valorLinha + ". Mantenha o valor exatamente assim, ja formatado, nao altere. Coloque o valor e o prazo cada um em sua linha.\n\n"
+    + "7. PORTFOLIO: uma frase curta dizendo que ele pode verificar o portfolio em lupixa.com.\n\n"
+    + "8. FECHAMENTO: termine apenas dizendo que fica a disposicao para qualquer duvida. NAO repita pergunta aqui (a pergunta ja foi feita no meio).\n\n"
+    + "REGRAS: seja ENXUTO (objetivo, sem encher linguica), mas nao vazio. Sem emojis. Sem excesso de hifens no texto corrido. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever os numeros nem os rotulos do modelo (sao so seu guia interno).\n\n"
+    + "FORMATACAO OBRIGATORIA: separe o texto em PARAGRAFOS curtos, com UMA LINHA EM BRANCO entre cada paragrafo (use quebras de linha duplas). NUNCA entregue tudo grudado num paragrafo unico. Cada entregavel da lista fica em sua propria linha.";
 }
 
 async function gerarClaro(){
