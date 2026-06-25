@@ -593,7 +593,7 @@ function buildApresentacaoPrompt(comPerguntas){
 
   p += "6. Aviso do anexo: diga em uma frase curta que esta enviando uma breve apresentacao sua. Use: 'Estou enviando uma breve apresentacao minha.'\n\n"
     + "7. Fechamento com assinatura, em duas linhas:\nAguardo seu retorno,\nDiogo Pinotti - lupixa.com\n\n"
-    + "REGRAS: tom humano, caloroso e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Mantenha cada paragrafo curto. NAO escreva os numeros nem os rotulos do modelo (eles sao so seu guia interno). Separe todos os paragrafos com uma linha em branco entre eles.\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — nunca omita acentos (ex: integracao → integração, operacao → operação). Tom humano, caloroso e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Mantenha cada paragrafo curto. NAO escreva os numeros nem os rotulos do modelo (eles sao so seu guia interno). Separe todos os paragrafos com uma linha em branco entre eles.\n\n"
     + "VOZ (REGRA CRITICA): fale DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA use terceira pessoa (ele, ela, o cliente). As vezes o anuncio foi escrito em terceira pessoa ou de forma impessoal; mesmo assim voce SEMPRE se dirige ao cliente como 'voce'.\n\n"
     + "ANTI-MODELO (CRITICO): esta abertura NAO pode ter cara de modelo padrao. Quando a abertura serve para qualquer cliente, ele percebe na hora que nao houve leitura real. Proibido frases genericas de preenchimento. Capture um detalhe especifico DESTE projeto e varie a construcao das frases a cada mensagem.";
   return p;
@@ -637,7 +637,7 @@ function buildPropostaPrompt(respostaCliente){
     + "9. PROXIMO PASSO QUE CONDUZ (1 linha, OBRIGATORIO ser personalizado para ESTE projeto): NAO termine de forma passiva. Conduza o avanco pedindo a proxima acao concreta que faca sentido para este projeto especifico. Ex.: pedir um material/acesso necessario, agendar uma conversa rapida, ou pedir o ok para iniciar pelo primeiro passo. Formato natural como 'Para avancar, me envie [o que for necessario neste projeto] que ja dou o primeiro passo.' VARIE conforme o projeto.\n\n"
     + "PROIBICOES ABSOLUTAS: NUNCA escreva 'se fizer sentido para voce' nem qualquer variacao que devolva a decisao ao cliente ou soe como duvida. NUNCA termine so com 'fico a disposicao' passivo (isso e fraco). NUNCA repita a pergunta do meio aqui no fim.\n\n"
     + "ANTI-MODELO (CRITICO): esta proposta NAO pode ter cara de modelo padrao. Proibido frases genericas de preenchimento que serviriam para qualquer projeto. O objetivo, a pergunta e o proximo passo devem ser especificos DESTE projeto. Varie a construcao das frases.\n\n"
-    + "REGRAS: seja CURTO e direto, sem encher linguica, mas nao vazio. Frases curtas. Sem emojis. Sem excesso de hifens no texto corrido. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever os numeros nem os rotulos do modelo (sao so seu guia interno).\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — nunca omita acentos (ex: integracao → integração, operacao → operação, critica → crítica). Seja CURTO e direto, sem encher linguica, mas nao vazio. Frases curtas. Sem emojis. Sem excesso de hifens no texto corrido. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever os numeros nem os rotulos do modelo (sao so seu guia interno).\n\n"
     + "VOZ (REGRA CRITICA): a proposta INTEIRA fala DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA use terceira pessoa (ele, ela, o cliente). ATENCAO: as vezes o anuncio foi escrito em terceira pessoa ou de forma impessoal; mesmo assim voce SEMPRE se dirige ao cliente como 'voce'.\n\n"
     + "FORMATACAO OBRIGATORIA: paragrafos curtos com UMA LINHA EM BRANCO entre cada um (quebras de linha duplas). NUNCA grude tudo num paragrafo unico. Cada entregavel em sua linha.";
 }
@@ -723,7 +723,7 @@ function buildParceriaPrompt(){
     + "8. PROXIMO PASSO QUE CONDUZ (1 linha, personalizado): proponha um teste pratico que reduz o risco dele. Algo natural como 'Para comecar, me indica um projeto atual que voce precise entregar que eu faco a primeira pagina e voce avalia meu trabalho na pratica.' Conduza com firmeza.\n\n"
     + "PROIBICOES ABSOLUTAS: NUNCA escreva 'se fizer sentido para voce' nem nada que devolva a decisao ao cliente ou soe como duvida. NUNCA termine so com 'fico a disposicao' passivo. NAO use prazo de entrega (parceria nao tem prazo unico).\n\n"
     + "ANTI-MODELO (CRITICO): nao pode ter cara de modelo padrao. A leitura, a pergunta e o proximo passo devem ser especificos DESTE anuncio. Varie a construcao das frases.\n\n"
-    + "REGRAS: seja CURTO e direto, frases curtas, sem encher linguica. Sem emojis. Sem excesso de hifens no texto corrido. Nunca mencionar IA. Sem 'Atenciosamente' nem assinatura formal.\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — nunca omita acentos. Seja CURTO e direto, frases curtas, sem encher linguica. Sem emojis. Sem excesso de hifens no texto corrido. Nunca mencionar IA. Sem 'Atenciosamente' nem assinatura formal.\n\n"
     + "VOZ (REGRA CRITICA): fale DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA terceira pessoa (ele, ela, o cliente), mesmo que o anuncio esteja escrito de forma impessoal.\n\n"
     + "FORMATACAO OBRIGATORIA: paragrafos curtos com UMA LINHA EM BRANCO entre cada um. Cada item da lista em sua linha.";
 }
@@ -1035,7 +1035,7 @@ async function gerarFollowupAlerta(id, tipo){
       + "- Retome o projeto e pergunte se ele teve chance de ver suas perguntas.\n"
       + "- Crie senso de disponibilidade: diga que sua agenda esta abrindo uma janela de inicio imediato esta semana.\n"
       + "- Fecho leve convidando a alinhar por ali.\n\n"
-      + "REGRAS: maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. Fale sempre em segunda pessoa (voce), nunca terceira.";
+      + "REGRAS: ESCREVA O TEXTO FINAL EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA (accao, integracao, operacao, critica, etc. DEVEM ter acento: acao, integracao, operacao, critica). Nunca omita acentos. Maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. Fale sempre em segunda pessoa (voce), nunca terceira.";
   } else if (tipo === "parceria") {
     prompt = 'Voce e o Diogo Pinotti, freelancer de TI. Escreva um follow-up CURTO e sutil no chat da Workana para o cliente "' + r.cliente + '" sobre uma PARCERIA recorrente que voce propos: "' + (r.descricao_completa||r.descricao) + '".\n\n'
       + "Contexto: voce ja enviou uma proposta de parceria (para ser fornecedor fixo dos sites/servicos dele) e ele ainda nao respondeu. Este follow-up reativa, sem pressao.\n\n"
@@ -1044,7 +1044,7 @@ async function gerarFollowupAlerta(id, tipo){
       + "- Retome a ideia da parceria e pergunte se ele teve chance de avaliar sua proposta.\n"
       + "- Reforce de leve que voce tem disponibilidade para comecar com um projeto teste esta semana, para ele ver seu trabalho na pratica.\n"
       + "- Fecho conduzindo: convide a alinhar por ali ou a te indicar um primeiro projeto.\n\n"
-      + "REGRAS: maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. NUNCA escreva 'se fizer sentido para voce'. Fale sempre em segunda pessoa (voce), nunca terceira.";
+      + "REGRAS: ESCREVA O TEXTO FINAL EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA (accao, integracao, operacao, critica, etc. DEVEM ter acento: acao, integracao, operacao, critica). Nunca omita acentos. Maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. NUNCA escreva 'se fizer sentido para voce'. Fale sempre em segunda pessoa (voce), nunca terceira.";
   } else {
     prompt = 'Voce e o Diogo Pinotti, freelancer de TI. Escreva um follow-up CURTO e sutil no chat da Workana para o cliente "' + r.cliente + '" sobre o projeto: "' + (r.descricao_completa||r.descricao) + '".\n\n'
       + "Contexto: voce ja enviou a proposta formal e ele ainda nao respondeu. Este follow-up reativa.\n\n"
@@ -1053,7 +1053,7 @@ async function gerarFollowupAlerta(id, tipo){
       + "- Pergunte se ele teve chance de analisar a estimativa que voce enviou.\n"
       + "- Crie senso de urgencia: diga que sua agenda esta abrindo uma janela de inicio imediato esta semana.\n"
       + "- Fecho leve convidando a alinhar os detalhes por ali.\n\n"
-      + "REGRAS: maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. Fale sempre em segunda pessoa (voce), nunca terceira.";
+      + "REGRAS: ESCREVA O TEXTO FINAL EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA (accao, integracao, operacao, critica, etc. DEVEM ter acento: acao, integracao, operacao, critica). Nunca omita acentos. Maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. Fale sempre em segunda pessoa (voce), nunca terceira.";
   }
 
   try {
@@ -1118,7 +1118,7 @@ async function gerarPropostaCRM(id){
     + "5. INVESTIMENTO: " + valorLinha + ". Mantenha o valor exatamente assim, nao altere.\n"
     + "6. Portfolio: lupixa.com.\n"
     + "7. Termine com uma pergunta especifica e diga que fica a disposicao para qualquer duvida.\n\n"
-    + "REGRAS: enxuto mas nao vazio. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. NUNCA escrever titulos ou numeros de secao.\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — nunca omita acentos. Enxuto mas nao vazio. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. NUNCA escrever titulos ou numeros de secao.\n\n"
     + "FORMATACAO OBRIGATORIA: separe o texto em PARAGRAFOS curtos, com UMA LINHA EM BRANCO entre cada paragrafo (quebras de linha duplas). NUNCA entregue tudo grudado num paragrafo unico. Se listar entregaveis, cada item em sua propria linha.";
 
   try {
@@ -1147,7 +1147,7 @@ async function gerarFollowup(id, tipo){
       + "- Retome o projeto e pergunte se ele teve chance de ver suas perguntas.\n"
       + "- Crie senso de disponibilidade: diga que sua agenda esta abrindo uma janela de inicio imediato esta semana.\n"
       + "- Fecho leve convidando a alinhar por ali.\n\n"
-      + "REGRAS: maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. Fale sempre em segunda pessoa (voce), nunca terceira.";
+      + "REGRAS: ESCREVA O TEXTO FINAL EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA (accao, integracao, operacao, critica, etc. DEVEM ter acento: acao, integracao, operacao, critica). Nunca omita acentos. Maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. Fale sempre em segunda pessoa (voce), nunca terceira.";
   } else if (tipo === "parceria") {
     prompt = 'Voce e o Diogo Pinotti, freelancer de TI. Escreva um follow-up CURTO e sutil no chat da Workana para o cliente "' + r.cliente + '" sobre uma PARCERIA recorrente que voce propos: "' + (r.descricao_completa||r.descricao) + '".\n\n'
       + "Contexto: voce ja enviou uma proposta de parceria (para ser fornecedor fixo dos sites/servicos dele) e ele ainda nao respondeu. Este follow-up reativa a conversa, sem pressao.\n\n"
@@ -1156,7 +1156,7 @@ async function gerarFollowup(id, tipo){
       + "- Retome a ideia da parceria e pergunte se ele teve chance de avaliar sua proposta.\n"
       + "- Reforce de leve que voce tem disponibilidade para comecar com um projeto teste esta semana, para ele ver seu trabalho na pratica.\n"
       + "- Fecho conduzindo: convide a alinhar por ali ou a te indicar um primeiro projeto.\n\n"
-      + "REGRAS: maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. NUNCA escreva 'se fizer sentido para voce'. Fale sempre em segunda pessoa (voce), nunca terceira.";
+      + "REGRAS: ESCREVA O TEXTO FINAL EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA (accao, integracao, operacao, critica, etc. DEVEM ter acento: acao, integracao, operacao, critica). Nunca omita acentos. Maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. NUNCA escreva 'se fizer sentido para voce'. Fale sempre em segunda pessoa (voce), nunca terceira.";
   } else {
     prompt = 'Voce e o Diogo Pinotti, freelancer de TI. Escreva um follow-up CURTO e sutil no chat da Workana para o cliente "' + r.cliente + '" sobre o projeto: "' + (r.descricao_completa||r.descricao) + '".\n\n'
       + "Contexto: voce ja enviou a proposta formal e ele ainda nao respondeu. Este follow-up reativa.\n\n"
@@ -1165,7 +1165,7 @@ async function gerarFollowup(id, tipo){
       + "- Pergunte se ele teve chance de analisar a estimativa que voce enviou.\n"
       + "- Crie senso de urgencia: diga que sua agenda esta abrindo uma janela de inicio imediato esta semana.\n"
       + "- Fecho leve convidando a alinhar os detalhes por ali.\n\n"
-      + "REGRAS: maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. Fale sempre em segunda pessoa (voce), nunca terceira.";
+      + "REGRAS: ESCREVA O TEXTO FINAL EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA (accao, integracao, operacao, critica, etc. DEVEM ter acento: acao, integracao, operacao, critica). Nunca omita acentos. Maximo 60 palavras. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. Fale sempre em segunda pessoa (voce), nunca terceira.";
   }
 
   try {
