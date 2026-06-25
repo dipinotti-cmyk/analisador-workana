@@ -369,10 +369,14 @@ async function deleteCRMItem(id){
 async function callClaude(prompt){
   const res = await fetch("/api/chat", {
     method:"POST",
-    headers:{"Content-Type":"application/json"},
+    headers:{"Content-Type":"application/json; charset=utf-8"},
     body: JSON.stringify({ prompt })
   });
-  const data = await res.json();
+  // decodifica explicitamente como UTF-8 para nao depender do palpite do navegador
+  const buf = await res.arrayBuffer();
+  const txt = new TextDecoder("utf-8").decode(buf);
+  let data;
+  try { data = JSON.parse(txt); } catch(e) { throw new Error("Resposta invalida do servidor"); }
   if (!res.ok || data.error) { throw new Error(data.error || ("Erro "+res.status)); }
   return data.text || "";
 }
