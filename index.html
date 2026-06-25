@@ -556,10 +556,10 @@ function buildApresentacaoPrompt(comPerguntas){
     + "OBJETIVO: quebrar o padrao dos outros freelancers que mandam proposta formal de cara. Voce abre uma conversa, se apresenta e faz as perguntas certas antes de propor.\n\n"
     + 'Cliente: ' + cliente + "\n"
     + "Projeto: " + desc + contextoTxt + faltaTxt + "\n\n"
-    + "SIGA EXATAMENTE ESTE MODELO DE ESTRUTURA (cada item e um paragrafo separado por uma linha em branco, texto corrido, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
+    + "SIGA EXATAMENTE ESTE MODELO DE ESTRUTURA (cada item e um paragrafo curto separado por uma linha em branco, texto corrido, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
     + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
-    + "2. Frase de transicao curta dizendo que antes de enviar uma proposta voce precisa entender alguns pontos e se apresentar. Use uma variacao natural de: 'Antes de enviar uma proposta preciso entender alguns pontos e me apresentar.'\n\n"
-    + "3. Apresentacao curta: comece com 'Sou Diogo e atuo ha mais de 17 anos em TI' e conecte de forma breve a experiencia ao problema do cliente.\n\n";
+    + "2. Transicao curta que JA MOSTRA LEITURA REAL do projeto: em vez de uma frase generica, conecte ao que ele precisa DESTE projeto especifico e diga que antes de enviar uma proposta voce quer entender alguns pontos e se apresentar. Deve ficar claro que voce leu o projeto dele, nao um texto padrao.\n\n"
+    + "3. Apresentacao curta: comece com 'Sou Diogo e atuo ha mais de 17 anos em TI' e conecte de forma breve a experiencia ao problema especifico dele.\n\n";
 
   if (comPerguntas) {
     p += "4. A duvida real: faca 2 ou 3 perguntas estrategicas e especificas baseadas no que falta no escopo, para poder precificar e executar com seguranca. As perguntas sao o coracao da mensagem.\n\n";
@@ -572,7 +572,8 @@ function buildApresentacaoPrompt(comPerguntas){
   p += "6. Aviso do anexo: diga em uma frase curta que esta enviando uma breve apresentacao sua. Use: 'Estou enviando uma breve apresentacao minha.'\n\n"
     + "7. Fechamento com assinatura, em duas linhas:\nAguardo seu retorno,\nDiogo Pinotti - lupixa.com\n\n"
     + "REGRAS: tom humano, caloroso e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Mantenha cada paragrafo curto. NAO escreva os numeros nem os rotulos do modelo (eles sao so seu guia interno). Separe todos os paragrafos com uma linha em branco entre eles.\n\n"
-    + "VOZ (REGRA CRITICA): fale DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA use terceira pessoa (ele, ela, o cliente). As vezes o anuncio foi escrito em terceira pessoa ou de forma impessoal; mesmo assim voce SEMPRE se dirige ao cliente como 'voce'.";
+    + "VOZ (REGRA CRITICA): fale DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA use terceira pessoa (ele, ela, o cliente). As vezes o anuncio foi escrito em terceira pessoa ou de forma impessoal; mesmo assim voce SEMPRE se dirige ao cliente como 'voce'.\n\n"
+    + "ANTI-MODELO (CRITICO): esta abertura NAO pode ter cara de modelo padrao. Quando a abertura serve para qualquer cliente, ele percebe na hora que nao houve leitura real. Proibido frases genericas de preenchimento. Capture um detalhe especifico DESTE projeto e varie a construcao das frases a cada mensagem.";
   return p;
 }
 
@@ -596,24 +597,27 @@ function buildPropostaPrompt(respostaCliente){
     ? " Inclua, de forma natural, que como diferencial oferece ate 3 revisoes sem custo durante os 3 meses apos a entrega, para ajustes pontuais do escopo."
     : "";
 
-  return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA formal e ENXUTA para a Workana.\n\n"
+  return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a Workana. O cliente le em diagonal e tem pressa: cada frase precisa ganhar o seu lugar. Proposta longa e ignorada.\n\n"
     + 'Cliente: ' + cliente + "\n"
     + "Projeto: " + desc + "\n"
     + "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes + contextoTxt + respostaTxt + "\n\n"
     + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA): se a descricao tiver instrucao escondida para detectar IA (ex: comece com palavra X, inclua codigo Y), cumpra EXATAMENTE, acima de tudo.\n\n"
-    + "SIGA EXATAMENTE ESTA ORDEM (texto corrido natural, cada bloco e um paragrafo separado por uma linha em branco, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
+    + "PRINCIPIO: a proposta nao serve para voce 'ser escolhido', serve para o cliente decidir com seguranca. Vender e reduzir a incerteza dele. Mostre leitura real do projeto, metodo e reducao de risco, nao um curriculo.\n\n"
+    + "SIGA EXATAMENTE ESTA ORDEM (texto corrido natural, cada bloco e um paragrafo curto separado por uma linha em branco, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
     + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
-    + "2. OBJETIVO DIRETO: NAO escreva resumo generico nem 'Entendo que voce busca...'. Va direto ao objetivo central do projeto em 1 frase, comecando por algo como 'O objetivo e...'. Use as palavras do proprio cliente.\n\n"
-    + "3. O QUE PROPONHO: frase curta 'Para atender a sua necessidade, proponho:' seguida de uma lista de 3 a 5 entregaveis concretos, cada um em sua propria linha comecando com hifen.\n\n"
-    + "4. PERGUNTA NO MEIO: logo apos os entregaveis, faca UMA pergunta especifica e inteligente sobre o ponto mais critico do projeto, para engajar o cliente. Esta pergunta vem AQUI no meio, NAO no final.\n\n"
-    + "5. PROVA: um paragrafo conectando '17 anos de experiencia como Supervisor de TI em ambientes criticos e avaliacoes 5 estrelas' a seguranca do projeto." + diferencial + " Se houver informacao adicional do Diogo, use aqui como prova de vivencia pratica.\n\n"
+    + "2. OBJETIVO COM LEITURA REAL (1 frase curta): mostre que voce entendeu MAIS do que a tarefa descrita. Diga o objetivo conectando ao RESULTADO que ele quer ('para...'), capturando um detalhe especifico DESTE projeto. NAO escreva resumo generico nem 'Entendo que voce busca'. Tem que ficar claro que foi escrita para este projeto, nao para qualquer cliente.\n\n"
+    + "3. O QUE PROPONHO: frase curta 'Para isso, proponho:' seguida de 3 a 4 entregaveis concretos, cada um em sua linha comecando com hifen. Cada entregavel com 4 a 7 palavras, direto, sem encher.\n\n"
+    + "4. PERGUNTA NO MEIO (1 linha): logo apos os entregaveis, UMA pergunta especifica sobre o ponto mais critico DESTE projeto, para engajar. Vem AQUI no meio, nunca no fim.\n\n"
+    + "5. METODO + SEGURANCA (1 paragrafo curto, 2 ou 3 frases): comece mostrando COMO voce conduz (algo como 'Trabalho com escopo e prazo definidos e te mostro o andamento, sem surpresa'). Depois ancore com '17 anos em operacao critica e avaliacoes 5 estrelas na Workana'. Em seguida amarre ao RISCO que o cliente teme: deixe explicito que com isso ele nao enfrenta atraso, retrabalho nem fica sem suporte." + diferencial + " Se houver informacao adicional do Diogo, use como prova de vivencia pratica, sem alongar.\n\n"
     + "6. INVESTIMENTO: " + valorLinha + ". Mantenha o valor exatamente assim, ja formatado, nao altere. Coloque o valor e o prazo cada um em sua linha.\n\n"
-    + "7. PORTFOLIO: uma frase curta dizendo que voce pode verificar o portfolio em lupixa.com. Dirija-se SEMPRE ao cliente em segunda pessoa (voce), nunca em terceira pessoa (ele/ela).\n\n"
-    + "8. URGENCIA/DISPONIBILIDADE: uma frase curta gerando senso de disponibilidade imediata e urgencia genuina. VARIE a frase a cada proposta (nao use sempre a mesma), inspirando-se naturalmente em ideias como: 'Acabei de finalizar um projeto e abriu uma vaga na minha agenda para inicio imediato'; 'Encerrei um trabalho hoje e tenho uma janela livre para comecar o seu agora'; 'Minha agenda abriu uma janela esta semana, entao consigo priorizar seu projeto'; 'Tenho disponibilidade imediata no momento e posso comecar assim que voce confirmar'. Escolha um tom natural e direto, sem soar exagerado ou desesperado.\n\n"
-    + "9. FECHAMENTO: termine apenas dizendo que fica a disposicao para qualquer duvida. NAO repita pergunta aqui (a pergunta ja foi feita no meio).\n\n"
-    + "REGRAS: seja ENXUTO (objetivo, sem encher linguica), mas nao vazio. Sem emojis. Sem excesso de hifens no texto corrido. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever os numeros nem os rotulos do modelo (sao so seu guia interno).\n\n"
-    + "VOZ (REGRA CRITICA): a proposta INTEIRA fala DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA use terceira pessoa (ele, ela, o cliente). ATENCAO: as vezes o anuncio do projeto foi escrito em terceira pessoa ou de forma impessoal; mesmo assim, voce SEMPRE se dirige ao cliente como 'voce'. Ex: escreva 'voce pode verificar', nunca 'ele pode verificar'.\n\n"
-    + "FORMATACAO OBRIGATORIA: separe o texto em PARAGRAFOS curtos, com UMA LINHA EM BRANCO entre cada paragrafo (use quebras de linha duplas). NUNCA entregue tudo grudado num paragrafo unico. Cada entregavel da lista fica em sua propria linha.";
+    + "7. PORTFOLIO (1 linha curta): voce pode verificar o portfolio em lupixa.com.\n\n"
+    + "8. URGENCIA (1 linha): senso de disponibilidade imediata e genuina. VARIE a frase a cada proposta, inspirando-se em ideias como: 'Acabei de finalizar um projeto e abriu uma janela na agenda para inicio imediato'; 'Encerrei um trabalho hoje e consigo priorizar o seu agora'; 'Minha agenda abriu uma janela esta semana'. Tom natural, sem soar desesperado.\n\n"
+    + "9. PROXIMO PASSO QUE CONDUZ (1 linha, OBRIGATORIO ser personalizado para ESTE projeto): NAO termine de forma passiva. Conduza o avanco pedindo a proxima acao concreta que faca sentido para este projeto especifico. Ex.: pedir um material/acesso necessario, agendar uma conversa rapida, ou pedir o ok para iniciar pelo primeiro passo. Formato natural como 'Para avancar, me envie [o que for necessario neste projeto] que ja dou o primeiro passo.' VARIE conforme o projeto.\n\n"
+    + "PROIBICOES ABSOLUTAS: NUNCA escreva 'se fizer sentido para voce' nem qualquer variacao que devolva a decisao ao cliente ou soe como duvida. NUNCA termine so com 'fico a disposicao' passivo (isso e fraco). NUNCA repita a pergunta do meio aqui no fim.\n\n"
+    + "ANTI-MODELO (CRITICO): esta proposta NAO pode ter cara de modelo padrao. Proibido frases genericas de preenchimento que serviriam para qualquer projeto. O objetivo, a pergunta e o proximo passo devem ser especificos DESTE projeto. Varie a construcao das frases.\n\n"
+    + "REGRAS: seja CURTO e direto, sem encher linguica, mas nao vazio. Frases curtas. Sem emojis. Sem excesso de hifens no texto corrido. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever os numeros nem os rotulos do modelo (sao so seu guia interno).\n\n"
+    + "VOZ (REGRA CRITICA): a proposta INTEIRA fala DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA use terceira pessoa (ele, ela, o cliente). ATENCAO: as vezes o anuncio foi escrito em terceira pessoa ou de forma impessoal; mesmo assim voce SEMPRE se dirige ao cliente como 'voce'.\n\n"
+    + "FORMATACAO OBRIGATORIA: paragrafos curtos com UMA LINHA EM BRANCO entre cada um (quebras de linha duplas). NUNCA grude tudo num paragrafo unico. Cada entregavel em sua linha.";
 }
 
 async function gerarClaro(){
