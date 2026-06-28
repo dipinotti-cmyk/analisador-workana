@@ -948,7 +948,7 @@ function renderCRM(){
     }
 
     const ehParceria = r.status === "parceria enviada";
-    if (fuDevido && (ehAbertura || ehProposta || ehParceria)) {
+    if (fuDevido && (ehAbertura || ehProposta || ehParceria) && (r.followups_enviados||0) < 1) {
       const tipoFu = ehAbertura ? "abertura" : (ehParceria ? "parceria" : "proposta");
       const corFu = ehAbertura ? "btn-purple" : "btn-gold";
       const labelFu = ehAbertura ? "📨 Gerar follow-up de abertura" : (ehParceria ? "📨 Gerar follow-up de parceria" : "📨 Gerar follow-up de proposta");
@@ -972,6 +972,7 @@ async function updateStatus(id, novoStatus){
 
 function followupDevido(r){
   if (["fechada","perdida"].indexOf(r.status) !== -1) return false;
+  if ((r.followups_enviados||0) >= 1) return false;
   if (!r.followup) return false;
   return r.followup <= today();
 }
@@ -1075,15 +1076,13 @@ async function adiarFollowup(id){
 }
 
 async function marcarFollowupEnviado(id){
-  // registra que o follow-up foi enviado hoje: incrementa contador estruturado,
-  // grava a data, e empurra o proximo follow-up para daqui a 3 dias. Sai do alerta.
+  // registra que o follow-up foi enviado hoje: incrementa contador e grava a data. Ciclo encerrado.
   const r = crm.find(function(x){ return x.id===id; });
   if (!r) return;
   const n = (r.followups_enviados || 0) + 1;
   await updateCRMItem(id, {
     followups_enviados: n,
-    data_ultimo_followup: today(),
-    followup: addDays(today(), 3)
+    data_ultimo_followup: today()
   });
 }
 
