@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0f14">
+<title>Analisador Workana — Lupixa</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--surface:#141720;--card:#1a1f2e;--border:#252b3b;
+  --accent:#5b8ef0;--accent-dim:#1e2d52;--gold:#f5a623;--gold-dim:#3a2c0a;
+  --green:#3ecf8e;--green-dim:#0d2b1e;--red:#f56565;--red-dim:#2d1515;
+  --purple:#a78bfa;--purple-dim:#241a3d;
+  --yellow:#f0c040;--text:#e8ecf5;--muted:#8892a4;--faint:#4a5568;
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+input,textarea,select{font-family:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;width:100%;outline:none;font-size:14px;transition:border-color .2s}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:80px;line-height:1.6}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:8px;font-size:14px;font-weight:600;transition:background .2s}
+label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.field{margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.btn{padding:10px 18px;font-size:14px}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-lg{padding:13px 20px;font-size:15px}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#4a7de8}
+.btn-ghost{background:transparent;color:var(--muted)}.btn-ghost:hover{background:var(--surface)}
+.btn-success{background:var(--green-dim);color:var(--green)}.btn-success:hover{background:#142b1e}
+.btn-danger{background:var(--red-dim);color:var(--red)}.btn-danger:hover{background:#3d1a1a}
+.btn-gold{background:var(--gold-dim);color:var(--gold)}.btn-gold:hover{background:#4a3512}
+.btn-purple{background:var(--purple-dim);color:var(--purple)}.btn-purple:hover{background:#2e2150}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em}
+.divider{border-top:1px solid var(--border);margin:14px 0}
+.stars{color:var(--gold);font-size:16px;letter-spacing:2px}
+.header{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;position:sticky;top:0;background:var(--bg);z-index:100}
+.header-title{font-size:18px;font-weight:800}
+.header-sub{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.main{padding:16px;max-width:1200px;margin:0 auto}
+.two-col{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+.col{display:flex;flex-direction:column;gap:14px}
+.rec-card{border-radius:12px;padding:16px}
+.analysis-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.gen-text{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;line-height:1.8;white-space:pre-wrap;max-height:360px;overflow-y:auto}
+.crm-item{border-left:3px solid var(--border);border-radius:12px;padding:14px;background:var(--card);margin-bottom:10px}
+.dash-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.dash-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.dash-stat{text-align:center;padding:18px 12px}
+.dash-val{font-size:26px;font-weight:800;margin-bottom:4px}
+.dash-label{font-size:11px;color:var(--muted)}
+.dash-icon{font-size:22px;margin-bottom:6px}
+.metric-card{padding:18px}
+.metric-label{font-size:11px;color:var(--muted);margin-bottom:6px}
+.metric-val{font-size:20px;font-weight:800}
+.status-dist{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.status-chip{background:var(--surface);border-radius:8px;padding:8px 14px}
+.status-chip-label{font-size:10px;text-transform:uppercase;margin-bottom:2px}
+.status-chip-val{font-size:18px;font-weight:700}
+.fbar-row{margin-bottom:12px}
+.fbar-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.fbar-label{font-size:13px;font-weight:600}
+.fbar-val{font-size:12px;color:var(--muted)}
+.fbar-track{background:var(--surface);border-radius:6px;height:22px;overflow:hidden}
+.fbar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:700;color:#0d0f14;min-width:24px;transition:width .3s}
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.alert{border-radius:12px;padding:14px 16px;margin-bottom:4px}
+.loading{text-align:center;padding:48px 20px}
+.loading-icon{font-size:32px;margin-bottom:10px}
+.sync-bar{display:flex;align-items:center;gap:8px;font-size:12px;padding:8px 12px;background:var(--surface);border-radius:8px;margin-bottom:12px}
+.manual-form{border:1px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:14px}
+.manual-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.crm-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.crm-meta{font-size:11px;color:var(--faint);margin-top:4px}
+.crm-desc{font-size:12px;color:var(--muted);margin-top:2px}
+@media(max-width:700px){
+  .two-col{grid-template-columns:1fr}
+  .dash-grid-4{grid-template-columns:repeat(2,1fr)}
+  .analysis-grid{grid-template-columns:1fr}
+  .manual-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-sub">Lupixa — Diogo Pinotti</div>
+    <div class="header-title">Analisador <span style="color:var(--accent)">Workana</span></div>
+  </div>
+  <div class="tabs">
+    <button class="btn btn-sm btn-primary" onclick="setTab('analisar')" id="tab-analisar">⚡ Analisar</button>
+    <button class="btn btn-sm btn-ghost" onclick="setTab('crm')" id="tab-crm">📋 CRM</button>
+    <button class="btn btn-sm btn-ghost" onclick="setTab('dashboard')" id="tab-dashboard">📊 Dashboard</button>
+    <button class="btn btn-sm btn-ghost" onclick="setTab('backup')" id="tab-backup">💾 Backup</button>
+  </div>
+</div>
+
+<div class="main">
+  <div id="sync-status" class="sync-bar" style="display:none"></div>
+
+  <!-- ANALISAR -->
+  <div id="page-analisar">
+    <div id="followup-alert" style="display:none;margin-bottom:16px"></div>
+    <div class="two-col">
+      <div class="col">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleProfile()">
+            <span style="font-weight:600;font-size:14px">👤 Perfil profissional</span>
+            <span style="color:var(--muted);font-size:12px" id="profile-toggle-label">▼ editar</span>
+          </div>
+          <div id="profile-panel" style="display:none">
+            <div class="divider"></div>
+            <div class="field"><label>Avaliações 5★ na Workana</label><input type="number" id="p-avaliacoes" min="0" onchange="saveProfile()"></div>
+            <div class="field"><label>Habilidades e experiências</label><textarea rows="9" id="p-habilidades" onchange="saveProfile()"></textarea></div>
+            <div style="font-size:11px;color:var(--green)" id="profile-saved"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="field"><label>Nome do cliente</label><input id="in-cliente" placeholder="Ex: João Silva"></div>
+          <div class="field"><label>Descrição do projeto</label><textarea id="in-desc" rows="6" placeholder="Cole aqui a descrição completa do projeto..."></textarea></div>
+          <div class="field">
+            <label>Tipo de cobrança</label>
+            <div style="display:flex;gap:8px">
+              <button type="button" class="btn btn-sm btn-primary" id="tipo-projeto" onclick="setTipo('projeto')" style="flex:1">Por projeto</button>
+              <button type="button" class="btn btn-sm btn-ghost" id="tipo-hora" onclick="setTipo('hora')" style="flex:1">Por hora</button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-lg" style="width:100%" onclick="avaliar()" id="btn-avaliar">⚡ Avaliar projeto</button>
+        </div>
+
+        <div class="card" style="border:1px dashed var(--gold)">
+          <div style="font-weight:600;margin-bottom:4px;font-size:14px">🤝 Proposta de parceria</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Para clientes que buscam um parceiro fixo/recorrente (não um projeto único). Preencha o nome e a descrição acima e escolha o serviço base.</div>
+          <div class="field">
+            <label>Serviço base da parceria</label>
+            <select id="parc-servico" onchange="ajustarPrecoParceria()">
+              <option value="landing">Landing page — base R$ 250</option>
+              <option value="site">Site completo — base R$ 500</option>
+              <option value="automacao_simples">Automação simples — base R$ 250</option>
+              <option value="automacao_avancada">Automação avançada — base a definir</option>
+              <option value="outro">Outro serviço — base a definir</option>
+            </select>
+          </div>
+          <div class="field"><label>Valor base por entrega (R$) — ajuste se quiser</label><input type="number" id="parc-valor" placeholder="Ex: 250"></div>
+          <div class="field"><label>Informação adicional (opcional)</label><textarea id="parc-contexto" rows="2" placeholder="Cole cases, diferenciais ou detalhes que reforcem a parceria..."></textarea></div>
+          <button class="btn btn-gold btn-lg" style="width:100%" onclick="gerarParceria()" id="btn-parceria">🤝 Gerar proposta de parceria</button>
+        </div>
+
+        <div class="card" id="preco-card" style="display:none">
+          <div style="font-weight:600;margin-bottom:12px;font-size:14px">💰 Decisão de precificação</div>
+          <div id="preco-decisao"></div>
+          <div class="divider"></div>
+          <div class="field"><label>Valor que você vai usar (R$)</label><input type="number" id="in-valor-final" placeholder="Digite o valor da sua proposta"></div>
+          <div class="field"><label>Prazo de entrega (editável)</label><input type="text" id="in-prazo" placeholder="Ex: 3 dias úteis"></div>
+          <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="confirmarValor()" id="btn-confirmar-valor">Confirmar valor e prazo</button>
+
+          <div id="caminho-wrap" style="display:none">
+            <div class="divider"></div>
+            <div class="field"><label>Informação adicional (opcional)</label><textarea id="in-contexto" rows="3" placeholder="Ex: já fui dono de loja na Nuvemshop com 200 produtos. Cole cases, links de portfólio ou detalhes relevantes..."></textarea></div>
+            <label>Como você quer abordar este cliente?</label>
+            <div id="escopo-hint" style="font-size:12px;line-height:1.5;margin-bottom:10px;padding:10px 12px;border-radius:8px"></div>
+            <button class="btn btn-success btn-lg" style="width:100%;margin-bottom:8px" onclick="gerarClaro()" id="btn-claro">✅ Escopo claro — gerar apresentação + proposta</button>
+            <button class="btn btn-purple btn-lg" style="width:100%" onclick="gerarIncerto()" id="btn-incerto">❓ Escopo incerto — gerar só apresentação com perguntas</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col" id="resultado-col">
+        <div class="card empty" id="empty-state">
+          <div class="empty-icon">⚡</div>
+          <div>Preencha os dados e clique em <strong>Avaliar projeto</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CRM -->
+  <div id="page-crm" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <h2 style="font-size:18px;font-weight:700">📋 CRM de Propostas</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge" id="crm-count" style="background:#1e2d52;color:var(--accent)"></span>
+        <button class="btn btn-sm btn-primary" onclick="toggleManual()" id="btn-manual">+ Adicionar manualmente</button>
+      </div>
+    </div>
+
+    <div id="manual-form" style="display:none" class="manual-form">
+      <div style="font-weight:600;color:var(--accent);margin-bottom:12px">➕ Nova proposta</div>
+      <div class="manual-grid">
+        <div class="field"><label>Cliente *</label><input id="m-cliente" placeholder="Nome do cliente"></div>
+        <div class="field"><label>Valor (R$)</label><input type="number" id="m-valor" placeholder="Ex: 800"></div>
+        <div class="field"><label>Data de envio</label><input type="date" id="m-envio"></div>
+        <div class="field"><label>Follow-up</label><input type="date" id="m-followup"></div>
+        <div class="field"><label>Status</label>
+          <select id="m-status">
+            <option value="abertura enviada">abertura enviada</option>
+            <option value="proposta enviada">proposta enviada</option>
+            <option value="visualizada">visualizada</option>
+            <option value="negociação">negociação</option>
+            <option value="fechada">fechada</option>
+            <option value="perdida">perdida</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Descrição</label><textarea rows="2" id="m-descricao" placeholder="Descreva brevemente o projeto..."></textarea></div>
+      <div class="field"><label>Notas</label><input id="m-notas" placeholder="Observações..."></div>
+      <button class="btn btn-success" style="width:100%" onclick="salvarManual()">✓ Salvar no CRM</button>
+    </div>
+
+    <div id="crm-filtros" style="margin-bottom:14px">
+      <input id="crm-busca" placeholder="🔍 Buscar por nome do cliente..." oninput="renderCRM()" style="margin-bottom:10px">
+      <div id="crm-filtro-botoes" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+
+    <div id="crm-list"></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" style="display:none">
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">📊 Dashboard</h2>
+    <div class="dash-grid-4" id="dash-top"></div>
+    <div class="dash-grid-2" id="dash-valores"></div>
+    <div class="dash-grid-2" id="dash-tickets"></div>
+
+    <div class="card" id="dash-funil" style="margin-bottom:12px;display:none">
+      <div style="font-weight:700;margin-bottom:4px">🔻 Funil de conversão</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">A jornada das suas oportunidades</div>
+      <div id="dash-funil-barras"></div>
+    </div>
+
+    <div class="card" id="dash-followup" style="margin-bottom:12px;display:none">
+      <div style="font-weight:700;margin-bottom:4px">📨 Follow-up</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">O follow-up está fechando venda?</div>
+      <div class="dash-grid-2" id="dash-followup-metricas"></div>
+      <div id="dash-followup-barra" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card" id="dash-valores-desfecho" style="margin-bottom:12px;display:none">
+      <div style="font-weight:700;margin-bottom:14px">💵 Valores por desfecho</div>
+      <div id="dash-valores-desfecho-barras"></div>
+    </div>
+
+    <div class="card" id="dash-dist" style="display:none">
+      <div style="font-weight:600;margin-bottom:10px">Distribuição por status</div>
+      <div class="status-dist" id="dash-status-list"></div>
+    </div>
+  </div>
+
+  <!-- BACKUP -->
+  <div id="page-backup" style="display:none">
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">💾 Backup</h2>
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-weight:600;margin-bottom:6px">Exportar</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Baixa JSON com perfil e CRM completo.</div>
+      <button class="btn btn-success" onclick="exportar()">⬇️ Exportar backup</button>
+    </div>
+    <div class="card">
+      <div style="font-weight:600;margin-bottom:6px">Importar</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Restaura dados de um backup JSON. Os dados atuais serão substituídos.</div>
+      <input type="file" accept=".json" onchange="importar(event)" style="color:var(--text)">
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://sxfixxirixbmcvsswpvh.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4Zml4eGlyaXhibWN2c3N3cHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODc0MTEsImV4cCI6MjA5NzY2MzQxMX0.3VpPtZ-zaSmNM60LX7GAI9vB9PavG8tPqUzzM7XKwBI";
+
+const STATUS_COLORS = {
+  "abertura enviada":"#a78bfa", "proposta enviada":"#5b8ef0", "parceria enviada":"#e8a33d", visualizada:"#f5a623",
+  "negociação":"#f0c040", fechada:"#3ecf8e", perdida:"#f56565"
+};
+
+const SENSITIVE = ["saas","marketplace","erp","financeiro","multi-tenant","app mobile","ia complexa","integrações críticas","automação avançada","sistema de pagamento","ecommerce","loja virtual","inteligência artificial","machine learning"];
+
+let profile = { avaliacoes: 3, habilidades: "" };
+let crm = [];
+let analysis = null;
+let finalPrice = null;
+let finalPrazo = "";
+let tipoCobranca = "projeto";
+let profileId = null;
+let showManualForm = false;
+let showProfile = false;
+let crmFiltro = "ativos";
+
+const fmt = n => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n||0);
+const fmtNum = n => new Intl.NumberFormat("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0);
+const fmtDate = d => { try { return new Date(d+"T12:00:00").toLocaleDateString("pt-BR"); } catch { return d; } };
+const today = () => new Date().toISOString().split("T")[0];
+const addDays = (d,n) => { const r = new Date(d+"T12:00:00"); r.setDate(r.getDate()+n); return r.toISOString().split("T")[0]; };
+
+function syncStatus(msg, color){
+  const el = document.getElementById("sync-status");
+  if (!msg) { el.style.display="none"; return; }
+  el.style.display="flex";
+  el.innerHTML = '<span style="color:'+(color||"#8892a4")+'">'+msg+'</span>';
+}
+
+async function sbFetch(path, opts){
+  opts = opts || {};
+  const headers = Object.assign({
+    "Content-Type":"application/json",
+    "apikey": SUPABASE_KEY,
+    "Authorization":"Bearer "+SUPABASE_KEY,
+    "Prefer":"return=representation"
+  }, opts.headers||{});
+  const res = await fetch(SUPABASE_URL+path, Object.assign({}, opts, { headers }));
+  if (!res.ok) { throw new Error(await res.text()); }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function loadProfile(){
+  try {
+    const data = await sbFetch("/rest/v1/perfil?limit=1");
+    if (data && data.length > 0) {
+      profileId = data[0].id;
+      profile.avaliacoes = data[0].avaliacoes;
+      profile.habilidades = data[0].habilidades;
+    }
+    document.getElementById("p-avaliacoes").value = profile.avaliacoes;
+    document.getElementById("p-habilidades").value = profile.habilidades;
+  } catch(e) { console.error(e); }
+}
+
+async function saveProfile(){
+  profile.avaliacoes = parseInt(document.getElementById("p-avaliacoes").value)||3;
+  profile.habilidades = document.getElementById("p-habilidades").value;
+  try {
+    if (profileId) {
+      await sbFetch("/rest/v1/perfil?id=eq."+profileId, { method:"PATCH", body: JSON.stringify({ avaliacoes: profile.avaliacoes, habilidades: profile.habilidades, atualizado_em: new Date().toISOString() }) });
+    } else {
+      const d = await sbFetch("/rest/v1/perfil", { method:"POST", body: JSON.stringify({ avaliacoes: profile.avaliacoes, habilidades: profile.habilidades }) });
+      if (d && d[0]) profileId = d[0].id;
+    }
+    document.getElementById("profile-saved").textContent = "✓ Salvo no Supabase";
+    setTimeout(function(){ document.getElementById("profile-saved").textContent=""; }, 2000);
+  } catch(e) { console.error(e); }
+}
+
+async function loadCRM(){
+  try {
+    const data = await sbFetch("/rest/v1/crm?order=criado_em.desc");
+    crm = data || [];
+    renderCRM();
+    renderDashboard();
+    renderFollowupAlert();
+    updateCrmBadge();
+  } catch(e) { console.error(e); }
+}
+
+function updateCrmBadge(){
+  const pendentes = crm.filter(function(r){ return followupDevido(r) && (r.status==="abertura enviada" || r.status==="proposta enviada" || r.status==="parceria enviada"); }).length;
+  const tab = document.getElementById("tab-crm");
+  if (!tab) return;
+  const base = "📋 CRM";
+  if (pendentes > 0) {
+    tab.innerHTML = base + ' <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:2px">'+pendentes+'</span>';
+  } else {
+    tab.innerHTML = base;
+  }
+}
+
+async function addCRMItem(item){
+  try { const d = await sbFetch("/rest/v1/crm", { method:"POST", body: JSON.stringify(item) }); await loadCRM(); return d; }
+  catch(e) { console.error(e); }
+}
+async function updateCRMItem(id, fields){
+  try { await sbFetch("/rest/v1/crm?id=eq."+id, { method:"PATCH", body: JSON.stringify(fields) }); await loadCRM(); }
+  catch(e) { console.error(e); }
+}
+async function deleteCRMItem(id){
+  if (!confirm("Excluir essa proposta?")) return;
+  try { await sbFetch("/rest/v1/crm?id=eq."+id, { method:"DELETE" }); await loadCRM(); }
+  catch(e) { console.error(e); }
+}
+
+async function callClaude(prompt){
+  const res = await fetch("/api/chat", {
+    method:"POST",
+    headers:{"Content-Type":"application/json; charset=utf-8"},
+    body: JSON.stringify({ prompt })
+  });
+  // decodifica explicitamente como UTF-8 para nao depender do palpite do navegador
+  const buf = await res.arrayBuffer();
+  const txt = new TextDecoder("utf-8").decode(buf);
+  let data;
+  try { data = JSON.parse(txt); } catch(e) { throw new Error("Resposta invalida do servidor"); }
+  if (!res.ok || data.error) { throw new Error(data.error || ("Erro "+res.status)); }
+  return data.text || "";
+}
+
+function setTipo(tipo){
+  tipoCobranca = tipo;
+  document.getElementById("tipo-projeto").className = tipo==="projeto" ? "btn btn-sm btn-primary" : "btn btn-sm btn-ghost";
+  document.getElementById("tipo-projeto").style.flex = "1";
+  document.getElementById("tipo-hora").className = tipo==="hora" ? "btn btn-sm btn-primary" : "btn btn-sm btn-ghost";
+  document.getElementById("tipo-hora").style.flex = "1";
+}
+
+async function avaliar(){
+  const desc = document.getElementById("in-desc").value.trim();
+  if (!desc) return;
+  const btn = document.getElementById("btn-avaliar");
+  btn.disabled = true; btn.textContent = "⏳ Analisando...";
+  analysis = null; finalPrice = null; finalPrazo = "";
+  document.getElementById("preco-card").style.display = "none";
+  document.getElementById("caminho-wrap").style.display = "none";
+  document.getElementById("in-contexto").value = "";
+  document.getElementById("in-prazo").value = "";
+  const bc = document.getElementById("btn-confirmar-valor");
+  bc.textContent = "Confirmar valor e prazo"; bc.className = "btn btn-primary";
+
+  const col = document.getElementById("resultado-col");
+  col.innerHTML = '<div class="card loading"><div class="loading-icon">🔍</div><div style="color:var(--muted)">Analisando com IA...</div></div>';
+
+  const cliente = document.getElementById("in-cliente").value || "sem nome";
+  const hasSensitive = SENSITIVE.some(function(s){ return desc.toLowerCase().includes(s); });
+
+  const cobrancaTxt = tipoCobranca === "hora"
+    ? "A cobranca e POR HORA. Nos cenarios de preco, os valores devem ser VALOR POR HORA em reais."
+    : "A cobranca e POR PROJETO (valor fechado). Os cenarios de preco sao o valor total do projeto.";
+
+  const prompt = "Voce e um consultor de precificacao para freelancers da Workana, plataforma brasileira de projetos freelance. Avalie o projeto abaixo para um profissional de TI com este perfil:\n"
+    + "Avaliacoes 5 estrelas: " + profile.avaliacoes + "\n"
+    + "Habilidades: " + profile.habilidades + "\n\n"
+    + 'Projeto do cliente "' + cliente + '":\n'
+    + desc + "\n\n"
+    + cobrancaTxt + "\n\n"
+    + "INSTRUCOES DE PRECIFICACAO (CRITICO):\n"
+    + "NAO invente um numero unico de preco. Preco de freelance depende de negociacao e percepcao de valor. Sua tarefa e ANALISAR a situacao e dar uma DECISAO ASSISTIDA.\n"
+    + "1. Detecte se o cliente sinalizou um orcamento ou faixa na descricao. Se sim, extraia.\n"
+    + "2. Avalie se esse orcamento e COERENTE com o escopo. Clientes na Workana frequentemente colocam orcamento muito baixo (ex: 250 reais para um e-commerce) como ANCORA para atrair propostas e negociar. Detecte essa incoerencia.\n"
+    + "3. Liste fatores que puxam o preco para cima ou para baixo nesta vaga (complexidade, urgencia, perfil do cliente, responsabilidade, amplitude do escopo).\n"
+    + "4. De TRES cenarios de valor baseados no mercado brasileiro da Workana: piso (minimo que compensa o esforco), competitivo (alinhado ao mercado), alto (se o cliente perceber alto valor na entrega). IMPORTANTE: os valores precoPiso, precoCompetitivo e precoAlto devem ser numeros inteiros em reais, valores CHEIOS e realistas (ex: 700, 1200, 2500). NUNCA use valores abreviados como 1 ou 1.5 para representar mil.\n"
+    + "5. De uma recomendacao honesta sobre vale a pena enviar proposta e com que expectativa.\n"
+    + "6. PRAZO (REGRA OBRIGATORIA): o Diogo trabalha com Claude (IA), automacao e ferramentas integradas, executando MUITO mais rapido que um freelancer manual. Os prazos DEVEM ser curtos. Referencia obrigatoria: landing page simples = 1 a 2 dias uteis; site institucional = 2 a 4 dias uteis; e-commerce ou sistema = 4 a 7 dias uteis; automacao ou integracao = 2 a 5 dias uteis. NUNCA passe de 7 dias uteis a menos que o escopo seja realmente enorme.\n"
+    + "7. VEREDITO DE ESCOPO (IMPORTANTE): avalie se a descricao do cliente tem informacao SUFICIENTE para voce executar e precificar com seguranca. Se faltar informacao essencial, marque escopoClaro como false e LISTE em escopoFalta exatamente o que falta (ex: quantas paginas, se ja tem identidade visual, qual plataforma, se tem integracao de pagamento, prazos especificos). Se a descricao for completa, marque escopoClaro como true e deixe escopoFalta como lista vazia.\n\n"
+    + "Responda SOMENTE em JSON valido, sem markdown, com EXATAMENTE estes campos:\n"
+    + '{"complexidade":NUMERO de 0.5 a 5.0,"complexidadeTexto":"frase curta","risco":NUMERO de 0.5 a 5.0,"riscoTexto":"frase curta","comercial":NUMERO de 0.5 a 5.0,"comercialTexto":"frase curta","recomendacao":"ENVIAR ou CAUTELA ou PULAR","recomendacaoMotivo":"frase curta","prazoEstimado":"ex: 3 dias uteis","orcamentoCliente":"faixa que o cliente sinalizou ou nao informado","coerenciaOrcamento":"analise orcamento vs escopo em 1 ou 2 frases, alerte se ancora baixa","fatoresPreco":["fator com seta para cima ou para baixo","fator 2","fator 3"],"precoPiso":NUMERO inteiro,"precoCompetitivo":NUMERO inteiro,"precoAlto":NUMERO inteiro,"recomendacaoPreco":"recomendacao honesta em 1 ou 2 frases","escopoClaro":true ou false,"escopoFalta":["o que falta 1","o que falta 2"],"sensivel":' + hasSensitive + ',"sensivelMotivo":"texto ou vazio"}';
+
+  try {
+    const raw = await callClaude(prompt);
+    analysis = JSON.parse(raw.replace(/```json|```/g,"").trim());
+    renderAnalysis();
+    renderDecisao();
+    document.getElementById("preco-card").style.display = "block";
+  } catch(e) {
+    col.innerHTML = '<div class="card"><div style="color:var(--red)">Erro: '+e.message+'</div></div>';
+  }
+  btn.disabled = false; btn.textContent = "⚡ Avaliar projeto";
+}
+
+function renderAnalysis(){
+  const a = analysis;
+  const recColors = { ENVIAR:["var(--green-dim)","var(--green)","✅"], CAUTELA:["#2d2510","var(--gold)","⚠️"], PULAR:["var(--red-dim)","var(--red)","🚫"] };
+  const rc = recColors[a.recomendacao] || ["var(--card)","var(--text)","❓"];
+  let html = "";
+  if (a.sensivel && a.sensivelMotivo) {
+    html += '<div class="alert" style="background:var(--gold-dim);border:1px solid var(--gold)"><div style="font-weight:700;color:var(--gold);margin-bottom:4px">⚠️ Escopo sensível identificado</div><div style="font-size:13px">'+a.sensivelMotivo+'</div></div>';
+  }
+  html += '<div class="rec-card" style="background:'+rc[0]+';border:1px solid '+rc[1]+'">'
+    + '<div style="display:flex;align-items:center;gap:12px"><span style="font-size:26px">'+rc[2]+'</span>'
+    + '<div><div style="font-weight:700;font-size:16px;color:'+rc[1]+'">'+a.recomendacao+'</div>'
+    + '<div style="font-size:13px;margin-top:2px">'+a.recomendacaoMotivo+'</div></div></div></div>';
+  html += '<div class="analysis-grid">';
+  const cards = [["🔧 Complexidade",a.complexidade,a.complexidadeTexto],["⚠️ Risco",a.risco,a.riscoTexto],["🎯 Chance comercial",a.comercial,a.comercialTexto]];
+  cards.forEach(function(c){
+    const v = c[1];
+    let stars = "";
+    for (let i=0;i<5;i++){ stars += (i < Math.round(v)) ? "★" : "☆"; }
+    html += '<div class="card"><div style="font-size:12px;color:var(--muted);margin-bottom:6px">'+c[0]+'</div>'
+      + '<div class="stars">'+stars+'<span style="color:var(--muted);font-size:12px;margin-left:6px">'+Number(v).toFixed(1)+'</span></div>'
+      + '<div style="font-size:12px;margin-top:8px;line-height:1.6">'+c[2]+'</div></div>';
+  });
+  html += '</div>';
+
+  if (a.escopoClaro) {
+    html += '<div class="card" style="border-left:3px solid var(--green)"><div style="font-weight:600;color:var(--green);margin-bottom:4px">✅ Escopo claro</div><div style="font-size:13px;color:var(--muted)">A descrição tem informação suficiente para executar e precificar. Você pode gerar apresentação e proposta.</div></div>';
+  } else {
+    let faltaHtml = "";
+    if (a.escopoFalta && a.escopoFalta.length) {
+      faltaHtml = '<div style="margin-top:8px">' + a.escopoFalta.map(function(f){ return '<div style="font-size:13px;padding:2px 0">• '+f+'</div>'; }).join("") + '</div>';
+    }
+    html += '<div class="card" style="border-left:3px solid var(--purple)"><div style="font-weight:600;color:var(--purple);margin-bottom:4px">❓ Escopo incompleto</div><div style="font-size:13px;color:var(--muted)">Falta informação para uma proposta segura. Considere abrir conversa com perguntas antes:</div>'+faltaHtml+'</div>';
+  }
+
+  html += '<div class="card" style="padding:12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--muted);font-size:13px">⏱️ Prazo estimado</span><span style="font-weight:700;color:var(--accent)">'+a.prazoEstimado+'</span></div></div>';
+  document.getElementById("resultado-col").innerHTML = html;
+}
+
+function renderDecisao(){
+  const a = analysis;
+  const unidade = tipoCobranca === "hora" ? "/h" : "";
+  let html = "";
+
+  html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px">'
+    + '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Orçamento sinalizado pelo cliente</div>'
+    + '<div style="font-size:14px;font-weight:600">'+(a.orcamentoCliente||"Não informado")+'</div></div>';
+
+  if (a.coerenciaOrcamento) {
+    const alerta = /ancor|âncor|baixo|abaixo|incoeren|irreal|nao bate|não bate/i.test(a.coerenciaOrcamento);
+    html += '<div style="background:'+(alerta?"var(--gold-dim)":"var(--surface)")+';border:1px solid '+(alerta?"var(--gold)":"var(--border)")+';border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:13px;line-height:1.5">'
+      + (alerta?"⚠️ ":"")+a.coerenciaOrcamento+'</div>';
+  }
+
+  if (a.fatoresPreco && a.fatoresPreco.length) {
+    html += '<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Fatores nesta vaga</div>';
+    a.fatoresPreco.forEach(function(f){ html += '<div style="font-size:13px;padding:3px 0;line-height:1.4">'+f+'</div>'; });
+    html += '</div>';
+  }
+
+  html += '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Cenários para decidir</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'
+    + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 6px;text-align:center;cursor:pointer" onclick="usarCenario('+a.precoPiso+')"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">PISO</div><div style="font-size:13px;font-weight:700;color:var(--muted)">'+fmt(a.precoPiso)+unidade+'</div></div>'
+    + '<div style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;padding:10px 6px;text-align:center;cursor:pointer" onclick="usarCenario('+a.precoCompetitivo+')"><div style="font-size:10px;color:var(--accent);margin-bottom:3px">COMPETITIVO</div><div style="font-size:13px;font-weight:700;color:var(--accent)">'+fmt(a.precoCompetitivo)+unidade+'</div></div>'
+    + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 6px;text-align:center;cursor:pointer" onclick="usarCenario('+a.precoAlto+')"><div style="font-size:10px;color:var(--gold);margin-bottom:3px">ALTO</div><div style="font-size:13px;font-weight:700;color:var(--gold)">'+fmt(a.precoAlto)+unidade+'</div></div>'
+    + '</div>'
+    + '<div style="font-size:11px;color:var(--faint);margin-bottom:10px">Toque num cenário para preencher, ou digite o valor abaixo.</div>';
+
+  if (a.recomendacaoPreco) {
+    html += '<div style="background:var(--surface);border-left:3px solid var(--accent);border-radius:6px;padding:10px 12px;font-size:13px;line-height:1.5"><strong style="color:var(--accent)">Recomendação:</strong> '+a.recomendacaoPreco+'</div>';
+  }
+
+  document.getElementById("preco-decisao").innerHTML = html;
+  const prazoInput = document.getElementById("in-prazo");
+  if (prazoInput && !prazoInput.value) { prazoInput.value = a.prazoEstimado || ""; }
+}
+
+function usarCenario(valor){
+  document.getElementById("in-valor-final").value = valor;
+}
+
+function confirmarValor(){
+  const manual = parseInt(document.getElementById("in-valor-final").value)||0;
+  if (!manual) { alert("Digite o valor da proposta ou toque num cenário."); return; }
+  finalPrice = manual;
+  finalPrazo = (document.getElementById("in-prazo").value||"").trim() || (analysis ? analysis.prazoEstimado : "");
+  const btn = document.getElementById("btn-confirmar-valor");
+  btn.textContent = "✓ Definido: "+fmt(finalPrice)+" · "+finalPrazo;
+  btn.className = "btn btn-success";
+  document.getElementById("caminho-wrap").style.display = "block";
+
+  const hint = document.getElementById("escopo-hint");
+  if (analysis && analysis.escopoClaro) {
+    hint.style.background = "var(--green-dim)";
+    hint.style.color = "var(--green)";
+    hint.innerHTML = "💡 A IA avaliou: <strong>escopo claro</strong>. Recomendado gerar apresentação + proposta e enviar as duas.";
+  } else {
+    hint.style.background = "var(--purple-dim)";
+    hint.style.color = "var(--purple)";
+    let f = (analysis && analysis.escopoFalta && analysis.escopoFalta.length) ? " Falta: "+analysis.escopoFalta.join("; ")+"." : "";
+    hint.innerHTML = "💡 A IA avaliou: <strong>escopo incerto</strong>. Recomendado abrir conversa só com a apresentação e perguntas." + f;
+  }
+}
+
+function buildApresentacaoPrompt(comPerguntas){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const desc = document.getElementById("in-desc").value;
+  const contexto = document.getElementById("in-contexto").value.trim();
+  const contextoTxt = contexto
+    ? "\n\nINFORMACAO ADICIONAL fornecida pelo Diogo (USE OBRIGATORIAMENTE na apresentacao, como prova concreta de vivencia pratica com o tema — nao e opcional, nao ignore): " + contexto
+    : "";
+  const faltaTxt = (comPerguntas && analysis && analysis.escopoFalta && analysis.escopoFalta.length)
+    ? "\n\nINFORMACOES QUE FALTAM (gere as perguntas a partir disto): " + analysis.escopoFalta.join("; ")
+    : "";
+
+  let p = "Voce e o Diogo Pinotti, freelancer de TI no Brasil (17 anos como Supervisor de TI em ambientes criticos, hoje desenvolve sites, automacoes e integracoes). Escreva uma MENSAGEM DE ABERTURA curta para enviar no botao 'Fazer uma pergunta' da Workana, ANTES de mandar proposta formal.\n\n"
+    + "OBJETIVO: a mensagem so cumpre a missao se o cliente RESPONDER. Cada elemento deve reduzir o esforco de resposta dele. Menos texto, pergunta mais facil, motivo claro para ele responder.\n\n"
+    + 'Cliente: ' + cliente + "\n"
+    + "Projeto: " + desc + contextoTxt + faltaTxt + "\n\n"
+    + "TAMANHO (REGRA DURA): no maximo 100 palavras no total, incluindo saudacao e assinatura. Passou de 100, corte.\n\n"
+    + "BLOCOS (cada item e um paragrafo curto separado por uma linha em branco, texto corrido, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
+    + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
+    + "2. UMA frase que conecta ao ponto central DESTE projeto e apresenta voce na mesma tacada: 'Sou Diogo, 17 anos em TI' amarrado ao problema especifico dele. SEM anunciar que leu (PROIBIDO 'Notei que', 'Entendi que', 'Vejo que', 'Percebi que' e similares). Curto: a apresentacao nao e o coracao da mensagem, a pergunta e.\n\n";
+
+  if (comPerguntas) {
+    p += "3. AS PERGUNTAS (coracao da mensagem, cada uma em sua propria linha): faca 1 ou 2 perguntas, NUNCA mais que 2. Criterios obrigatorios para cada uma: o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples); a resposta MUDA o que voce vai entregar ou cobrar; NUNCA pergunte o que o anuncio ja responde; NUNCA estetica, cor ou design. Se as INFORMACOES QUE FALTAM listarem varios itens, escolha so os 2 mais decisivos para preco e execucao — os demais voce alinha depois.\n\n";
+    p += "4. MOTIVO PARA RESPONDER (1 frase, beneficio DELE): com essas respostas voce envia na sequencia uma proposta com preco e prazo exatos, sem surpresa depois. Construa a frase de forma natural e variada, nunca identica entre mensagens.\n\n";
+  } else {
+    p += "3. A PERGUNTA (coracao da mensagem): UMA pergunta que o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples) e cuja resposta MUDA o que voce vai entregar ou cobrar. NUNCA pergunte o que o anuncio ja responde. NUNCA estetica, cor ou design.\n\n";
+    p += "4. AVISO DA PROPOSTA NA SEQUENCIA (1 frase): deixe claro que voce ja esta enviando a proposta para este projeto na sequencia. Use algo natural como 'Ja estou te enviando minha proposta na sequencia.'\n\n";
+  }
+
+  p += "5. Aviso do anexo (1 frase curta): 'Estou enviando uma breve apresentacao minha.'\n\n"
+    + "6. Fechamento com assinatura, em duas linhas:\nAguardo seu retorno,\nDiogo Pinotti - lupixa.com\n\n"
+    + "PROIBICOES ABSOLUTAS: NUNCA escreva 'fico a disposicao' nem 'se fizer sentido para voce' nem qualquer fecho passivo — o fechamento e a assinatura, nada antes dela alem dos blocos acima.\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO E CRITICO. NUNCA omita acentos em nenhuma palavra. Escreva sempre: não, você, também, então, página, avaliação, integração, operação, crítica — NUNCA as formas sem acento. Tom humano, caloroso e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Mantenha cada paragrafo curto. NAO escreva os numeros nem os rotulos do modelo (eles sao so seu guia interno). Separe todos os paragrafos com uma linha em branco entre eles.\n\n"
+    + "VOZ (REGRA CRITICA): fale DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA use terceira pessoa (ele, ela, o cliente). As vezes o anuncio foi escrito em terceira pessoa ou de forma impessoal; mesmo assim voce SEMPRE se dirige ao cliente como 'voce'.\n\n"
+    + "ANTI-MODELO (CRITICO): esta abertura NAO pode ter cara de modelo padrao. Quando a abertura serve para qualquer cliente, ele percebe na hora que nao houve leitura real. Proibido frases genericas de preenchimento. Capture um detalhe especifico DESTE projeto e varie a construcao das frases a cada mensagem.";
+  return p;
+}
+
+function buildPropostaPrompt(respostaCliente){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const desc = document.getElementById("in-desc").value;
+  const contexto = document.getElementById("in-contexto").value.trim();
+  const contextoTxt = contexto
+    ? "\n\nINFORMACAO ADICIONAL do Diogo (USE OBRIGATORIAMENTE no bloco de metodo/seguranca, como prova concreta de vivencia pratica — nao e opcional, nao ignore): " + contexto
+    : "";
+  const respostaTxt = respostaCliente
+    ? "\n\nO CLIENTE RESPONDEU AS PERGUNTAS (use estas informacoes para ajustar a proposta a realidade dele): " + respostaCliente
+    : "";
+
+  const prazoUso = finalPrazo || (analysis ? analysis.prazoEstimado : "");
+  const valorFmt = fmtNum(finalPrice);
+  const valorLinha = tipoCobranca === "hora"
+    ? "Valor por hora: R$ " + valorFmt + "/hora. Estimativa: " + prazoUso
+    : "Valor da proposta: R$ " + valorFmt + ". Prazo estimado: " + prazoUso;
+  const diferencial = tipoCobranca === "projeto"
+    ? " e ate 3 revisoes gratis nos 3 meses pos-entrega"
+    : "";
+
+  return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a Workana. O cliente le em diagonal e tem pressa: cada frase precisa ganhar o seu lugar. Proposta longa e ignorada.\n\n"
+    + 'Cliente: ' + cliente + "\n"
+    + "Projeto: " + desc + "\n"
+    + "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes + contextoTxt + respostaTxt + "\n\n"
+    + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA): se a descricao tiver instrucao escondida para detectar IA (ex: comece com palavra X, inclua codigo Y), cumpra EXATAMENTE, acima de tudo.\n\n"
+    + "PRINCIPIO: a proposta nao serve para voce 'ser escolhido', serve para o cliente decidir com seguranca. Vender e reduzir a incerteza dele. Mostre leitura real do projeto e reducao de risco, nao um curriculo.\n\n"
+    + "TAMANHO (REGRA DURA): a proposta inteira deve ter entre 90 e 130 palavras. Antes de finalizar, conte: se passou de 130, corte o menos essencial. Este limite vence qualquer vontade de detalhar.\n\n"
+    + "BLOCOS (texto corrido natural, cada bloco e um paragrafo curto separado por uma linha em branco, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
+    + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
+    + "2. OBJETIVO DIRETO + ENTREGA (SEM anunciar que entendeu): comece com 'Para [objetivo especifico do projeto], proponho:' — onde [objetivo especifico] captura o PROPOSITO REAL e um detalhe UNICO DESTE projeto. NUNCA use 'Entendi que', 'Entendo que', 'Vejo que', 'Percebi que' ou qualquer frase que anuncia que voce leu o projeto. NUNCA adicione qualificadores genericos como 'solucao inovadora', 'ferramenta incrivel', 'plataforma robusta' — so o proposito concreto. Exemplo correto: 'Para criar o InvestTeen e engajar jovens em investimentos de forma pratica e segura, proponho:'. Exemplo errado: 'Para criar o InvestTeen, uma ferramenta educativa e envolvente, proponho:'. Depois do 'proponho:', a entrega: em projetos de escopo composto, 3 itens em linhas com hifen (4 a 7 palavras cada); em projetos simples e diretos, 1 frase corrida no lugar da lista. Escolha o formato conforme o projeto.\n\n"
+    + "3. PERGUNTA (1 linha): a duvida que, dependendo da resposta, MUDA o que voce vai executar ou cobrar. Criterios obrigatorios: o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples); a resposta altera a execucao; NUNCA pergunte o que o anuncio ja responde; NUNCA estetica, cor, tom visual ou preferencia de design. Exemplos do que funciona: 'Voce ja tem conta no Airtable ou eu configuro?', 'O conteudo educativo voce ja tem pronto ou eu estruturo?'. Se o anuncio for completo a ponto de nenhuma pergunta passar nesses criterios, pule este bloco — nunca invente pergunta so para preencher.\n\n"
+    + "4. CONFIANCA (1 frase so, sem virar curriculo): 17 anos em operacao critica de TI, nota 5 estrelas na Workana, portfolio em lupixa.com" + diferencial + ".\n\n"
+    + "5. INVESTIMENTO: " + valorLinha + ". Mantenha o valor exatamente assim, ja formatado, nao altere. Coloque o valor e o prazo cada um em sua linha.\n\n"
+    + "6. FECHO UNICO (1 linha, OBRIGATORIO ser personalizado para ESTE projeto): UM unico proximo passo concreto que o cliente resolve em 30 segundos com o que ele tem na mao agora. Exemplos: 'me envia o logo e as cores que ja inicio o layout', 'me confirma qual plataforma voce usa que ja estruturo a base'. Se couber natural, embuta disponibilidade real na mesma frase (ex: 'consigo iniciar esta semana'). PROIBIDO: dois pedidos, frase de urgencia separada, pedir 'mais detalhes' vago, repetir a pergunta do bloco 3.\n\n"
+    + "VARIACAO ESTRUTURAL (CRITICO contra cara de template): a ordem dos blocos 3, 4 e 5 e flexivel — a pergunta pode vir logo apos a entrega OU depois do investimento; a frase de confianca pode vir antes ou depois do valor. Escolha o arranjo que fizer o texto fluir mais natural para ESTE anuncio. Saudacao sempre primeiro, fecho sempre por ultimo. Varie tambem entre propostas: nao repita sempre o mesmo arranjo.\n\n"
+    + "PROIBICOES ABSOLUTAS: NUNCA escreva 'se fizer sentido para voce' nem qualquer variacao que devolva a decisao ao cliente ou soe como duvida. NUNCA termine com 'fico a disposicao' passivo. NUNCA mencione IA nem diga que escreve sem IA.\n\n"
+    + "ANTI-MODELO (CRITICO): esta proposta NAO pode ter cara de modelo padrao. Proibido frases genericas de preenchimento que serviriam para qualquer projeto. O objetivo, a pergunta e o fecho devem ser especificos DESTE projeto. Varie a construcao das frases.\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO E CRITICO. NUNCA omita acentos em nenhuma palavra. Escreva sempre: não, você, também, então, página, avaliação, integração, operação, crítica, automática — NUNCA as formas sem acento (nao, voce, tambem, entao, pagina, avaliacao, integracao, operacao, critica, automatica). Revise cada palavra antes de finalizar. Frases curtas. Sem emojis. Sem excesso de hifens no texto corrido. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever os numeros nem os rotulos dos blocos (sao so seu guia interno).\n\n"
+    + "VOZ (REGRA CRITICA): a proposta INTEIRA fala DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA use terceira pessoa (ele, ela, o cliente). ATENCAO: as vezes o anuncio foi escrito em terceira pessoa ou de forma impessoal; mesmo assim voce SEMPRE se dirige ao cliente como 'voce'.\n\n"
+    + "FORMATACAO OBRIGATORIA: paragrafos curtos com UMA LINHA EM BRANCO entre cada um (quebras de linha duplas). NUNCA grude tudo num paragrafo unico. Cada entregavel em sua linha (quando usar lista).";
+}
+
+async function gerarClaro(){
+  if (!analysis || !finalPrice) return;
+  const btn = document.getElementById("btn-claro");
+  btn.disabled = true; btn.textContent = "⏳ Gerando os dois textos...";
+  try {
+    const apresentacao = await callClaude(buildApresentacaoPrompt(false));
+    const proposta = await callClaude(buildPropostaPrompt(""));
+    renderTextos({ apresentacao: apresentacao, proposta: proposta, modo: "claro" });
+  } catch(e) { alert("Erro: "+e.message); }
+  btn.disabled = false; btn.textContent = "✅ Escopo claro — gerar apresentação + proposta";
+}
+
+async function gerarIncerto(){
+  if (!analysis || !finalPrice) return;
+  const btn = document.getElementById("btn-incerto");
+  btn.disabled = true; btn.textContent = "⏳ Gerando apresentação...";
+  try {
+    const apresentacao = await callClaude(buildApresentacaoPrompt(true));
+    renderTextos({ apresentacao: apresentacao, proposta: null, modo: "incerto" });
+  } catch(e) { alert("Erro: "+e.message); }
+  btn.disabled = false; btn.textContent = "❓ Escopo incerto — gerar só apresentação com perguntas";
+}
+
+var PARCERIA_BASE = {
+  landing: { nome: "landing page", valor: 250 },
+  site: { nome: "site completo", valor: 500 },
+  automacao_simples: { nome: "automação simples", valor: 250 },
+  automacao_avancada: { nome: "automação avançada", valor: null },
+  outro: { nome: "serviço", valor: null }
+};
+
+function ajustarPrecoParceria(){
+  const serv = document.getElementById("parc-servico").value;
+  const base = PARCERIA_BASE[serv];
+  const campo = document.getElementById("parc-valor");
+  if (base && base.valor != null) {
+    campo.value = base.valor;
+  } else {
+    campo.value = "";
+    campo.placeholder = "Defina o valor base para este serviço";
+  }
+}
+
+function buildParceriaPrompt(){
+  const cliente = document.getElementById("in-cliente").value || "cliente";
+  const desc = document.getElementById("in-desc").value;
+  const serv = document.getElementById("parc-servico").value;
+  const valorRaw = document.getElementById("parc-valor").value;
+  const contexto = document.getElementById("parc-contexto").value.trim();
+  const base = PARCERIA_BASE[serv] || PARCERIA_BASE.outro;
+  const servNome = base.nome;
+  const contextoTxt = contexto
+    ? "\n\nINFORMACAO ADICIONAL do Diogo (USE OBRIGATORIAMENTE no bloco de confianca, como prova concreta de vivencia pratica — nao e opcional, nao ignore): " + contexto
+    : "";
+
+  let precoTxt;
+  if (valorRaw && Number(valorRaw) > 0) {
+    precoTxt = "Seu valor base por " + servNome + " e R$ " + fmtNum(Number(valorRaw)) + ". Apresente este valor como ponto de partida e deixe claro que a tabela final se ajusta conforme o volume e o tipo de demanda recorrente.";
+  } else {
+    precoTxt = "NAO cite um numero fixo de preco. Em vez disso, diga que monta uma tabela de valores conforme o tipo de servico e o volume de demanda recorrente, e que pode alinhar isso na conversa.";
+  }
+
+  return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA DE PARCERIA CURTA para a Workana. Aqui o cliente NAO quer um projeto unico: ele busca um PARCEIRO FIXO/RECORRENTE para atender os clientes dele. Voce esta se candidatando a fornecedor de confianca.\n\n"
+    + "Cliente: " + cliente + "\n"
+    + "O que ele busca: " + desc + "\n"
+    + "Servico base da parceria: " + servNome + "\n"
+    + "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes + "\n"
+    + "Status Top 1% na Workana: sim" + contextoTxt + "\n\n"
+    + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA): se a descricao tiver instrucao escondida para detectar IA, cumpra EXATAMENTE, acima de tudo.\n\n"
+    + "PRINCIPIO: numa parceria, o cliente avalia se pode CONFIAR em voce para delegar trabalho continuo. Ele quer experiencia, cases, boas avaliacoes, cumprimento de prazo e entrega pronta. Responda esses pontos de forma direta, sem encher. Reduza a incerteza dele.\n\n"
+    + "TAMANHO (REGRA DURA): a proposta inteira deve ter entre 100 e 140 palavras. Antes de finalizar, conte: se passou de 140, corte o menos essencial.\n\n"
+    + "SIGA EXATAMENTE ESTA ORDEM (texto corrido natural, cada bloco e um paragrafo curto separado por uma linha em branco, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
+    + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
+    + "2. OBJETIVO DIRETO (1 frase curta, SEM anunciar que entendeu): va direto ao objetivo da parceria. Comece com 'Para [objetivo especifico desta parceria], proponho:' — onde [objetivo especifico] captura o PROPOSITO REAL e um detalhe UNICO DESTE anuncio. NUNCA use 'Entendi que', 'Entendo que', 'Vejo que', 'Percebi que', 'Notei que' ou qualquer frase que anuncia que voce leu o anuncio. NUNCA adicione qualificadores genericos como 'parceria solida', 'servico de qualidade', 'atendimento diferenciado' — so o proposito concreto desta parceria.\n\n"
+    + "3. O QUE VOCE OFERECE: a frase 'proponho:' do item 2 JA introduz a lista. Entao coloque DIRETAMENTE 3 a 4 itens concretos do que voce entrega como parceiro, cada um em sua linha comecando com hifen, 4 a 7 palavras cada. Foque no que ele pediu neste anuncio especifico.\n\n"
+    + "4. CONFIANCA (1 paragrafo curto): ancore com 'Top 1% na Workana, nota 5 estrelas em todos os projetos' e cases reais que ele pode ver em lupixa.com. Cite os 17 anos em operacao critica de TI (prazo curto e zero erro). Se houver INFORMACAO ADICIONAL do Diogo, USE-A AQUI como prova concreta. Amarre ao que reduz o risco dele: entrega pronta, sem atraso, sem retrabalho.\n\n"
+    + "5. PRECO DE PARCERIA: " + precoTxt + " Deixe claro que volume de parceria tem condicao diferente de projeto avulso.\n\n"
+    + "6. PERGUNTA NO MEIO-FIM (1 linha): a duvida que, dependendo da resposta, MUDA como voce estrutura esta parceria. Criterios obrigatorios: o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples); a resposta altera a operacao ou a tabela de valores; NUNCA pergunte o que o anuncio ja responde. Deve ser sobre OPERACAO desta parceria especifica (ferramentas usadas, como chegam os briefings, o que ele ja tem estruturado, quem aprova as entregas). PROIBIDO: perguntas genericas que servem para qualquer anuncio. A pergunta deve provar que voce leu ESTE anuncio.\n\n"
+    + "7. PROXIMO PASSO QUE CONDUZ (1 linha, OBRIGATORIO ser personalizado para ESTE anuncio): NAO termine de forma passiva. Proponha uma acao CONCRETA e ESPECIFICA que faca sentido para esta parceria — algo que o cliente pode responder em 30 segundos. NUNCA use exemplos fixos como 'me indica um projeto atual' ou frases que serviriam para qualquer parceria. VARIE conforme o anuncio real e seja especifico.\n\n"
+    + "PROIBICOES ABSOLUTAS: NUNCA escreva 'se fizer sentido para voce' nem nada que devolva a decisao ao cliente ou soe como duvida. NUNCA termine so com 'fico a disposicao' passivo. NAO use prazo de entrega (parceria nao tem prazo unico).\n\n"
+    + "ANTI-MODELO (CRITICO): esta proposta NAO pode ter cara de modelo padrao. Proibido frases genericas de preenchimento que serviriam para qualquer anuncio de parceria. O objetivo, a pergunta e o proximo passo devem ser especificos DESTE anuncio. Varie a construcao das frases.\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO E CRITICO. NUNCA omita acentos em nenhuma palavra. Escreva sempre: não, você, também, então, página, avaliação, integração, operação, crítica, automática — NUNCA as formas sem acento. Revise cada palavra antes de finalizar. Seja CURTO e direto, frases curtas, sem encher linguica. Sem emojis. Sem excesso de hifens no texto corrido. Nunca mencionar IA. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever os numeros nem os rotulos do modelo (sao so seu guia interno).\n\n"
+    + "VOZ (REGRA CRITICA): fale DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA terceira pessoa (ele, ela, o cliente), mesmo que o anuncio esteja escrito de forma impessoal.\n\n"
+    + "FORMATACAO OBRIGATORIA: paragrafos curtos com UMA LINHA EM BRANCO entre cada um. Cada item da lista em sua linha.";
+}
+
+async function gerarParceria(){
+  const cliente = document.getElementById("in-cliente").value.trim();
+  const desc = document.getElementById("in-desc").value.trim();
+  if (!cliente || !desc) { alert("Preencha o nome do cliente e a descrição (nos campos acima) antes de gerar a proposta de parceria."); return; }
+  const btn = document.getElementById("btn-parceria");
+  btn.disabled = true; btn.textContent = "⏳ Gerando proposta de parceria...";
+  try {
+    const proposta = await callClaude(buildParceriaPrompt());
+    renderTextos({ apresentacao: null, proposta: proposta, modo: "parceria" });
+  } catch(e) { alert("Erro: "+e.message); }
+  btn.disabled = false; btn.textContent = "🤝 Gerar proposta de parceria";
+}
+
+function renderTextos(o){
+  window._apresentacao = o.apresentacao;
+  window._proposta = o.proposta || "";
+  const col = document.getElementById("resultado-col");
+
+  if (o.modo === "parceria") {
+    let h = '<div class="card">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:600">🤝 Proposta de parceria</div>'
+      + '<button class="btn btn-sm btn-success" onclick="copyText(window._proposta, this)">📋 Copiar</button></div>'
+      + '<div style="font-size:12px;color:var(--gold);margin-bottom:8px">👉 Envie na conversa da Workana</div>'
+      + '<div class="gen-text">'+o.proposta+'</div></div>';
+    h += '<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:8px">Enviou a proposta de parceria na Workana?</div>'
+      + '<button class="btn btn-sm btn-gold" onclick="registrarCRM(\'parceria enviada\')">✓ Registrar como parceria enviada</button></div>';
+    col.innerHTML = h;
+    return;
+  }
+
+  let html = '<div class="card">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:600">💬 Mensagem de apresentação</div>'
+    + '<button class="btn btn-sm btn-success" onclick="copyText(window._apresentacao, this)">📋 Copiar</button></div>'
+    + '<div style="font-size:12px;color:var(--purple);margin-bottom:8px">👉 Cole no botão "Fazer uma pergunta" da Workana</div>'
+    + '<div class="gen-text">'+o.apresentacao+'</div></div>';
+
+  if (o.modo === "claro" && o.proposta) {
+    html += '<div class="card">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:600">✍️ Proposta formal</div>'
+      + '<button class="btn btn-sm btn-success" onclick="copyText(window._proposta, this)">📋 Copiar</button></div>'
+      + '<div style="font-size:12px;color:var(--accent);margin-bottom:8px">👉 Envie logo após a apresentação</div>'
+      + '<div class="gen-text">'+o.proposta+'</div></div>';
+    html += '<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:8px">Registrou esse contato na Workana?</div>'
+      + '<button class="btn btn-sm btn-primary" onclick="registrarCRM(\'proposta enviada\')">✓ Registrar como proposta enviada</button></div>';
+  } else {
+    html += '<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:8px">Enviou a apresentação na Workana? Registre para acompanhar e gerar a proposta depois que o cliente responder (na aba CRM).</div>'
+      + '<button class="btn btn-sm btn-purple" onclick="registrarCRM(\'abertura enviada\')">✓ Registrar como abertura enviada</button></div>';
+  }
+
+  col.innerHTML = html;
+}
+
+async function registrarCRM(status){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const desc = document.getElementById("in-desc").value;
+  const ehParceria = status === "parceria enviada";
+  const fuDias = status === "abertura enviada" ? 1 : 2;
+  // valor: parceria usa o campo de preco base; demais usam o finalPrice da analise
+  let valor = finalPrice;
+  let prazo = finalPrazo;
+  let descParc = desc;
+  if (ehParceria) {
+    const parcValor = document.getElementById("parc-valor").value;
+    valor = parcValor && Number(parcValor) > 0 ? Number(parcValor) : null;
+    prazo = "";
+    const servSel = document.getElementById("parc-servico");
+    const servLabel = servSel.options[servSel.selectedIndex].text.split(" — ")[0];
+    descParc = "[PARCERIA · " + servLabel + "] " + desc;
+  }
+  await addCRMItem({
+    id: Date.now().toString(),
+    cliente: cliente,
+    descricao: descParc.slice(0,120)+(descParc.length>120?"…":""),
+    descricao_completa: descParc,
+    valor: valor,
+    prazo: prazo,
+    status: status,
+    envio: today(),
+    followup: addDays(today(), fuDias),
+    notas: ""
+  });
+  const col = document.getElementById("resultado-col");
+  col.innerHTML += '<div class="card" style="border-left:3px solid var(--green)"><div style="color:var(--green);font-size:13px">✓ Registrado no CRM como "'+status+'". Acompanhe na aba CRM.</div></div>';
+}
+
+function copyText(text, btnEl){
+  text = text||"";
+  const cb = function(){
+    const orig = btnEl.textContent;
+    btnEl.textContent="✓ Copiado!"; btnEl.style.background="var(--green)"; btnEl.style.color="#000";
+    setTimeout(function(){ btnEl.textContent=orig; btnEl.style.background=""; btnEl.style.color=""; },2000);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(cb).catch(function(){ fallbackCopy(text,cb); });
+  } else { fallbackCopy(text,cb); }
+}
+
+function fallbackCopy(text,cb){
+  const ta=document.createElement("textarea"); ta.value=text;
+  ta.style.cssText="position:fixed;top:0;left:0;opacity:0;pointer-events:none;";
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand("copy"); cb(); }catch(e){}
+  document.body.removeChild(ta);
+}
+
+function statusGrupo(status){
+  // mapeia status para grupos de filtro
+  if (status === "fechada") return "fechadas";
+  if (status === "perdida") return "perdidas";
+  if (status === "abertura enviada") return "abertura";
+  if (status === "proposta enviada") return "proposta";
+  if (status === "negociação") return "negociacao";
+  if (status === "visualizada") return "ativos";
+  return "outros";
+}
+
+function ehAtivo(status){
+  return ["abertura enviada","proposta enviada","parceria enviada","visualizada","negociação"].indexOf(status) !== -1;
+}
+
+function renderFiltroBotoes(){
+  const cont = document.getElementById("crm-filtro-botoes");
+  if (!cont) return;
+  const cont_ativos = crm.filter(function(r){ return ehAtivo(r.status); }).length;
+  const cont_abertura = crm.filter(function(r){ return r.status==="abertura enviada"; }).length;
+  const cont_proposta = crm.filter(function(r){ return r.status==="proposta enviada"; }).length;
+  const cont_negoc = crm.filter(function(r){ return r.status==="negociação"; }).length;
+  const cont_fechadas = crm.filter(function(r){ return r.status==="fechada"; }).length;
+  const cont_perdidas = crm.filter(function(r){ return r.status==="perdida"; }).length;
+
+  const cont_visualizada = crm.filter(function(r){ return r.status==="visualizada"; }).length;
+  const cont_parceria = crm.filter(function(r){ return r.status==="parceria enviada"; }).length;
+
+  const filtros = [
+    ["ativos", "Ativos", cont_ativos],
+    ["abertura", "Abertura", cont_abertura],
+    ["proposta", "Proposta", cont_proposta],
+    ["parceria", "Parceria", cont_parceria],
+    ["visualizada", "Visualizada", cont_visualizada],
+    ["negociacao", "Negociação", cont_negoc],
+    ["fechadas", "Fechadas", cont_fechadas],
+    ["perdidas", "Perdidas", cont_perdidas],
+    ["todos", "Todos", crm.length]
+  ];
+
+  cont.innerHTML = filtros.map(function(f){
+    const ativo = crmFiltro === f[0];
+    const cls = ativo ? "btn btn-sm btn-primary" : "btn btn-sm btn-ghost";
+    return '<button class="'+cls+'" onclick="setCrmFiltro(\''+f[0]+'\')">'+f[1]+' ('+f[2]+')</button>';
+  }).join("");
+}
+
+function setCrmFiltro(f){
+  crmFiltro = f;
+  renderCRM();
+}
+
+function crmFiltrado(){
+  const busca = (document.getElementById("crm-busca") ? document.getElementById("crm-busca").value : "").toLowerCase().trim();
+  return crm.filter(function(r){
+    // filtro por status
+    let passa = false;
+    if (crmFiltro === "todos") passa = true;
+    else if (crmFiltro === "ativos") passa = ehAtivo(r.status);
+    else if (crmFiltro === "abertura") passa = r.status === "abertura enviada";
+    else if (crmFiltro === "proposta") passa = r.status === "proposta enviada";
+    else if (crmFiltro === "parceria") passa = r.status === "parceria enviada";
+    else if (crmFiltro === "visualizada") passa = r.status === "visualizada";
+    else if (crmFiltro === "negociacao") passa = r.status === "negociação";
+    else if (crmFiltro === "fechadas") passa = r.status === "fechada";
+    else if (crmFiltro === "perdidas") passa = r.status === "perdida";
+    if (!passa) return false;
+    // busca por nome
+    if (busca && !(r.cliente||"").toLowerCase().includes(busca)) return false;
+    return true;
+  });
+}
+
+function renderCRM(){
+  const list = document.getElementById("crm-list");
+  document.getElementById("crm-count").textContent = crm.length+" registros";
+  renderFiltroBotoes();
+
+  if (!crm.length) { list.innerHTML='<div class="empty"><div class="empty-icon">📭</div><div>Nenhuma proposta ainda.</div></div>'; return; }
+
+  const lista = crmFiltrado();
+  if (!lista.length) { list.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div>Nenhum resultado neste filtro.</div></div>'; return; }
+
+  list.innerHTML = lista.map(function(r){
+    const c = STATUS_COLORS[r.status]||"var(--faint)";
+    const fuDevido = followupDevido(r);
+    const ehAbertura = r.status === "abertura enviada";
+    const ehProposta = r.status === "proposta enviada";
+    const nFu = r.followups_enviados || 0;
+    const fuTag = nFu > 0 ? ' · '+nFu+' follow-up'+(nFu>1?'s':'')+' enviado'+(nFu>1?'s':'') : '';
+
+    let bloco = '<div class="crm-item" style="border-left-color:'+c+'">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">'
+      + '<span style="font-weight:700;font-size:15px">'+(r.cliente||"Sem nome")+'</span>'
+      + '<span class="badge" style="background:'+c+'22;color:'+c+'">'+r.status+'</span>'
+      + '<span style="color:var(--accent);font-weight:700;font-size:13px">'+fmt(r.valor)+'</span></div>'
+      + '<div class="crm-desc">'+(r.descricao||"")+'</div>'
+      + '<div class="crm-meta">Envio: '+fmtDate(r.envio)+' · Follow-up: '+fmtDate(r.followup)+(r.prazo?" · Prazo: "+r.prazo:"")+fuTag+(r.notas?" · "+r.notas:"")+'</div></div>'
+      + '<div class="crm-actions">'
+      + '<select onchange="updateStatus(\''+r.id+'\',this.value)" style="width:auto;padding:4px 6px;font-size:12px">'
+      + Object.keys(STATUS_COLORS).map(function(s){ return '<option value="'+s+'"'+(s===r.status?" selected":"")+'>'+s+'</option>'; }).join("")
+      + '</select>'
+      + '<button class="btn btn-sm btn-ghost" onclick="editarCRM(\''+r.id+'\')">✏️</button>'
+      + '<button class="btn btn-sm btn-danger" onclick="deleteCRMItem(\''+r.id+'\')">🗑️</button></div></div>';
+
+    if (ehAbertura) {
+      bloco += '<div style="margin-top:12px;background:var(--purple-dim);border-radius:8px;padding:12px">'
+        + '<div style="font-size:12px;color:var(--purple);font-weight:600;margin-bottom:8px">📨 Cliente respondeu? Cole a resposta e gere a proposta:</div>'
+        + '<textarea id="resp-'+r.id+'" rows="3" placeholder="Cole aqui o que o cliente respondeu às suas perguntas..." style="margin-bottom:8px">'+(r.resposta_cliente||"")+'</textarea>'
+        + '<button class="btn btn-sm btn-success" onclick="gerarPropostaCRM(\''+r.id+'\')" id="gp-btn-'+r.id+'">✍️ Gerar proposta com a resposta</button>'
+        + '<div id="gp-box-'+r.id+'" style="margin-top:10px"></div></div>';
+    }
+
+    const ehParceria = r.status === "parceria enviada";
+    if (fuDevido && (ehAbertura || ehProposta || ehParceria) && (r.followups_enviados||0) < 1) {
+      const tipoFu = ehAbertura ? "abertura" : (ehParceria ? "parceria" : "proposta");
+      const corFu = ehAbertura ? "btn-purple" : "btn-gold";
+      const labelFu = ehAbertura ? "📨 Gerar follow-up de abertura" : (ehParceria ? "📨 Gerar follow-up de parceria" : "📨 Gerar follow-up de proposta");
+      bloco += '<div style="margin-top:10px"><button class="btn btn-sm '+corFu+'" onclick="gerarFollowup(\''+r.id+'\',\''+tipoFu+'\')" id="fu-btn-'+r.id+'">'+labelFu+'</button><div id="fu-box-'+r.id+'" style="margin-top:10px"></div></div>';
+    }
+
+    bloco += '</div>';
+    return bloco;
+  }).join("");
+}
+
+async function updateStatus(id, novoStatus){
+  // ao mudar status, se virar fechada e ja teve follow-up, marca fechou_apos_followup automaticamente
+  const r = crm.find(function(x){ return x.id===id; });
+  const fields = { status: novoStatus };
+  if (r && novoStatus === "fechada" && (r.followups_enviados||0) > 0) {
+    fields.fechou_apos_followup = true;
+  }
+  await updateCRMItem(id, fields);
+}
+
+function followupDevido(r){
+  if (["fechada","perdida"].indexOf(r.status) !== -1) return false;
+  if ((r.followups_enviados||0) >= 1) return false;
+  if (!r.followup) return false;
+  return r.followup <= today();
+}
+
+function diasAtraso(r){
+  // quantos dias desde a data de follow-up (0 = hoje, positivo = atrasado)
+  const hoje = new Date(today()+"T12:00:00");
+  const fu = new Date(r.followup+"T12:00:00");
+  return Math.round((hoje - fu) / 86400000);
+}
+
+function renderFollowupAlert(){
+  const el = document.getElementById("followup-alert");
+  if (!el) return;
+  // pega os follow-ups devidos, em abertura ou proposta, ordenados do mais atrasado pro mais recente
+  const pendentes = crm
+    .filter(function(r){ return followupDevido(r) && (r.status==="abertura enviada" || r.status==="proposta enviada" || r.status==="parceria enviada"); })
+    .sort(function(a,b){ return diasAtraso(b) - diasAtraso(a); });
+
+  if (!pendentes.length) { el.style.display = "none"; el.innerHTML = ""; return; }
+
+  let html = '<div class="card" style="border:1px solid var(--gold);background:var(--gold-dim)">'
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+    + '<span style="font-size:22px">🔔</span>'
+    + '<div style="font-weight:700;color:var(--gold);font-size:15px">'+pendentes.length+' follow-up'+(pendentes.length>1?'s':'')+' pendente'+(pendentes.length>1?'s':'')+'</div></div>';
+
+  pendentes.forEach(function(r){
+    const d = diasAtraso(r);
+    const quando = d <= 0 ? "vence hoje" : ("atrasado "+d+" dia"+(d>1?"s":""));
+    const corQuando = d >= 2 ? "var(--red)" : "var(--muted)";
+    const tipoFu = r.status==="abertura enviada" ? "abertura" : (r.status==="parceria enviada" ? "parceria" : "proposta");
+    const tipoLabel = r.status==="abertura enviada" ? "abertura" : "proposta";
+    html += '<div style="border-top:1px solid rgba(245,166,35,.25);padding:10px 0">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-weight:600;font-size:14px">'+(r.cliente||"Sem nome")+' <span style="color:var(--faint);font-weight:400">· '+fmt(r.valor)+'</span></div>'
+      + '<div style="font-size:12px;color:'+corQuando+'">follow-up de '+tipoLabel+' · '+quando+'</div></div>'
+      + '<button class="btn btn-sm btn-gold" onclick="gerarFollowupAlerta(\''+r.id+'\',\''+tipoFu+'\')" id="fa-btn-'+r.id+'">✍️ Gerar texto</button>'
+      + '</div>'
+      + '<div id="fa-box-'+r.id+'" style="margin-top:8px"></div></div>';
+  });
+
+  html += '</div>';
+  el.style.display = "block";
+  el.innerHTML = html;
+}
+
+function buildFollowupPrompt(r, tipo){
+  const desc = r.descricao_completa || r.descricao || "";
+  const regras = "\n\nPRINCIPIO (CRITICO): um follow-up que converte DA algo novo ao cliente, nao cobra resposta. Reabra a conversa agregando, nunca pedindo.\n\n"
+    + "PROIBICOES ABSOLUTAS: NUNCA pergunte se ele 'teve chance de ver', 'conseguiu analisar' ou variacao — isso cobra leitura e nao agrega nada. NUNCA use 'minha agenda esta abrindo uma janela' nem urgencia artificial. NUNCA 'se fizer sentido para voce'. NUNCA 'fico a disposicao' como fecho. NUNCA recapitule a proposta ou a mensagem anterior.\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO. NUNCA omita acentos: escreva não, você, também, então, página, avaliação, integração, operação, crítica — nunca as formas sem acento. Maximo 50 palavras no total. Tom humano e leve, sem pressao. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente'. Fale sempre em segunda pessoa (voce), nunca terceira. Paragrafos curtos separados por linha em branco.";
+
+  if (tipo === "abertura") {
+    return 'Voce e o Diogo Pinotti, freelancer de TI. Escreva um follow-up CURTO no chat da Workana para o cliente "' + r.cliente + '" sobre o projeto: "' + desc + '".\n\n'
+      + "Contexto: voce mandou uma mensagem de apresentacao com perguntas e ele nao respondeu. Este follow-up reabre a conversa AGREGANDO algo, sem cobrar.\n\n"
+      + "ESTRUTURA (texto corrido, sem titulos):\n"
+      + "- Saudacao breve: Ola, " + r.cliente + "! Tudo bem?\n"
+      + "- UMA observacao ou ideia concreta e especifica sobre o projeto DELE, que prove que voce pensou no projeto desde entao (um caminho tecnico que facilita, um detalhe que acelera, um risco que voce ja sabe evitar). Especifica DESTE projeto, nunca generica.\n"
+      + "- Refaca APENAS a pergunta mais decisiva da abertura, na forma mais facil de responder possivel (1 linha: numero, sim ou nao, escolha simples).\n"
+      + "- Fecho em 1 frase com beneficio DELE: com essa resposta voce ja envia a proposta com preco e prazo exatos."
+      + regras;
+  }
+  if (tipo === "parceria") {
+    return 'Voce e o Diogo Pinotti, freelancer de TI. Escreva um follow-up CURTO no chat da Workana para o cliente "' + r.cliente + '" sobre uma PARCERIA recorrente que voce propos: "' + desc + '".\n\n'
+      + "Contexto: voce enviou uma proposta de parceria (ser fornecedor fixo dele) e ele nao respondeu. Este follow-up reabre a conversa indo direto a acao, sem cobrar leitura.\n\n"
+      + "ESTRUTURA (texto corrido, sem titulos):\n"
+      + "- Saudacao breve: Ola, " + r.cliente + "! Tudo bem?\n"
+      + "- Va direto: a oferta de comecar com um projeto teste segue de pe. Reformule de forma concreta e leve, especifica para o tipo de servico DELE.\n"
+      + "- Peca a acao: ele indica UM projeto que precise entregar agora e voce executa, para ele avaliar seu trabalho na pratica antes de fechar a parceria.\n"
+      + "- Nada de recapitular a proposta anterior."
+      + regras;
+  }
+  return 'Voce e o Diogo Pinotti, freelancer de TI. Escreva um follow-up CURTO no chat da Workana para o cliente "' + r.cliente + '" sobre o projeto: "' + desc + '".\n\n'
+    + "Contexto: voce enviou a proposta formal com valor e prazo e ele nao respondeu. Este follow-up reabre a conversa AGREGANDO algo novo, sem cobrar.\n\n"
+    + "ESTRUTURA (texto corrido, sem titulos):\n"
+    + "- Saudacao breve: Ola, " + r.cliente + "! Tudo bem?\n"
+    + "- Agregue UMA ideia nova e especifica que NAO estava na proposta: algo a mais que voce inclui sem mudar o valor, um caminho que acelera a entrega, ou um detalhe do projeto DELE que voce resolveria de um jeito melhor. Especifica DESTE projeto.\n"
+    + "- Amarre com um proximo passo concreto de 30 segundos (confirmar um dado, enviar um acesso, dar o ok para iniciar).\n"
+    + "- Nada de recapitular a proposta."
+    + regras;
+}
+
+async function gerarFollowupAlerta(id, tipo){
+  const btn = document.getElementById("fa-btn-"+id);
+  if (btn) { btn.disabled = true; btn.textContent = "⏳ Gerando..."; }
+  const r = crm.find(function(x){ return x.id===id; });
+  if (!r) return;
+
+  const prompt = buildFollowupPrompt(r, tipo);
+
+  try {
+    const text = await callClaude(prompt);
+    window["_fa_"+id] = text;
+    const box = document.getElementById("fa-box-"+id);
+    if (box) {
+      box.innerHTML = '<div class="gen-text" style="margin-bottom:8px">'+text+'</div>'
+        + '<button class="btn btn-sm btn-success" onclick="copyText(window[\'_fa_'+id+'\'], this)">📋 Copiar follow-up</button> '
+        + '<button class="btn btn-sm btn-primary" onclick="marcarFollowupEnviado(\''+id+'\')">✓ Marcar como enviado</button> '
+        + '<button class="btn btn-sm btn-ghost" onclick="adiarFollowup(\''+id+'\')">⏰ Adiar +2 dias</button>';
+    }
+  } catch(e) { alert("Erro ao gerar follow-up: "+e.message); }
+  if (btn) { btn.disabled = false; btn.textContent = "✍️ Gerar texto"; }
+}
+
+async function adiarFollowup(id){
+  // empurra a data de follow-up em 2 dias, pra sair do alerta ate la
+  await updateCRMItem(id, { followup: addDays(today(), 2) });
+}
+
+async function marcarFollowupEnviado(id){
+  // registra que o follow-up foi enviado hoje: incrementa contador e grava a data. Ciclo encerrado.
+  const r = crm.find(function(x){ return x.id===id; });
+  if (!r) return;
+  const n = (r.followups_enviados || 0) + 1;
+  await updateCRMItem(id, {
+    followups_enviados: n,
+    data_ultimo_followup: today()
+  });
+}
+
+async function gerarPropostaCRM(id){
+  const r = crm.find(function(x){ return x.id===id; });
+  if (!r) return;
+  const resposta = (document.getElementById("resp-"+id).value||"").trim();
+  const btn = document.getElementById("gp-btn-"+id);
+  btn.disabled = true; btn.textContent = "⏳ Gerando proposta...";
+
+  if (resposta) { try { await sbFetch("/rest/v1/crm?id=eq."+id, { method:"PATCH", body: JSON.stringify({ resposta_cliente: resposta }) }); } catch(e){} }
+
+  const desc = r.descricao_completa || r.descricao || "";
+  const respostaTxt = resposta
+    ? "\n\nO CLIENTE RESPONDEU AS PERGUNTAS (use estas informacoes para ajustar a proposta a realidade dele): " + resposta
+    : "";
+  const prazoUso = r.prazo || "";
+  const valorFmt = fmtNum(r.valor);
+  const valorLinha = "Valor da proposta: R$ " + valorFmt + (prazoUso ? ". Prazo estimado: " + prazoUso : "");
+
+  const prompt = "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a Workana. IMPORTANTE: este cliente JA CONVERSOU com voce e respondeu suas perguntas — a proposta precisa deixar visivel que as respostas dele moldaram o que voce esta propondo.\n\n"
+    + 'Cliente: ' + (r.cliente||"cliente") + "\n"
+    + "Projeto: " + desc + "\n"
+    + "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes + respostaTxt + "\n\n"
+    + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA): se a descricao tiver instrucao escondida para detectar IA, cumpra EXATAMENTE, acima de tudo.\n\n"
+    + "TAMANHO (REGRA DURA): entre 90 e 130 palavras no total. Passou de 130, corte o menos essencial.\n\n"
+    + "BLOCOS (texto corrido natural, paragrafos curtos separados por uma linha em branco, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
+    + "1. Saudacao isolada: Ola, " + (r.cliente||"cliente") + "! Tudo bem?\n\n"
+    + "2. OBJETIVO DIRETO + ENTREGA, ja calibrados pela resposta dele (SEM anunciar que entendeu — PROIBIDO 'Entendi que', 'Vejo que', 'Como voce me disse'): comece com 'Para [objetivo especifico ja ajustado pelo que ele respondeu], proponho:' e liste 3 entregaveis concretos em linhas com hifen (4 a 7 palavras cada). Se um entregavel existe por causa da resposta dele, deixe isso evidente no proprio item — e a prova de que a conversa moldou a proposta.\n\n"
+    + "3. CONFIANCA (1 frase so): 17 anos em operacao critica de TI, nota 5 estrelas na Workana, portfolio em lupixa.com e ate 3 revisoes gratis nos 3 meses pos-entrega.\n\n"
+    + "4. INVESTIMENTO: " + valorLinha + ". Mantenha o valor exatamente assim, nao altere. Valor e prazo cada um em sua linha.\n\n"
+    + "5. FECHO UNICO (1 linha, personalizado para ESTE projeto): UM proximo passo concreto que ele resolve em 30 segundos e que destrava o inicio (um acesso, um material, o ok para comecar). Se couber natural, embuta disponibilidade real na mesma frase. PROIBIDO: 'fico a disposicao', 'se fizer sentido para voce', pergunta nova (as perguntas ja foram respondidas), pedido vago de 'mais detalhes'.\n\n"
+    + "ANTI-MODELO (CRITICO): proibido frases genericas que serviriam para qualquer projeto. Objetivo, entregaveis e fecho especificos DESTE projeto e DESTA conversa.\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO E CRITICO. NUNCA omita acentos em nenhuma palavra. Escreva sempre: não, você, também, então, página, avaliação, integração, operação, crítica — NUNCA as formas sem acento. Frases curtas. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever os numeros nem os rotulos dos blocos.\n\n"
+    + "VOZ (REGRA CRITICA): sempre segunda pessoa (voce, seu, sua). NUNCA terceira pessoa (ele, ela, o cliente).\n\n"
+    + "FORMATACAO OBRIGATORIA: separe o texto em PARAGRAFOS curtos, com UMA LINHA EM BRANCO entre cada paragrafo (quebras de linha duplas). NUNCA entregue tudo grudado num paragrafo unico. Cada entregavel em sua propria linha.";
+
+  try {
+    const text = await callClaude(prompt);
+    window["_prop_"+id] = text;
+    document.getElementById("gp-box-"+id).innerHTML =
+      '<div class="gen-text" style="margin-bottom:8px">'+text+'</div>'
+      + '<button class="btn btn-sm btn-success" onclick="copyText(window[\'_prop_'+id+'\'], this)">📋 Copiar proposta</button> '
+      + '<button class="btn btn-sm btn-primary" onclick="updateCRMItem(\''+id+'\',{status:\'proposta enviada\',followup:\''+addDays(today(),2)+'\'})">✓ Marcar como proposta enviada</button>';
+  } catch(e) { alert("Erro ao gerar proposta: "+e.message); }
+  btn.disabled = false; btn.textContent = "✍️ Gerar proposta com a resposta";
+}
+
+async function gerarFollowup(id, tipo){
+  const r = crm.find(function(x){ return x.id===id; });
+  if (!r) return;
+  const btn = document.getElementById("fu-btn-"+id);
+  btn.disabled = true; btn.textContent = "⏳ Gerando...";
+
+  const prompt = buildFollowupPrompt(r, tipo);
+
+  try {
+    const text = await callClaude(prompt);
+    window["_fu_"+id] = text;
+    document.getElementById("fu-box-"+id).innerHTML =
+      '<div class="gen-text" style="margin-bottom:8px">'+text+'</div>'
+      + '<button class="btn btn-sm btn-success" onclick="copyText(window[\'_fu_'+id+'\'], this)">📋 Copiar follow-up</button> '
+      + '<button class="btn btn-sm btn-primary" onclick="marcarFollowupEnviado(\''+id+'\')">✓ Marcar como enviado</button>';
+  } catch(e) { alert("Erro ao gerar follow-up: "+e.message); }
+  btn.disabled = false; btn.textContent = tipo==="abertura" ? "📨 Gerar follow-up de abertura" : (tipo==="parceria" ? "📨 Gerar follow-up de parceria" : "📨 Gerar follow-up de proposta");
+}
+
+function editarCRM(id){
+  const r = crm.find(function(x){ return x.id===id; });
+  if (!r) return;
+  const novoCliente = prompt("Cliente:", r.cliente)||r.cliente;
+  const novoValor = prompt("Valor (R$):", r.valor)||r.valor;
+  const novasNotas = prompt("Notas:", r.notas)||r.notas;
+  updateCRMItem(id, { cliente:novoCliente, valor:parseInt(novoValor)||0, notas:novasNotas });
+}
+
+function toggleManual(){
+  showManualForm = !showManualForm;
+  document.getElementById("manual-form").style.display = showManualForm?"block":"none";
+  document.getElementById("btn-manual").textContent = showManualForm?"✕ Cancelar":"+ Adicionar manualmente";
+  document.getElementById("btn-manual").className = showManualForm?"btn btn-sm btn-ghost":"btn btn-sm btn-primary";
+  if (showManualForm) {
+    document.getElementById("m-envio").value = today();
+    document.getElementById("m-followup").value = addDays(today(),2);
+  }
+}
+
+async function salvarManual(){
+  const cliente = document.getElementById("m-cliente").value.trim();
+  if (!cliente) { alert("Informe o nome do cliente"); return; }
+  await addCRMItem({
+    id: Date.now().toString(),
+    cliente: cliente,
+    descricao: document.getElementById("m-descricao").value,
+    descricao_completa: document.getElementById("m-descricao").value,
+    valor: parseInt(document.getElementById("m-valor").value)||0,
+    status: document.getElementById("m-status").value,
+    envio: document.getElementById("m-envio").value||today(),
+    followup: document.getElementById("m-followup").value||addDays(today(),2),
+    notas: document.getElementById("m-notas").value
+  });
+  document.getElementById("m-cliente").value="";
+  document.getElementById("m-valor").value="";
+  document.getElementById("m-descricao").value="";
+  document.getElementById("m-notas").value="";
+  toggleManual();
+}
+
+function renderDashboard(){
+  const fechadas = crm.filter(function(r){ return r.status==="fechada"; });
+  const total = crm.length;
+  const nFechadas = fechadas.length;
+  const perdidas = crm.filter(function(r){ return r.status==="perdida"; }).length;
+  const conversao = total ? ((nFechadas/total)*100).toFixed(1) : "0.0";
+  const valorTotal = crm.reduce(function(s,r){ return s+(r.valor||0); },0);
+  const valorFechado = fechadas.reduce(function(s,r){ return s+(r.valor||0); },0);
+  const ticketMedio = total ? valorTotal/total : 0;
+  const ticketConv = nFechadas ? valorFechado/nFechadas : 0;
+
+  document.getElementById("dash-top").innerHTML = [
+    ["📤","Total registros",total,"var(--accent)"],
+    ["✅","Fechadas",nFechadas,"var(--green)"],
+    ["❌","Perdidas",perdidas,"var(--red)"],
+    ["🎯","Conversão",conversao+"%","var(--gold)"]
+  ].map(function(x){ return '<div class="card dash-stat"><div class="dash-icon">'+x[0]+'</div><div class="dash-val" style="color:'+x[3]+'">'+x[2]+'</div><div class="dash-label">'+x[1]+'</div></div>'; }).join("");
+
+  document.getElementById("dash-valores").innerHTML = [
+    ["Valor total em jogo",fmt(valorTotal),"var(--accent)"],
+    ["Valor total fechado",fmt(valorFechado),"var(--green)"]
+  ].map(function(x){ return '<div class="card metric-card"><div class="metric-label">'+x[0]+'</div><div class="metric-val" style="color:'+x[2]+'">'+x[1]+'</div></div>'; }).join("");
+
+  document.getElementById("dash-tickets").innerHTML = [
+    ["Ticket médio (geral)",fmt(ticketMedio),"var(--muted)"],
+    ["Ticket médio (fechadas)",nFechadas?fmt(ticketConv):"—","var(--gold)"]
+  ].map(function(x){ return '<div class="card metric-card"><div class="metric-label">'+x[0]+'</div><div class="metric-val" style="color:'+x[2]+'">'+x[1]+'</div></div>'; }).join("");
+
+  // ---------- FUNIL DE CONVERSÃO ----------
+  const nAbertura = crm.filter(function(r){ return r.status==="abertura enviada"; }).length;
+  const nProposta = crm.filter(function(r){ return r.status==="proposta enviada"; }).length;
+  const nParceria = crm.filter(function(r){ return r.status==="parceria enviada"; }).length;
+  const nVisualizada = crm.filter(function(r){ return r.status==="visualizada"; }).length;
+  const nNegoc = crm.filter(function(r){ return r.status==="negociação"; }).length;
+  // etapas cumulativas do funil: quantos chegaram a cada nivel
+  // contato (todos) -> proposta/parceria+visualizada+negociacao+fechada (passaram de abertura) -> negociacao+fechada -> fechada
+  const chegaramProposta = nProposta + nParceria + nVisualizada + nNegoc + nFechadas + perdidas; // todos que viraram ao menos proposta/parceria
+  const emNegociacao = nNegoc + nFechadas;
+  const funilEtapas = [
+    ["Contatos abertos", total, "var(--purple)"],
+    ["Viraram proposta", chegaramProposta, "var(--accent)"],
+    ["Em negociação", emNegociacao, "var(--gold)"],
+    ["Fechadas", nFechadas, "var(--green)"]
+  ];
+  const funilMax = total || 1;
+  const funilEl = document.getElementById("dash-funil");
+  if (total > 0) {
+    funilEl.style.display = "block";
+    document.getElementById("dash-funil-barras").innerHTML = funilEtapas.map(function(e){
+      const pct = Math.round((e[1]/funilMax)*100);
+      return '<div class="fbar-row"><div class="fbar-head"><span class="fbar-label">'+e[0]+'</span><span class="fbar-val">'+e[1]+' · '+pct+'%</span></div>'
+        + '<div class="fbar-track"><div class="fbar-fill" style="width:'+Math.max(pct,3)+'%;background:'+e[2]+'">'+(pct>=8?pct+'%':'')+'</div></div></div>';
+    }).join("");
+  } else { funilEl.style.display = "none"; }
+
+  // ---------- FOLLOW-UP ----------
+  const totalFu = crm.reduce(function(s,r){ return s+(r.followups_enviados||0); },0);
+  const clientesComFu = crm.filter(function(r){ return (r.followups_enviados||0) > 0; }).length;
+  const fechadasComFu = fechadas.filter(function(r){ return r.fechou_apos_followup; }).length;
+  const valorFechadoComFu = fechadas.filter(function(r){ return r.fechou_apos_followup; }).reduce(function(s,r){ return s+(r.valor||0); },0);
+  const fuEl = document.getElementById("dash-followup");
+  if (total > 0) {
+    fuEl.style.display = "block";
+    document.getElementById("dash-followup-metricas").innerHTML = [
+      ["Follow-ups enviados", totalFu, "var(--accent)"],
+      ["Clientes acompanhados", clientesComFu, "var(--purple)"],
+      ["Fechadas após follow-up", fechadasComFu, "var(--green)"],
+      ["Valor fechado via follow-up", fmt(valorFechadoComFu), "var(--green)"]
+    ].map(function(x){ return '<div class="card metric-card" style="background:var(--surface)"><div class="metric-label">'+x[0]+'</div><div class="metric-val" style="color:'+x[2]+';font-size:18px">'+x[1]+'</div></div>'; }).join("");
+    // barra: das fechadas, quantas vieram de follow-up
+    if (nFechadas > 0) {
+      const pctFu = Math.round((fechadasComFu/nFechadas)*100);
+      document.getElementById("dash-followup-barra").innerHTML =
+        '<div class="fbar-row"><div class="fbar-head"><span class="fbar-label">Fechadas que passaram por follow-up</span><span class="fbar-val">'+fechadasComFu+' de '+nFechadas+' · '+pctFu+'%</span></div>'
+        + '<div class="fbar-track"><div class="fbar-fill" style="width:'+Math.max(pctFu,3)+'%;background:var(--green)">'+(pctFu>=8?pctFu+'%':'')+'</div></div></div>';
+    } else {
+      document.getElementById("dash-followup-barra").innerHTML = "";
+    }
+    if (totalFu === 0) {
+      document.getElementById("dash-followup-barra").innerHTML +=
+        '<div style="font-size:12px;color:var(--faint);margin-top:6px">Ainda sem follow-ups registrados. Use "Marcar como enviado" no alerta ou no CRM e os números aparecem aqui.</div>';
+    }
+  } else { fuEl.style.display = "none"; }
+
+  // ---------- VALORES POR DESFECHO ----------
+  const valorAtivo = crm.filter(function(r){ return ehAtivo(r.status); }).reduce(function(s,r){ return s+(r.valor||0); },0);
+  const valorPerdido = crm.filter(function(r){ return r.status==="perdida"; }).reduce(function(s,r){ return s+(r.valor||0); },0);
+  const vdEl = document.getElementById("dash-valores-desfecho");
+  const vdMax = Math.max(valorAtivo, valorFechado, valorPerdido, 1);
+  if (total > 0) {
+    vdEl.style.display = "block";
+    const desfechos = [
+      ["Em aberto (ativos)", valorAtivo, "var(--accent)"],
+      ["Fechado (ganho)", valorFechado, "var(--green)"],
+      ["Perdido", valorPerdido, "var(--red)"]
+    ];
+    document.getElementById("dash-valores-desfecho-barras").innerHTML = desfechos.map(function(d){
+      const pct = Math.round((d[1]/vdMax)*100);
+      return '<div class="fbar-row"><div class="fbar-head"><span class="fbar-label">'+d[0]+'</span><span class="fbar-val">'+fmt(d[1])+'</span></div>'
+        + '<div class="fbar-track"><div class="fbar-fill" style="width:'+Math.max(pct,3)+'%;background:'+d[2]+'"></div></div></div>';
+    }).join("");
+  } else { vdEl.style.display = "none"; }
+
+  const distEl = document.getElementById("dash-dist");
+  const listEl = document.getElementById("dash-status-list");
+  const counts = Object.keys(STATUS_COLORS).map(function(s){ return { s:s, n:crm.filter(function(r){ return r.status===s; }).length }; }).filter(function(x){ return x.n>0; });
+  if (counts.length) {
+    distEl.style.display="block";
+    listEl.innerHTML = counts.map(function(x){ return '<div class="status-chip" style="border:1px solid '+STATUS_COLORS[x.s]+'44"><div class="status-chip-label" style="color:'+STATUS_COLORS[x.s]+'">'+x.s+'</div><div class="status-chip-val">'+x.n+'</div></div>'; }).join("");
+  } else { distEl.style.display="none"; }
+}
+
+function exportar(){
+  const blob = new Blob([JSON.stringify({profile:profile,crm:crm},null,2)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "lupixa-backup-"+today()+".json";
+  a.click();
+}
+
+async function importar(e){
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = async function(ev){
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (d.profile) {
+        profile = d.profile;
+        document.getElementById("p-avaliacoes").value = profile.avaliacoes;
+        document.getElementById("p-habilidades").value = profile.habilidades;
+        await saveProfile();
+      }
+      if (d.crm && d.crm.length) {
+        for (let i=0;i<d.crm.length;i++){
+          const item = d.crm[i];
+          try { await sbFetch("/rest/v1/crm?id=eq."+item.id, {method:"DELETE"}); } catch(err){}
+          await addCRMItem(item);
+        }
+      }
+      alert("Importação concluída!");
+    } catch(err) { alert("Arquivo inválido."); }
+  };
+  r.readAsText(f);
+}
+
+function toggleProfile(){
+  showProfile = !showProfile;
+  document.getElementById("profile-panel").style.display = showProfile?"block":"none";
+  document.getElementById("profile-toggle-label").textContent = showProfile?"▲ fechar":"▼ editar";
+}
+
+function setTab(tab){
+  ["analisar","crm","dashboard","backup"].forEach(function(t){
+    document.getElementById("page-"+t).style.display = t===tab?"block":"none";
+    document.getElementById("tab-"+t).className = t===tab?"btn btn-sm btn-primary":"btn btn-sm btn-ghost";
+  });
+  if (tab==="dashboard") renderDashboard();
+}
+
+async function init(){
+  syncStatus("⏳ Conectando ao Supabase...", "var(--gold)");
+  try {
+    await loadProfile();
+    await loadCRM();
+    syncStatus("✓ Conectado ao Supabase", "var(--green)");
+    setTimeout(function(){ syncStatus(""); },3000);
+  } catch(e) {
+    syncStatus("⚠️ Erro de conexão", "var(--red)");
+  }
+}
+
+init();
+</script>
+</body>
+</html>
