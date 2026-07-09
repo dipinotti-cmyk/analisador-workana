@@ -267,6 +267,12 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
       <div id="dash-valores-desfecho-barras"></div>
     </div>
 
+    <div class="card" id="dash-evolucao" style="margin-bottom:12px;display:none">
+      <div style="font-weight:700;margin-bottom:4px">📈 Evolução mensal</div>
+      <div style="font-size:11px;color:var(--faint);margin-bottom:14px">Por mês de envio: enviadas, fechadas e valor ganho</div>
+      <div id="dash-evolucao-linhas"></div>
+    </div>
+
     <div class="card" id="dash-dist" style="display:none">
       <div style="font-weight:600;margin-bottom:10px">Distribuição por status</div>
       <div class="status-dist" id="dash-status-list"></div>
@@ -1061,6 +1067,7 @@ function followupDevido(r){
   if (["fechada","perdida"].indexOf(r.status) !== -1) return false;
   if ((r.followups_enviados||0) >= 1) return false;
   if (!r.followup) return false;
+  if (r.envio && r.envio < addDays(today(), -7)) return false;
   return r.followup <= today();
 }
 
@@ -1412,6 +1419,33 @@ function renderDashboard(){
     }).join("");
   } else { vdEl.style.display = "none"; }
 
+  // ---------- EVOLUÇÃO MENSAL ----------
+  const evoEl = document.getElementById("dash-evolucao");
+  const meses = {};
+  dados.forEach(function(r){
+    if (!r.envio || r.envio.length < 7) return;
+    const m = r.envio.slice(0,7);
+    if (!meses[m]) meses[m] = { enviadas:0, fechadas:0, valorFechado:0 };
+    meses[m].enviadas++;
+    if (r.status === "fechada") { meses[m].fechadas++; meses[m].valorFechado += (r.valor||0); }
+  });
+  const chavesMes = Object.keys(meses).sort();
+  if (evoEl) {
+    if (chavesMes.length) {
+      evoEl.style.display = "block";
+      const nomesMes = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+      const maxEnv = Math.max.apply(null, chavesMes.map(function(m){ return meses[m].enviadas; }));
+      document.getElementById("dash-evolucao-linhas").innerHTML = chavesMes.map(function(m){
+        const d = meses[m];
+        const label = nomesMes[parseInt(m.slice(5,7),10)-1] + "/" + m.slice(2,4);
+        const conv = d.enviadas ? Math.round((d.fechadas/d.enviadas)*100) : 0;
+        const pct = Math.round((d.enviadas/maxEnv)*100);
+        return '<div class="fbar-row"><div class="fbar-head"><span class="fbar-label">'+label+'</span><span class="fbar-val">'+d.enviadas+' enviadas · '+d.fechadas+' fechadas ('+conv+'%) · '+fmt(d.valorFechado)+'</span></div>'
+          + '<div class="fbar-track"><div class="fbar-fill" style="width:'+Math.max(pct,3)+'%;background:var(--accent)"></div></div></div>';
+      }).join("");
+    } else { evoEl.style.display = "none"; }
+  }
+
   const distEl = document.getElementById("dash-dist");
   const listEl = document.getElementById("dash-status-list");
   const counts = Object.keys(STATUS_COLORS).map(function(s){ return { s:s, n:dados.filter(function(r){ return r.status===s; }).length }; }).filter(function(x){ return x.n>0; });
@@ -1473,11 +1507,29 @@ function setTab(tab){
   if (tab==="dashboard") renderDashboard();
 }
 
+async function expirarAntigos(){
+  // registros ativos sem interacao do cliente com envio ha mais de 7 dias viram "perdida"
+  const limite = addDays(today(), -7);
+  const alvo = crm.filter(function(r){
+    return ["abertura enviada","proposta enviada","parceria enviada"].indexOf(r.status) !== -1
+      && r.envio && r.envio < limite;
+  });
+  for (var i = 0; i < alvo.length; i++) {
+    const r = alvo[i];
+    const nota = (r.notas ? r.notas + " " : "") + "[expirada: sem resposta em 7 dias]";
+    try {
+      await sbFetch("/rest/v1/crm?id=eq."+r.id, { method:"PATCH", body: JSON.stringify({ status: "perdida", notas: nota }) });
+    } catch(e) {}
+  }
+  if (alvo.length) await loadCRM();
+}
+
 async function init(){
   syncStatus("⏳ Conectando ao Supabase...", "var(--gold)");
   try {
     await loadProfile();
     await loadCRM();
+    await expirarAntigos();
     syncStatus("✓ Conectado ao Supabase", "var(--green)");
     setTimeout(function(){ syncStatus(""); },3000);
   } catch(e) {
