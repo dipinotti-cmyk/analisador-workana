@@ -604,29 +604,29 @@ function buildApresentacaoPrompt(comPerguntas){
   const ondeEnvia = plataformaGrupo(plat) === "Workana"
     ? "no botao 'Fazer uma pergunta' da Workana"
     : "como primeira mensagem ao cliente na plataforma " + plat;
-  let p = "Voce e o Diogo Pinotti, freelancer de TI no Brasil (17 anos como Supervisor de TI em ambientes criticos, hoje desenvolve sites, automacoes e integracoes). Escreva uma MENSAGEM DE ABERTURA curta para enviar " + ondeEnvia + ", ANTES de mandar proposta formal.\n\n"
-    + "OBJETIVO: a mensagem so cumpre a missao se o cliente RESPONDER. Cada elemento deve reduzir o esforco de resposta dele. Menos texto, pergunta mais facil, motivo claro para ele responder.\n\n"
+  let p = "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma MENSAGEM DE ABERTURA curta para enviar " + ondeEnvia + ", ANTES de mandar proposta formal.\n\n"
+    + "OBJETIVO: a mensagem so cumpre a missao se o cliente RESPONDER. Cada elemento deve reduzir o esforco de resposta dele. Menos texto, pergunta mais facil, motivo claro para ele responder. SEM se apresentar: o cliente quer resposta sobre o projeto dele, nao curriculo.\n\n"
     + 'Cliente: ' + cliente + "\n"
     + "Projeto: " + desc + contextoTxt + faltaTxt + "\n\n"
-    + "TAMANHO (REGRA DURA): no maximo 100 palavras no total, incluindo saudacao e assinatura. Passou de 100, corte.\n\n"
-    + "BLOCOS (cada item e um paragrafo curto separado por uma linha em branco, texto corrido, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
+    + "TAMANHO (REGRA DURA): no maximo 80 palavras no total, incluindo saudacao e assinatura. Passou de 80, corte.\n\n"
+    + "ESTRUTURA OBRIGATORIA, NESTA ORDEM (cada item e um paragrafo curto separado por uma linha em branco, texto corrido, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
     + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
-    + "2. UMA frase que conecta ao ponto central DESTE projeto e apresenta voce na mesma tacada: 'Sou Diogo, 17 anos em TI' amarrado ao problema especifico dele. SEM anunciar que leu (PROIBIDO 'Notei que', 'Entendi que', 'Vejo que', 'Percebi que' e similares). Curto: a apresentacao nao e o coracao da mensagem, a pergunta e.\n\n";
+    + "2. MEIA FRASE de contexto conectando ao tema DESTE projeto, terminando em dois pontos (ex: 'Sobre o sistema que voce precisa:'). SEM se apresentar, SEM 'Sou o Diogo', SEM anunciar que leu (PROIBIDO 'Notei que', 'Entendi que', 'Vejo que', 'Percebi que').\n\n";
 
   if (comPerguntas) {
-    p += "3. AS PERGUNTAS (coracao da mensagem, cada uma em sua propria linha): faca 1 ou 2 perguntas, NUNCA mais que 2. Criterios obrigatorios para cada uma: o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples); a resposta MUDA o que voce vai entregar ou cobrar; NUNCA pergunte o que o anuncio ja responde; NUNCA estetica, cor ou design. Se as INFORMACOES QUE FALTAM listarem varios itens, escolha so os 2 mais decisivos para preco e execucao — os demais voce alinha depois.\n\n";
-    p += "4. MOTIVO PARA RESPONDER (1 frase, beneficio DELE): com essas respostas voce envia na sequencia uma proposta com preco e prazo exatos, sem surpresa depois. Construa a frase de forma natural e variada, nunca identica entre mensagens.\n\n";
+    p += "3. AS PERGUNTAS ASSERTIVAS (coracao da mensagem, cada uma em sua propria linha): faca 1 ou 2 perguntas, NUNCA mais que 2. Criterios obrigatorios para cada uma: o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples); a resposta MUDA o que voce vai entregar ou cobrar; NUNCA pergunte o que o anuncio ja responde; NUNCA estetica, cor ou design. Se as INFORMACOES QUE FALTAM listarem varios itens, escolha so os 2 mais decisivos para preco e execucao.\n\n";
+    p += "4. FRASE DO ORCAMENTO (1 frase, beneficio DELE): com essas respostas o orcamento sai preciso, sem surpresa depois. Varie a construcao a cada mensagem, nunca identica.\n\n";
+    p += "5. PERGUNTA DE ACAO (1 linha, paragrafo proprio): uma pergunta curta que puxa a resposta AGORA. Exemplos: 'Consegue me responder ainda hoje?', 'Prefere alinhar por aqui mesmo?'. Varie entre mensagens.\n\n";
   } else {
     p += "3. A PERGUNTA (coracao da mensagem): UMA pergunta que o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples) e cuja resposta MUDA o que voce vai entregar ou cobrar. NUNCA pergunte o que o anuncio ja responde. NUNCA estetica, cor ou design.\n\n";
-    p += "4. AVISO DA PROPOSTA NA SEQUENCIA (1 frase): deixe claro que voce ja esta enviando a proposta para este projeto na sequencia. Use algo natural como 'Ja estou te enviando minha proposta na sequencia.'\n\n";
+    p += "4. AVISO DA PROPOSTA NA SEQUENCIA (1 frase): deixe claro que voce ja esta enviando a proposta na sequencia. Ex natural: 'Ja estou te enviando minha proposta na sequencia.'\n\n";
   }
 
-  p += "5. Aviso do anexo (1 frase curta): 'Estou enviando uma breve apresentacao minha.'\n\n"
-    + "6. Fechamento com assinatura, em duas linhas:\nAguardo seu retorno,\nDiogo Pinotti - lupixa.com\n\n"
-    + "PROIBICOES ABSOLUTAS: NUNCA escreva 'fico a disposicao' nem 'se fizer sentido para voce' nem qualquer fecho passivo — o fechamento e a assinatura, nada antes dela alem dos blocos acima.\n\n"
-    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO E CRITICO. NUNCA omita acentos em nenhuma palavra. Escreva sempre: não, você, também, então, página, avaliação, integração, operação, crítica — NUNCA as formas sem acento. Tom humano, caloroso e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Mantenha cada paragrafo curto. NAO escreva os numeros nem os rotulos do modelo (eles sao so seu guia interno). Separe todos os paragrafos com uma linha em branco entre eles.\n\n"
+  p += "ULTIMO BLOCO — Finalizacao fixa, em duas linhas exatas:\nNo aguardo,\nDiogo Pinotti\n\n"
+    + "PROIBICOES ABSOLUTAS: NUNCA se apresente nem fale de credenciais. NUNCA escreva 'fico a disposicao' nem 'se fizer sentido para voce' nem qualquer fecho passivo. NUNCA mencione anexos. Depois da finalizacao, NADA.\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO E CRITICO. NUNCA omita acentos em nenhuma palavra. Escreva sempre: não, você, também, então, página, avaliação, integração, operação, crítica — NUNCA as formas sem acento. Tom humano e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Mantenha cada paragrafo curto. NAO escreva os numeros nem os rotulos do modelo (eles sao so seu guia interno). Separe todos os paragrafos com uma linha em branco entre eles.\n\n"
     + "VOZ (REGRA CRITICA): fale DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA use terceira pessoa (ele, ela, o cliente). As vezes o anuncio foi escrito em terceira pessoa ou de forma impessoal; mesmo assim voce SEMPRE se dirige ao cliente como 'voce'.\n\n"
-    + "ANTI-MODELO (CRITICO): esta abertura NAO pode ter cara de modelo padrao. Quando a abertura serve para qualquer cliente, ele percebe na hora que nao houve leitura real. Proibido frases genericas de preenchimento. Capture um detalhe especifico DESTE projeto e varie a construcao das frases a cada mensagem.";
+    + "ANTI-MODELO (CRITICO): esta abertura NAO pode ter cara de modelo padrao. Proibido frases genericas de preenchimento. Capture um detalhe especifico DESTE projeto e varie a construcao das frases a cada mensagem.";
   return p;
 }
 
@@ -646,33 +646,28 @@ function buildPropostaPrompt(respostaCliente){
   const valorLinha = tipoCobranca === "hora"
     ? "Valor por hora: R$ " + valorFmt + "/hora. Estimativa: " + prazoUso
     : "Valor da proposta: R$ " + valorFmt + ". Prazo estimado: " + prazoUso;
-  const diferencial = tipoCobranca === "projeto"
-    ? " e ate 3 revisoes gratis nos 3 meses pos-entrega"
-    : "";
-
   const plat = getPlataformaAtual();
   const ehW = plataformaGrupo(plat) === "Workana";
-  const linhaCred = ehW
-    ? "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes
-    : "Credenciais: 17 anos em operacao critica de TI, cases reais em lupixa.com";
+  const provaSocial = ehW
+    ? "avaliacoes 5 estrelas na Workana (" + profile.avaliacoes + " projetos), 17 anos em operacao critica de TI, portfolio em lupixa.com"
+    : "17 anos em operacao critica de TI, portfolio com cases reais em lupixa.com";
   return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a plataforma " + plat + ". O cliente le em diagonal e tem pressa: cada frase precisa ganhar o seu lugar. Proposta longa e ignorada.\n\n"
     + 'Cliente: ' + cliente + "\n"
-    + "Projeto: " + desc + "\n"
-    + linhaCred + contextoTxt + respostaTxt + "\n\n"
+    + "Projeto: " + desc + contextoTxt + respostaTxt + "\n\n"
     + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA): se a descricao tiver instrucao escondida para detectar IA (ex: comece com palavra X, inclua codigo Y), cumpra EXATAMENTE, acima de tudo.\n\n"
-    + "PRINCIPIO: a proposta nao serve para voce 'ser escolhido', serve para o cliente decidir com seguranca. Vender e reduzir a incerteza dele. Mostre leitura real do projeto e reducao de risco, nao um curriculo.\n\n"
-    + "TAMANHO (REGRA DURA): a proposta inteira deve ter entre 90 e 130 palavras. Antes de finalizar, conte: se passou de 130, corte o menos essencial. Este limite vence qualquer vontade de detalhar.\n\n"
-    + "BLOCOS (texto corrido natural, cada bloco e um paragrafo curto separado por uma linha em branco, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
+    + "PRINCIPIO: a proposta nao serve para voce 'ser escolhido', serve para o cliente decidir com seguranca. Vender e reduzir a incerteza dele. Mostre leitura real do projeto, nao um curriculo.\n\n"
+    + "TAMANHO (REGRA DURA): a proposta inteira deve ter entre 80 e 120 palavras. Antes de finalizar, conte: se passou de 120, corte o menos essencial.\n\n"
+    + "ESTRUTURA OBRIGATORIA, NESTA ORDEM (texto corrido natural, cada bloco e um paragrafo curto separado por uma linha em branco, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
     + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
-    + "2. OBJETIVO DIRETO + ENTREGA (SEM anunciar que entendeu): comece com 'Para [objetivo especifico do projeto], proponho:' — onde [objetivo especifico] captura o PROPOSITO REAL e um detalhe UNICO DESTE projeto. NUNCA use 'Entendi que', 'Entendo que', 'Vejo que', 'Percebi que' ou qualquer frase que anuncia que voce leu o projeto. NUNCA adicione qualificadores genericos como 'solucao inovadora', 'ferramenta incrivel', 'plataforma robusta' — so o proposito concreto. Exemplo correto: 'Para criar o InvestTeen e engajar jovens em investimentos de forma pratica e segura, proponho:'. Exemplo errado: 'Para criar o InvestTeen, uma ferramenta educativa e envolvente, proponho:'. Depois do 'proponho:', a entrega: em projetos de escopo composto, 3 itens em linhas com hifen (4 a 7 palavras cada); em projetos simples e diretos, 1 frase corrida no lugar da lista. Escolha o formato conforme o projeto.\n\n"
-    + "3. PERGUNTA (1 linha): a duvida que, dependendo da resposta, MUDA o que voce vai executar ou cobrar. Criterios obrigatorios: o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples); a resposta altera a execucao; NUNCA pergunte o que o anuncio ja responde; NUNCA estetica, cor, tom visual ou preferencia de design. Exemplos do que funciona: 'Voce ja tem conta no Airtable ou eu configuro?', 'O conteudo educativo voce ja tem pronto ou eu estruturo?'. Se o anuncio for completo a ponto de nenhuma pergunta passar nesses criterios, pule este bloco — nunca invente pergunta so para preencher.\n\n"
-    + "4. CONFIANCA (1 frase so, sem virar curriculo): " + (ehW ? "17 anos em operacao critica de TI, nota 5 estrelas na Workana, portfolio em lupixa.com" : "17 anos em operacao critica de TI, portfolio com cases reais em lupixa.com") + diferencial + ".\n\n"
+    + "2. O QUE A PROPOSTA INCLUI (SEM se apresentar, SEM anunciar que entendeu): comece com 'Para [objetivo especifico do projeto], a proposta inclui:' — onde [objetivo especifico] captura o PROPOSITO REAL e um detalhe UNICO DESTE projeto. NUNCA use 'Entendi que', 'Vejo que', 'Percebi que'. NUNCA qualificador generico ('solucao inovadora', 'plataforma robusta'). Depois dos dois pontos: entregaveis em linhas com hifen (3 itens, 4 a 7 palavras cada); em projeto simples e direto, 1 frase corrida no lugar da lista.\n\n"
+    + "3. COMPROVACAO (CONDICIONAL — avalie o anuncio): SOMENTE se o cliente pediu portfolio, exemplos, experiencia ou comprovacao, desenvolva em 1 ou 2 frases usando: " + provaSocial + ". Se o anuncio NAO pediu nada disso, PULE este bloco por completo — nada de curriculo espontaneo.\n\n"
+    + "4. SUGESTAO DE MELHORIA (CONDICIONAL — so se agregar de verdade): UMA melhoria concreta e especifica DESTA vaga, que o cliente nao pediu mas valoriza, em 1 frase (ex: 'aproveito e deixo o rastreamento automatico configurado no e-mail do cliente'). Criterios: exequivel dentro do escopo e do prazo, especifica deste projeto, curta. Se nenhuma melhoria fizer sentido REAL para esta vaga, PULE o bloco — proibido sugestao generica de preenchimento.\n\n"
     + "5. INVESTIMENTO: " + valorLinha + ". Mantenha o valor exatamente assim, ja formatado, nao altere. Coloque o valor e o prazo cada um em sua linha.\n\n"
-    + "6. FECHO UNICO (1 linha, OBRIGATORIO ser personalizado para ESTE projeto): UM unico proximo passo concreto que o cliente resolve em 30 segundos com o que ele tem na mao agora. Exemplos: 'me envia o logo e as cores que ja inicio o layout', 'me confirma qual plataforma voce usa que ja estruturo a base'. Se couber natural, embuta disponibilidade real na mesma frase (ex: 'consigo iniciar esta semana'). PROIBIDO: dois pedidos, frase de urgencia separada, pedir 'mais detalhes' vago, repetir a pergunta do bloco 3.\n\n"
-    + "VARIACAO ESTRUTURAL (CRITICO contra cara de template): a ordem dos blocos 3, 4 e 5 e flexivel — a pergunta pode vir logo apos a entrega OU depois do investimento; a frase de confianca pode vir antes ou depois do valor. Escolha o arranjo que fizer o texto fluir mais natural para ESTE anuncio. Saudacao sempre primeiro, fecho sempre por ultimo. Varie tambem entre propostas: nao repita sempre o mesmo arranjo.\n\n"
-    + "PROIBICOES ABSOLUTAS: NUNCA escreva 'se fizer sentido para voce' nem qualquer variacao que devolva a decisao ao cliente ou soe como duvida. NUNCA termine com 'fico a disposicao' passivo. NUNCA mencione IA nem diga que escreve sem IA.\n\n"
-    + "ANTI-MODELO (CRITICO): esta proposta NAO pode ter cara de modelo padrao. Proibido frases genericas de preenchimento que serviriam para qualquer projeto. O objetivo, a pergunta e o fecho devem ser especificos DESTE projeto. Varie a construcao das frases.\n\n"
-    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO E CRITICO. NUNCA omita acentos em nenhuma palavra. Escreva sempre: não, você, também, então, página, avaliação, integração, operação, crítica, automática — NUNCA as formas sem acento (nao, voce, tambem, entao, pagina, avaliacao, integracao, operacao, critica, automatica). Revise cada palavra antes de finalizar. Frases curtas. Sem emojis. Sem excesso de hifens no texto corrido. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever os numeros nem os rotulos dos blocos (sao so seu guia interno).\n\n"
+    + "6. PERGUNTA FINAL (1 linha, paragrafo proprio, logo antes da finalizacao): a duvida de ESCOPO ou EXECUCAO que, dependendo da resposta, MUDA o que voce vai executar. Criterios: o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples); NUNCA pergunte o que o anuncio ja responde; NUNCA estetica, cor ou design. PROIBIDO pedido generico que serve para qualquer vaga, como 'me da acesso a hospedagem que ja comeco' ou 'me envia os detalhes'. Exemplos do que funciona: 'Hoje o envio e pelos Correios, transportadora ou os dois?', 'O conteudo voce ja tem pronto ou eu estruturo?'.\n\n"
+    + "7. Finalizacao fixa, em duas linhas exatas:\nNo aguardo,\nDiogo Pinotti\n\n"
+    + "PROIBICOES ABSOLUTAS: NUNCA se apresente ('Sou o Diogo', 'me chamo') — a assinatura ja identifica. NUNCA escreva 'se fizer sentido para voce' nem 'fico a disposicao'. NUNCA mencione IA nem diga que escreve sem IA. NUNCA frase de urgencia artificial. Depois da finalizacao, NADA.\n\n"
+    + "ANTI-MODELO (CRITICO): esta proposta NAO pode ter cara de modelo padrao. Proibido frases genericas de preenchimento que serviriam para qualquer projeto. O objetivo, a sugestao e a pergunta devem ser especificos DESTE projeto. Varie a construcao das frases entre propostas.\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO E CRITICO. NUNCA omita acentos em nenhuma palavra. Escreva sempre: não, você, também, então, página, avaliação, integração, operação, crítica, automática — NUNCA as formas sem acento (nao, voce, tambem, entao, pagina, avaliacao, integracao, operacao, critica, automatica). Revise cada palavra antes de finalizar. Frases curtas. Sem emojis. Sem excesso de hifens no texto corrido. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. NUNCA escrever os numeros nem os rotulos dos blocos (sao so seu guia interno).\n\n"
     + "VOZ (REGRA CRITICA): a proposta INTEIRA fala DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA use terceira pessoa (ele, ela, o cliente). ATENCAO: as vezes o anuncio foi escrito em terceira pessoa ou de forma impessoal; mesmo assim voce SEMPRE se dirige ao cliente como 'voce'.\n\n"
     + "FORMATACAO OBRIGATORIA: paragrafos curtos com UMA LINHA EM BRANCO entre cada um (quebras de linha duplas). NUNCA grude tudo num paragrafo unico. Cada entregavel em sua linha (quando usar lista).";
 }
@@ -1194,46 +1189,101 @@ async function gerarPropostaCRM(id){
   if (!r) return;
   const resposta = (document.getElementById("resp-"+id).value||"").trim();
   const btn = document.getElementById("gp-btn-"+id);
-  btn.disabled = true; btn.textContent = "⏳ Gerando proposta...";
+  btn.disabled = true; btn.textContent = "⏳ Reavaliando valor e prazo...";
 
-  if (resposta) { try { await sbFetch("/rest/v1/crm?id=eq."+id, { method:"PATCH", body: JSON.stringify({ resposta_cliente: resposta }) }); } catch(e){} }
+  if (resposta) { try { await sbFetch("/rest/v1/crm?id=eq."+id, { method:"PATCH", body: JSON.stringify({ resposta_cliente: resposta }) }); r.resposta_cliente = resposta; } catch(e){} }
+
+  if (!resposta) {
+    await gerarPropostaFinalCRM(id, r.valor||0, r.prazo||"");
+    btn.disabled = false; btn.textContent = "✍️ Gerar proposta com a resposta";
+    return;
+  }
+
+  const desc = r.descricao_completa || r.descricao || "";
+  const promptRe = "Voce e um consultor de precificacao para freelancers de TI no Brasil. Um freelancer estimou valor e prazo para uma vaga SEM ter todas as informacoes de escopo. Agora o cliente respondeu as perguntas. Reavalie com base no que a resposta revela (complexidade, volume, integracoes, urgencia).\n\n"
+    + "VAGA: " + desc + "\n"
+    + "VALOR ESTIMADO ANTES: R$ " + (r.valor||0) + "\n"
+    + "PRAZO ESTIMADO ANTES: " + (r.prazo||"nao definido") + "\n"
+    + "RESPOSTA DO CLIENTE: " + resposta + "\n\n"
+    + "Se a resposta nao muda o escopo, mantenha os valores. Valores em reais, numeros inteiros cheios (ex: 800, 1500). Prazo curto em dias uteis.\n\n"
+    + "Responda SOMENTE com JSON valido, sem markdown e sem texto antes ou depois, neste formato exato: {\"valor\": 1200, \"prazo\": \"3 a 5 dias uteis\", \"motivo\": \"1 frase explicando o ajuste ou a manutencao\"}";
+
+  let sug = null;
+  try {
+    const raw = await callClaude(promptRe);
+    sug = JSON.parse(raw.replace(/```json|```/g, "").trim());
+  } catch(e) { sug = null; }
+
+  const vSug = (sug && sug.valor) ? parseInt(sug.valor, 10) : (r.valor||0);
+  const pSug = (sug && sug.prazo) ? String(sug.prazo) : (r.prazo||"");
+  const motivo = (sug && sug.motivo) ? String(sug.motivo) : "Não foi possível reavaliar automaticamente — confira os valores antes de gerar.";
+
+  document.getElementById("gp-box-"+id).innerHTML =
+    '<div style="background:var(--surface);border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;color:var(--gold)">💡 Reavaliação: '+motivo+'</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">Valor (R$)</div>'
+    + '<input id="rv-valor-'+id+'" type="number" value="'+vSug+'" style="margin-bottom:8px">'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">Prazo</div>'
+    + '<input id="rv-prazo-'+id+'" value="'+pSug.replace(/"/g,"&quot;")+'" style="margin-bottom:10px">'
+    + '<button class="btn btn-sm btn-success" onclick="confirmarPropostaCRM(\''+id+'\')">✍️ Gerar proposta com esses valores</button>';
+
+  btn.disabled = false; btn.textContent = "✍️ Gerar proposta com a resposta";
+}
+
+async function confirmarPropostaCRM(id){
+  const v = parseInt(document.getElementById("rv-valor-"+id).value, 10) || 0;
+  const p = (document.getElementById("rv-prazo-"+id).value||"").trim();
+  try { await sbFetch("/rest/v1/crm?id=eq."+id, { method:"PATCH", body: JSON.stringify({ valor: v, prazo: p }) }); } catch(e){}
+  const r = crm.find(function(x){ return x.id===id; });
+  if (r) { r.valor = v; r.prazo = p; }
+  await gerarPropostaFinalCRM(id, v, p);
+}
+
+async function gerarPropostaFinalCRM(id, valor, prazo){
+  const r = crm.find(function(x){ return x.id===id; });
+  if (!r) return;
+  const respEl = document.getElementById("resp-"+id);
+  const resposta = (r.resposta_cliente||"").trim() || (respEl ? (respEl.value||"").trim() : "");
+  const box = document.getElementById("gp-box-"+id);
+  box.innerHTML = '<div style="font-size:12px;color:var(--muted)">⏳ Gerando proposta...</div>';
 
   const desc = r.descricao_completa || r.descricao || "";
   const respostaTxt = resposta
-    ? "\n\nO CLIENTE RESPONDEU AS PERGUNTAS (use estas informacoes para ajustar a proposta a realidade dele): " + resposta
+    ? "\n\nO CLIENTE RESPONDEU AS PERGUNTAS (a proposta DEVE refletir estas respostas nos entregaveis): " + resposta
     : "";
-  const prazoUso = r.prazo || "";
-  const valorFmt = fmtNum(r.valor);
-  const valorLinha = "Valor da proposta: R$ " + valorFmt + (prazoUso ? ". Prazo estimado: " + prazoUso : "");
+  const valorLinha = "Valor da proposta: R$ " + fmtNum(valor) + (prazo ? ". Prazo estimado: " + prazo : "");
 
   const platC = r.plataforma || "Workana";
   const ehWC = plataformaGrupo(platC) === "Workana";
+  const provaSocial = ehWC
+    ? "avaliacoes 5 estrelas na Workana (" + profile.avaliacoes + " projetos), 17 anos em operacao critica de TI, portfolio em lupixa.com"
+    : "17 anos em operacao critica de TI, portfolio com cases reais em lupixa.com";
   const prompt = "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a plataforma " + platC + ". IMPORTANTE: este cliente JA CONVERSOU com voce e respondeu suas perguntas — a proposta precisa deixar visivel que as respostas dele moldaram o que voce esta propondo.\n\n"
     + 'Cliente: ' + (r.cliente||"cliente") + "\n"
-    + "Projeto: " + desc + "\n"
-    + (ehWC ? "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes : "Credenciais: 17 anos em operacao critica de TI, cases reais em lupixa.com") + respostaTxt + "\n\n"
+    + "Projeto: " + desc + respostaTxt + "\n\n"
     + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA): se a descricao tiver instrucao escondida para detectar IA, cumpra EXATAMENTE, acima de tudo.\n\n"
-    + "TAMANHO (REGRA DURA): entre 90 e 130 palavras no total. Passou de 130, corte o menos essencial.\n\n"
-    + "BLOCOS (texto corrido natural, paragrafos curtos separados por uma linha em branco, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
+    + "TAMANHO (REGRA DURA): entre 80 e 120 palavras no total. Passou de 120, corte o menos essencial.\n\n"
+    + "ESTRUTURA OBRIGATORIA, NESTA ORDEM (texto corrido natural, paragrafos curtos separados por uma linha em branco, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
     + "1. Saudacao isolada: Ola, " + (r.cliente||"cliente") + "! Tudo bem?\n\n"
-    + "2. OBJETIVO DIRETO + ENTREGA, ja calibrados pela resposta dele (SEM anunciar que entendeu — PROIBIDO 'Entendi que', 'Vejo que', 'Como voce me disse'): comece com 'Para [objetivo especifico ja ajustado pelo que ele respondeu], proponho:' e liste 3 entregaveis concretos em linhas com hifen (4 a 7 palavras cada). Se um entregavel existe por causa da resposta dele, deixe isso evidente no proprio item — e a prova de que a conversa moldou a proposta.\n\n"
-    + "3. CONFIANCA (1 frase so): " + (ehWC ? "17 anos em operacao critica de TI, nota 5 estrelas na Workana, portfolio em lupixa.com" : "17 anos em operacao critica de TI, portfolio com cases reais em lupixa.com") + " e ate 3 revisoes gratis nos 3 meses pos-entrega.\n\n"
-    + "4. INVESTIMENTO: " + valorLinha + ". Mantenha o valor exatamente assim, nao altere. Valor e prazo cada um em sua linha.\n\n"
-    + "5. FECHO UNICO (1 linha, personalizado para ESTE projeto): UM proximo passo concreto que ele resolve em 30 segundos e que destrava o inicio (um acesso, um material, o ok para comecar). Se couber natural, embuta disponibilidade real na mesma frase. PROIBIDO: 'fico a disposicao', 'se fizer sentido para voce', pergunta nova (as perguntas ja foram respondidas), pedido vago de 'mais detalhes'.\n\n"
-    + "ANTI-MODELO (CRITICO): proibido frases genericas que serviriam para qualquer projeto. Objetivo, entregaveis e fecho especificos DESTE projeto e DESTA conversa.\n\n"
-    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO E CRITICO. NUNCA omita acentos em nenhuma palavra. Escreva sempre: não, você, também, então, página, avaliação, integração, operação, crítica — NUNCA as formas sem acento. Frases curtas. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Sem 'Atenciosamente' nem assinatura formal. NUNCA escrever os numeros nem os rotulos dos blocos.\n\n"
+    + "2. O QUE A PROPOSTA INCLUI, ja calibrado pela resposta dele (SEM se apresentar, SEM 'Entendi que', 'Vejo que', 'Como voce me disse'): comece com 'Para [objetivo especifico ja ajustado pelo que ele respondeu], a proposta inclui:' e liste 3 entregaveis concretos em linhas com hifen (4 a 7 palavras cada). Se um entregavel existe por causa da resposta dele, deixe isso evidente no proprio item.\n\n"
+    + "3. COMPROVACAO (CONDICIONAL): SOMENTE se o anuncio pediu portfolio, exemplos ou comprovacao de experiencia, desenvolva em 1 ou 2 frases usando: " + provaSocial + ". Se nao pediu, PULE o bloco.\n\n"
+    + "4. SUGESTAO DE MELHORIA (CONDICIONAL — so se agregar de verdade): UMA melhoria concreta e especifica DESTA vaga, em 1 frase, exequivel dentro do escopo e do prazo. Se nenhuma fizer sentido REAL, PULE o bloco — proibido sugestao generica.\n\n"
+    + "5. INVESTIMENTO: " + valorLinha + ". Mantenha o valor exatamente assim, nao altere. Valor e prazo cada um em sua linha.\n\n"
+    + "6. PERGUNTA FINAL DE ACAO (1 linha, paragrafo proprio): NAO faca pergunta tecnica nova (as perguntas ja foram respondidas). Faca UMA pergunta curta que destrava o inicio, ex: 'Posso comecar amanha?', 'Me confirma o ok para iniciar esta semana?'. Varie entre propostas.\n\n"
+    + "7. Finalizacao fixa, em duas linhas exatas:\nNo aguardo,\nDiogo Pinotti\n\n"
+    + "PROIBICOES ABSOLUTAS: NUNCA se apresente. NUNCA 'fico a disposicao' nem 'se fizer sentido para voce'. NUNCA mencione IA. Depois da finalizacao, NADA.\n\n"
+    + "ANTI-MODELO (CRITICO): proibido frases genericas que serviriam para qualquer projeto. Objetivo, entregaveis, sugestao e pergunta especificos DESTE projeto e DESTA conversa.\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO E CRITICO. NUNCA omita acentos em nenhuma palavra. Escreva sempre: não, você, também, então, página, avaliação, integração, operação, crítica — NUNCA as formas sem acento. Frases curtas. Sem emojis. Sem excesso de hifens. Sem 'Atenciosamente'. NUNCA escrever os numeros nem os rotulos dos blocos.\n\n"
     + "VOZ (REGRA CRITICA): sempre segunda pessoa (voce, seu, sua). NUNCA terceira pessoa (ele, ela, o cliente).\n\n"
     + "FORMATACAO OBRIGATORIA: separe o texto em PARAGRAFOS curtos, com UMA LINHA EM BRANCO entre cada paragrafo (quebras de linha duplas). NUNCA entregue tudo grudado num paragrafo unico. Cada entregavel em sua propria linha.";
 
   try {
     const text = await callClaude(prompt);
     window["_prop_"+id] = text;
-    document.getElementById("gp-box-"+id).innerHTML =
+    box.innerHTML =
       '<div class="gen-text" style="margin-bottom:8px">'+text+'</div>'
       + '<button class="btn btn-sm btn-success" onclick="copyText(window[\'_prop_'+id+'\'], this)">📋 Copiar proposta</button> '
       + '<button class="btn btn-sm btn-primary" onclick="updateCRMItem(\''+id+'\',{status:\'proposta enviada\',followup:\''+addDays(today(),2)+'\'})">✓ Marcar como proposta enviada</button>';
-  } catch(e) { alert("Erro ao gerar proposta: "+e.message); }
-  btn.disabled = false; btn.textContent = "✍️ Gerar proposta com a resposta";
+  } catch(e) { box.innerHTML=''; alert("Erro ao gerar proposta: "+e.message); }
 }
 
 async function gerarFollowup(id, tipo){
