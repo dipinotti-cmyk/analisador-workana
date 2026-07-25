@@ -409,11 +409,11 @@ async function deleteCRMItem(id){
   catch(e) { console.error(e); }
 }
 
-async function callClaude(prompt){
+async function callClaude(prompt, maxTokens){
   const res = await fetch("/api/chat", {
     method:"POST",
     headers:{"Content-Type":"application/json; charset=utf-8"},
-    body: JSON.stringify({ prompt })
+    body: JSON.stringify({ prompt: prompt, max_tokens: maxTokens || 1000 })
   });
   // decodifica explicitamente como UTF-8 para nao depender do palpite do navegador
   const buf = await res.arrayBuffer();
@@ -580,7 +580,10 @@ function confirmarValor(){
   if (analysis && analysis.escopoClaro) {
     hint.style.background = "var(--green-dim)";
     hint.style.color = "var(--green)";
-    hint.innerHTML = "💡 A IA avaliou: <strong>escopo claro</strong>. Recomendado gerar apresentação + proposta e enviar as duas.";
+    const htmlNote = (tipoCobranca === "projeto" && finalPrice >= 1000)
+      ? " Valor ≥ R$1.000: será gerada <strong>proposta HTML</strong> (pra publicar no Vercel) + texto de acompanhamento sem valor/prazo."
+      : "";
+    hint.innerHTML = "💡 A IA avaliou: <strong>escopo claro</strong>. Recomendado gerar apresentação + proposta e enviar as duas." + htmlNote;
   } else {
     hint.style.background = "var(--purple-dim)";
     hint.style.color = "var(--purple)";
@@ -649,7 +652,7 @@ function buildPropostaPrompt(respostaCliente){
   const plat = getPlataformaAtual();
   const ehW = plataformaGrupo(plat) === "Workana";
   const provaSocial = ehW
-    ? "avaliacoes 5 estrelas na Workana (" + profile.avaliacoes + " projetos), 17 anos em operacao critica de TI, portfolio em lupixa.com"
+    ? "entre os 0,01% mais bem classificados da Workana (posicao 333 de 14,59 milhoes de freelancers, nivel Gold), avaliacao 5.0 em " + profile.avaliacoes + " projetos, 17 anos em operacao critica de TI, portfolio em lupixa.com. REGRA DO RANKING: sempre citar numero bruto E porcentagem juntos (0,01%, posicao 333 de 14,59 milhoes), nunca so 'Top 1%'"
     : "17 anos em operacao critica de TI, portfolio com cases reais em lupixa.com";
   return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a plataforma " + plat + ". O cliente le em diagonal e tem pressa: cada frase precisa ganhar o seu lugar. Proposta longa e ignorada.\n\n"
     + 'Cliente: ' + cliente + "\n"
@@ -672,16 +675,102 @@ function buildPropostaPrompt(respostaCliente){
     + "FORMATACAO OBRIGATORIA: paragrafos curtos com UMA LINHA EM BRANCO entre cada um (quebras de linha duplas). NUNCA grude tudo num paragrafo unico. Cada entregavel em sua linha (quando usar lista).";
 }
 
+// REGRA DE FORMATO POR VALOR: >= R$1.000 (por projeto) gera proposta HTML no Vercel + texto de acompanhamento sem valor/prazo (forca abrir o link). Abaixo disso, so texto com valor/prazo em bloco separado.
+function deveGerarHtml(){
+  return tipoCobranca === "projeto" && finalPrice >= 1000;
+}
+
+function slugCliente(){
+  return (document.getElementById("in-cliente").value||"cliente").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").split("-")[0] || "cliente";
+}
+
+function limparHtmlGerado(raw){
+  let t = (raw||"").replace(/```html/gi,"").replace(/```/g,"").trim();
+  const i = t.indexOf("<!DOCTYPE");
+  if (i > 0) t = t.slice(i);
+  return t;
+}
+
+function buildPropostaHtmlPrompt(){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const desc = document.getElementById("in-desc").value;
+  const contexto = document.getElementById("in-contexto").value.trim();
+  const contextoTxt = contexto ? "\n\nInformacao adicional do Diogo (usar como prova de vivencia pratica): " + contexto : "";
+  const prazoUso = finalPrazo || (analysis ? analysis.prazoEstimado : "");
+  return "Voce e um desenvolvedor front-end senior trabalhando para o Diogo Pinotti, freelancer de TI no Brasil. Gere um documento HTML COMPLETO e AUTOCONTIDO de proposta comercial para ser publicado no Vercel e enviado como link ao cliente.\n\n"
+    + 'Cliente: ' + cliente + "\n"
+    + "Projeto descrito pelo cliente: " + desc + contextoTxt + "\n"
+    + "Valor: R$ " + fmtNum(finalPrice) + "\n"
+    + "Prazo: " + prazoUso + "\n\n"
+    + "BASE VISUAL PADRAO (usar como fundacao): dark mode, fundo #0b0d12, cards #12151c com borda #242938 e border-radius 14px, texto #eef1f7, texto secundario #a6adbb, acentos #9fe6c8 (verde-agua) e #7c9cff (azul), max-width 780px centralizado, font-family system-ui, todo CSS inline em <style> unico no <head>, ZERO recursos externos (sem imagens, sem fonts, sem scripts).\n\n"
+    + "ESTRUTURA OBRIGATORIA, nesta ordem:\n"
+    + "1. Badge pequeno 'Proposta tecnica' no topo.\n"
+    + "2. H1 com o objetivo do projeto (especifico, nao generico) + subtitulo 'Preparada para " + cliente + "'.\n"
+    + "3. Saudacao: 'Oi " + cliente + ", tudo bem?'.\n"
+    + "4. Secao 'Sobre o projeto': 1-2 paragrafos provando leitura real do que o cliente descreveu, citando detalhes especificos do anuncio.\n"
+    + "5. Secao 'Como pretendo estruturar': card com lista de 4-5 itens tecnicos, cada um com titulo em <b> e explicacao curta, especificos DESTE projeto.\n"
+    + "6. Secao 'Experiencia': 1 paragrafo conectando a experiencia do Diogo a ESTE tipo de projeto.\n"
+    + "7. Grid de 2 stats: '17 anos' (de experiencia em TI, incluindo operacao critica) e '5.0' (avaliacao na Workana, projetos entregues com nota maxima).\n"
+    + "8. Bloco de investimento em destaque (gradiente sutil dos acentos): 'R$ " + fmtNum(finalPrice) + "' grande + 'Prazo de entrega: " + prazoUso + "'. Logo abaixo, em texto menor, protecao de escopo: prazo contado a partir do acesso ao material/credenciais necessarios DESTE projeto (especifique o que e neste caso), e ajustes fora do escopo descrito orcados a parte.\n"
+    + "9. Bloco de ranking com 🏆 e o texto EXATO: 'Entre os 0,01% mais bem classificados da Workana, na posição 333 de 14,59 milhões de freelancers, nível Gold.' (a primeira parte em <b>).\n"
+    + "10. Assinatura: 'Fico à disposição para qualquer ajuste ou dúvida sobre a proposta.' + nome 'Diogo Pinotti' em destaque.\n"
+    + "11. Responsivo: @media max-width 520px com grid em 1 coluna e fontes reduzidas.\n\n"
+    + "ADAPTACAO AO PROJETO (REGRA CRITICA — e o que separa esta proposta de uma generica):\n"
+    + "- Se o cliente PEDIU animacoes ou efeitos: inclua animacoes CSS reais e elegantes na propria proposta (fade-in nas secoes, hover nos cards, transicoes) — a proposta VIRA a prova de que voce domina o que ele pediu.\n"
+    + "- Se o nicho e claro (imobiliaria, restaurante, advocacia, clinica, moda, e-commerce, barbearia etc): adapte o formato — vocabulario das secoes no tom do nicho, e quando fizer sentido inclua UMA demonstracao visual do nicho dentro da proposta (ex: imobiliaria = um mini card de imovel de exemplo; restaurante = um trecho de cardapio estilizado; e-commerce = um mini card de produto). Ajuste a cor de acento pra combinar com o nicho MANTENDO dark mode e alta legibilidade.\n"
+    + "- Se o cliente descreveu funcionalidades especificas: cada uma precisa aparecer nos itens tecnicos com a abordagem de solucao.\n"
+    + "- Se o cliente nao deu detalhes de estilo/nicho: use a base visual padrao sem inventar tema.\n\n"
+    + "CONTEUDO: portugues correto com acentuacao completa em todas as palavras. Segunda pessoa (voce). Paragrafos curtos. Nunca mencionar IA. Sem frases genericas que serviriam pra qualquer projeto.\n\n"
+    + "SAIDA: responda SOMENTE com o codigo HTML completo, comecando em <!DOCTYPE html> e terminando em </html>. Sem markdown, sem explicacao antes ou depois.";
+}
+
+function buildAcompanhamentoPrompt(){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const desc = document.getElementById("in-desc").value;
+  const plat = getPlataformaAtual();
+  return "Voce e o Diogo Pinotti, freelancer de TI no Brasil, escrevendo como um vendedor senior de multinacional: seguranca tranquila, direto, sem soar necessitado. Escreva o TEXTO CURTO DE ACOMPANHAMENTO para a caixa de proposta da plataforma " + plat + ", que acompanha o LINK de uma proposta HTML completa ja publicada.\n\n"
+    + 'Cliente: ' + cliente + "\n"
+    + "Projeto: " + desc + "\n\n"
+    + "ESTRUTURA (paragrafos curtos separados por linha em branco):\n"
+    + "1. Saudacao: 'Oi " + cliente + ", tudo bem?'\n"
+    + "2. 1 paragrafo curto provando leitura real do projeto e que o Diogo e o profissional certo pra ESTE projeto especifico (nao curriculo generico).\n"
+    + "3. 1 frase apresentando a proposta detalhada + o marcador LINK_DA_PROPOSTA sozinho em sua propria linha.\n"
+    + "4. 1 frase: 'La tem o raciocinio tecnico completo, valor e prazo.' (pode variar a construcao).\n"
+    + "5. Fechamento com o texto EXATO: 'Entre os 0,01% mais bem classificados da Workana, na posição 333 de 14,59 milhões de freelancers, nível Gold.'\n\n"
+    + "PROIBICOES: NUNCA citar valor nem prazo neste texto (estao no link — o objetivo e forcar a abertura). NUNCA 'fico a disposicao'. NUNCA se apresentar com 'Sou o Diogo'. Maximo 90 palavras.\n\n"
+    + "REGRAS: portugues correto com acentuacao completa. Sem emojis. Nunca mencionar IA. Tom humano e direto.";
+}
+
 async function gerarClaro(){
   if (!analysis || !finalPrice) return;
   const btn = document.getElementById("btn-claro");
-  btn.disabled = true; btn.textContent = "⏳ Gerando os dois textos...";
+  const ehHtml = deveGerarHtml();
+  btn.disabled = true; btn.textContent = ehHtml ? "⏳ Gerando apresentação + proposta HTML..." : "⏳ Gerando os dois textos...";
   try {
     const apresentacao = await callClaude(buildApresentacaoPrompt(false));
-    const proposta = await callClaude(buildPropostaPrompt(""));
-    renderTextos({ apresentacao: apresentacao, proposta: proposta, modo: "claro" });
+    if (ehHtml) {
+      const htmlProposta = await callClaude(buildPropostaHtmlPrompt(), 8000);
+      const acomp = await callClaude(buildAcompanhamentoPrompt());
+      renderTextos({ apresentacao: apresentacao, proposta: acomp, propostaHtml: limparHtmlGerado(htmlProposta), modo: "claro-html" });
+    } else {
+      const proposta = await callClaude(buildPropostaPrompt(""));
+      renderTextos({ apresentacao: apresentacao, proposta: proposta, modo: "claro" });
+    }
   } catch(e) { alert("Erro: "+e.message); }
   btn.disabled = false; btn.textContent = "✅ Escopo claro — gerar apresentação + proposta";
+}
+
+function baixarPropostaHtml(){
+  const blob = new Blob([window._propostaHtml||""], {type:"text/html;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "proposta-"+slugCliente()+".html";
+  a.click();
+}
+
+function verPropostaHtml(){
+  const blob = new Blob([window._propostaHtml||""], {type:"text/html;charset=utf-8"});
+  window.open(URL.createObjectURL(blob), "_blank");
 }
 
 async function gerarIncerto(){
@@ -737,7 +826,7 @@ function buildParceriaPrompt(){
   const plat = getPlataformaAtual();
   const ehW = plataformaGrupo(plat) === "Workana";
   const linhasCred = ehW
-    ? "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes + "\nStatus Top 1% na Workana: sim"
+    ? "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes + "\nRanking Workana: entre os 0,01% mais bem classificados, posicao 333 de 14,59 milhoes de freelancers, nivel Gold (sempre citar assim, nunca so 'Top 1%')"
     : "Credenciais: 17 anos em operacao critica de TI, cases reais em lupixa.com";
   return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA DE PARCERIA CURTA para a plataforma " + plat + ". Aqui o cliente NAO quer um projeto unico: ele busca um PARCEIRO FIXO/RECORRENTE para atender os clientes dele. Voce esta se candidatando a fornecedor de confianca.\n\n"
     + "Cliente: " + cliente + "\n"
@@ -751,7 +840,7 @@ function buildParceriaPrompt(){
     + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
     + "2. OBJETIVO DIRETO (1 frase curta, SEM anunciar que entendeu): va direto ao objetivo da parceria. Comece com 'Para [objetivo especifico desta parceria], proponho:' — onde [objetivo especifico] captura o PROPOSITO REAL e um detalhe UNICO DESTE anuncio. NUNCA use 'Entendi que', 'Entendo que', 'Vejo que', 'Percebi que', 'Notei que' ou qualquer frase que anuncia que voce leu o anuncio. NUNCA adicione qualificadores genericos como 'parceria solida', 'servico de qualidade', 'atendimento diferenciado' — so o proposito concreto desta parceria.\n\n"
     + "3. O QUE VOCE OFERECE: a frase 'proponho:' do item 2 JA introduz a lista. Entao coloque DIRETAMENTE 3 a 4 itens concretos do que voce entrega como parceiro, cada um em sua linha comecando com hifen, 4 a 7 palavras cada. Foque no que ele pediu neste anuncio especifico.\n\n"
-    + "4. CONFIANCA (1 paragrafo curto): " + (ehW ? "ancore com 'Top 1% na Workana, nota 5 estrelas em todos os projetos' e cases reais que ele pode ver em lupixa.com. Cite os 17 anos em operacao critica de TI (prazo curto e zero erro)." : "ancore com os 17 anos em operacao critica de TI (prazo curto e zero erro) e cases reais que ele pode ver em lupixa.com.") + " Se houver INFORMACAO ADICIONAL do Diogo, USE-A AQUI como prova concreta. Amarre ao que reduz o risco dele: entrega pronta, sem atraso, sem retrabalho.\n\n"
+    + "4. CONFIANCA (1 paragrafo curto): " + (ehW ? "ancore com 'entre os 0,01% mais bem classificados da Workana, na posicao 333 de 14,59 milhoes de freelancers, nivel Gold, nota 5 em todos os projetos' e cases reais que ele pode ver em lupixa.com. Cite os 17 anos em operacao critica de TI (prazo curto e zero erro)." : "ancore com os 17 anos em operacao critica de TI (prazo curto e zero erro) e cases reais que ele pode ver em lupixa.com.") + " Se houver INFORMACAO ADICIONAL do Diogo, USE-A AQUI como prova concreta. Amarre ao que reduz o risco dele: entrega pronta, sem atraso, sem retrabalho.\n\n"
     + "5. PRECO DE PARCERIA: " + precoTxt + " Deixe claro que volume de parceria tem condicao diferente de projeto avulso.\n\n"
     + "6. PERGUNTA NO MEIO-FIM (1 linha): a duvida que, dependendo da resposta, MUDA como voce estrutura esta parceria. Criterios obrigatorios: o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples); a resposta altera a operacao ou a tabela de valores; NUNCA pergunte o que o anuncio ja responde. Deve ser sobre OPERACAO desta parceria especifica (ferramentas usadas, como chegam os briefings, o que ele ja tem estruturado, quem aprova as entregas). PROIBIDO: perguntas genericas que servem para qualquer anuncio. A pergunta deve provar que voce leu ESTE anuncio.\n\n"
     + "7. PROXIMO PASSO QUE CONDUZ (1 linha, OBRIGATORIO ser personalizado para ESTE anuncio): NAO termine de forma passiva. Proponha uma acao CONCRETA e ESPECIFICA que faca sentido para esta parceria — algo que o cliente pode responder em 30 segundos. NUNCA use exemplos fixos como 'me indica um projeto atual' ou frases que serviriam para qualquer parceria. VARIE conforme o anuncio real e seja especifico.\n\n"
@@ -778,7 +867,31 @@ async function gerarParceria(){
 function renderTextos(o){
   window._apresentacao = o.apresentacao;
   window._proposta = o.proposta || "";
+  window._propostaHtml = o.propostaHtml || "";
   const col = document.getElementById("resultado-col");
+
+  if (o.modo === "claro-html") {
+    const slug = slugCliente();
+    let h = '<div class="card">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:600">💬 Mensagem de apresentação</div>'
+      + '<button class="btn btn-sm btn-success" onclick="copyText(window._apresentacao, this)">📋 Copiar</button></div>'
+      + '<div style="font-size:12px;color:var(--purple);margin-bottom:8px">👉 Envie como primeira mensagem (na Workana: botão "Fazer uma pergunta")</div>'
+      + '<div class="gen-text">'+o.apresentacao+'</div></div>';
+    h += '<div class="card" style="border:1px solid var(--accent)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:600">🌐 Proposta HTML (valor ≥ R$1.000)</div>'
+      + '<div style="display:flex;gap:6px"><button class="btn btn-sm btn-ghost" onclick="verPropostaHtml()">👁️ Visualizar</button>'
+      + '<button class="btn btn-sm btn-primary" onclick="baixarPropostaHtml()">⬇️ Baixar HTML</button></div></div>'
+      + '<div style="font-size:12px;line-height:1.7;color:var(--muted)">Publicar no Vercel como projeto <strong style="color:var(--accent)">proposta-'+slug+'</strong> (arquivo como index.html). Depois: testar o link em aba anônima (tem que abrir sem login) e trocar o marcador <strong style="color:var(--gold)">LINK_DA_PROPOSTA</strong> no texto abaixo pelo link real (formato proposta-'+slug+'.vercel.app).</div></div>';
+    h += '<div class="card">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:600">✍️ Texto de acompanhamento do link</div>'
+      + '<button class="btn btn-sm btn-success" onclick="copyText(window._proposta, this)">📋 Copiar</button></div>'
+      + '<div style="font-size:12px;color:var(--accent);margin-bottom:8px">👉 Vai na caixa de proposta da Workana, junto com o link. Sem valor/prazo de propósito — força o cliente a abrir o link.</div>'
+      + '<div class="gen-text">'+o.proposta+'</div></div>';
+    h += '<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:8px">Publicou o link e enviou a proposta?</div>'
+      + '<button class="btn btn-sm btn-primary" onclick="registrarCRM(\'proposta enviada\')">✓ Registrar como proposta enviada</button></div>';
+    col.innerHTML = h;
+    return;
+  }
 
   if (o.modo === "parceria") {
     let h = '<div class="card">'
@@ -1255,7 +1368,7 @@ async function gerarPropostaFinalCRM(id, valor, prazo){
   const platC = r.plataforma || "Workana";
   const ehWC = plataformaGrupo(platC) === "Workana";
   const provaSocial = ehWC
-    ? "avaliacoes 5 estrelas na Workana (" + profile.avaliacoes + " projetos), 17 anos em operacao critica de TI, portfolio em lupixa.com"
+    ? "entre os 0,01% mais bem classificados da Workana (posicao 333 de 14,59 milhoes de freelancers, nivel Gold), avaliacao 5.0 em " + profile.avaliacoes + " projetos, 17 anos em operacao critica de TI, portfolio em lupixa.com. REGRA DO RANKING: sempre citar numero bruto E porcentagem juntos, nunca so 'Top 1%'"
     : "17 anos em operacao critica de TI, portfolio com cases reais em lupixa.com";
   const prompt = "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a plataforma " + platC + ". IMPORTANTE: este cliente JA CONVERSOU com voce e respondeu suas perguntas — a proposta precisa deixar visivel que as respostas dele moldaram o que voce esta propondo.\n\n"
     + 'Cliente: ' + (r.cliente||"cliente") + "\n"
@@ -1279,8 +1392,11 @@ async function gerarPropostaFinalCRM(id, valor, prazo){
   try {
     const text = await callClaude(prompt);
     window["_prop_"+id] = text;
-    box.innerHTML =
-      '<div class="gen-text" style="margin-bottom:8px">'+text+'</div>'
+    const avisoHtml = (valor >= 1000)
+      ? '<div style="font-size:12px;color:var(--gold);background:var(--gold-dim);border-radius:8px;padding:8px 12px;margin-bottom:8px">⚠️ Valor ≥ R$1.000: pela regra, esse cliente merece proposta HTML no Vercel. Gere pela aba Analisar (cole a descrição + resposta dele) e use este texto só como acompanhamento do link, removendo o valor/prazo dele.</div>'
+      : '';
+    box.innerHTML = avisoHtml
+      + '<div class="gen-text" style="margin-bottom:8px">'+text+'</div>'
       + '<button class="btn btn-sm btn-success" onclick="copyText(window[\'_prop_'+id+'\'], this)">📋 Copiar proposta</button> '
       + '<button class="btn btn-sm btn-primary" onclick="updateCRMItem(\''+id+'\',{status:\'proposta enviada\',followup:\''+addDays(today(),2)+'\'})">✓ Marcar como proposta enviada</button>';
   } catch(e) { box.innerHTML=''; alert("Erro ao gerar proposta: "+e.message); }
