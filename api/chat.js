@@ -7,10 +7,12 @@ export default async function handler(req) {
     });
   }
 
-  let prompt;
+  let prompt, maxTokens;
   try {
     const raw = await req.text();
-    prompt = JSON.parse(raw).prompt;
+    const body = JSON.parse(raw);
+    prompt = body.prompt;
+    maxTokens = Math.min(Math.max(parseInt(body.max_tokens) || 1000, 100), 8000);
   } catch (e) {
     return new Response(JSON.stringify({ error: 'Body invalido: ' + e.message }), {
       status: 400, headers: { 'Content-Type': 'application/json; charset=utf-8' }
@@ -36,7 +38,7 @@ export default async function handler(req) {
       headers: { 'Content-Type': 'application/json; charset=utf-8', 'Authorization': 'Bearer ' + apiKey },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_tokens: 1000,
+        max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }]
       })
     });

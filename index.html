@@ -409,11 +409,11 @@ async function deleteCRMItem(id){
   catch(e) { console.error(e); }
 }
 
-async function callClaude(prompt){
+async function callClaude(prompt, maxTokens){
   const res = await fetch("/api/chat", {
     method:"POST",
     headers:{"Content-Type":"application/json; charset=utf-8"},
-    body: JSON.stringify({ prompt })
+    body: JSON.stringify({ prompt: prompt, max_tokens: maxTokens || 1000 })
   });
   // decodifica explicitamente como UTF-8 para nao depender do palpite do navegador
   const buf = await res.arrayBuffer();
@@ -580,7 +580,10 @@ function confirmarValor(){
   if (analysis && analysis.escopoClaro) {
     hint.style.background = "var(--green-dim)";
     hint.style.color = "var(--green)";
-    hint.innerHTML = "💡 A IA avaliou: <strong>escopo claro</strong>. Recomendado gerar apresentação + proposta e enviar as duas.";
+    const htmlNote = (tipoCobranca === "projeto" && finalPrice >= 1000)
+      ? " Valor ≥ R$1.000: será gerada <strong>proposta HTML</strong> (pra publicar no Vercel) + texto de acompanhamento sem valor/prazo."
+      : "";
+    hint.innerHTML = "💡 A IA avaliou: <strong>escopo claro</strong>. Recomendado gerar apresentação + proposta e enviar as duas." + htmlNote;
   } else {
     hint.style.background = "var(--purple-dim)";
     hint.style.color = "var(--purple)";
@@ -649,7 +652,7 @@ function buildPropostaPrompt(respostaCliente){
   const plat = getPlataformaAtual();
   const ehW = plataformaGrupo(plat) === "Workana";
   const provaSocial = ehW
-    ? "avaliacoes 5 estrelas na Workana (" + profile.avaliacoes + " projetos), 17 anos em operacao critica de TI, portfolio em lupixa.com"
+    ? "entre os 0,01% mais bem classificados da Workana (posicao 333 de 14,59 milhoes de freelancers, nivel Gold), avaliacao 5.0 em " + profile.avaliacoes + " projetos, 17 anos em operacao critica de TI, portfolio em lupixa.com. REGRA DO RANKING: sempre citar numero bruto E porcentagem juntos (0,01%, posicao 333 de 14,59 milhoes), nunca so 'Top 1%'"
     : "17 anos em operacao critica de TI, portfolio com cases reais em lupixa.com";
   return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a plataforma " + plat + ". O cliente le em diagonal e tem pressa: cada frase precisa ganhar o seu lugar. Proposta longa e ignorada.\n\n"
     + 'Cliente: ' + cliente + "\n"
@@ -672,16 +675,182 @@ function buildPropostaPrompt(respostaCliente){
     + "FORMATACAO OBRIGATORIA: paragrafos curtos com UMA LINHA EM BRANCO entre cada um (quebras de linha duplas). NUNCA grude tudo num paragrafo unico. Cada entregavel em sua linha (quando usar lista).";
 }
 
+// REGRA DE FORMATO POR VALOR: >= R$1.000 (por projeto) gera proposta HTML no Vercel + texto de acompanhamento sem valor/prazo (forca abrir o link). Abaixo disso, so texto com valor/prazo em bloco separado.
+function deveGerarHtml(){
+  return tipoCobranca === "projeto" && finalPrice >= 1000;
+}
+
+function slugCliente(){
+  return (document.getElementById("in-cliente").value||"cliente").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").split("-")[0] || "cliente";
+}
+
+function limparHtmlGerado(raw){
+  let t = (raw||"").replace(/```html/gi,"").replace(/```/g,"").trim();
+  const i = t.indexOf("<!DOCTYPE");
+  if (i > 0) t = t.slice(i);
+  return t;
+}
+
+// A IA gera SO o conteudo (JSON). O layout e um template fixo de qualidade comprovada (montarHtmlProposta) — nunca fica na mao do modelo.
+function buildPropostaConteudoPrompt(){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const desc = document.getElementById("in-desc").value;
+  const contexto = document.getElementById("in-contexto").value.trim();
+  const contextoTxt = contexto ? "\n\nInformacao adicional do Diogo (usar como prova de vivencia pratica): " + contexto : "";
+  return "Voce escreve o CONTEUDO de uma proposta comercial do Diogo Pinotti, freelancer de TI no Brasil. O layout ja existe; sua tarefa e so o texto, adaptado a ESTE projeto.\n\n"
+    + 'Cliente: ' + cliente + "\n"
+    + "Projeto descrito pelo cliente: " + desc + contextoTxt + "\n\n"
+    + "ADAPTACAO (CRITICO): se o cliente pediu animacoes/efeitos, marque animar=true. Se o nicho e claro (imobiliaria, restaurante, advocacia, clinica, moda, e-commerce, barbearia...), escolha uma cor de acento hex que combine com o nicho (clara o bastante pra ler em fundo escuro #0b0d12) e, quando fizer sentido, preencha o campo demo com uma demonstracao visual do nicho (ex: imobiliaria = mini card de imovel; restaurante = item de cardapio; e-commerce = card de produto). Sem nicho claro: accent \"#9fe6c8\" e demo null.\n\n"
+    + "CONTEUDO: portugues correto com acentuacao completa. Segunda pessoa (voce). Frases curtas. Nunca mencionar IA. Nada generico que serviria pra qualquer projeto — cite detalhes especificos do anuncio.\n\n"
+    + "Responda SOMENTE em JSON valido, sem markdown, com EXATAMENTE estes campos:\n"
+    + '{"titulo":"objetivo especifico do projeto para o H1 (sem o nome do cliente)",'
+    + '"accent":"#hex de acento adequado ao nicho",'
+    + '"animar":true ou false,'
+    + '"sobre":["paragrafo 1 provando leitura real do anuncio","paragrafo 2 com a abordagem geral (opcional, senao lista com 1 item)"],'
+    + '"estrutura":[{"t":"titulo curto do item tecnico","d":"explicacao curta especifica deste projeto"} com 4 a 5 itens],'
+    + '"demo":null ou {"rotulo":"ex: Exemplo de como um imovel apareceria no site","titulo":"titulo do card demo","linhas":["linha 1","linha 2"],"destaque":"ex: R$ 450.000 ou preco do prato"},'
+    + '"experiencia":"1 paragrafo conectando a experiencia do Diogo (17 anos TI, projetos web/automacao reais) a ESTE tipo de projeto",'
+    + '"protecao":"frase de protecao de escopo citando o material/acesso especifico DESTE projeto que dispara o inicio do prazo"}';
+}
+
+function montarHtmlProposta(c){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const prazoUso = finalPrazo || (analysis ? analysis.prazoEstimado : "");
+  const ac = /^#[0-9a-fA-F]{3,8}$/.test(c.accent||"") ? c.accent : "#9fe6c8";
+  const anim = c.animar
+    ? ".rv{opacity:0;animation:fadeUp .7s ease forwards}@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}"
+      + "section:nth-of-type(2) .rv{animation-delay:.15s}section:nth-of-type(3) .rv{animation-delay:.3s}"
+      + ".card{transition:transform .25s ease,border-color .25s ease}.card:hover{transform:translateY(-3px);border-color:var(--accent-2)}"
+    : ".rv{}";
+  const sobre = (c.sobre||[]).map(function(p){ return '<p>'+p+'</p>'; }).join("");
+  const itens = (c.estrutura||[]).map(function(i){ return '<li><b>'+i.t+'</b> — '+i.d+'</li>'; }).join("");
+  const demo = c.demo
+    ? '<section class="rv"><h2>'+(c.demo.rotulo||"Demonstração")+'</h2><div class="card demo-card">'
+      + '<div class="demo-title">'+(c.demo.titulo||"")+'</div>'
+      + (c.demo.linhas||[]).map(function(l){ return '<div class="demo-line">'+l+'</div>'; }).join("")
+      + (c.demo.destaque ? '<div class="demo-destaque">'+c.demo.destaque+'</div>' : "")
+      + '</div></section>'
+    : "";
+  return '<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
+    + '<title>Proposta — '+(c.titulo||"Projeto")+'</title>\n<style>\n'
+    + ':root{--bg:#0b0d12;--bg-elev:#12151c;--bg-elev-2:#171b24;--border:#242938;--text:#eef1f7;--text-dim:#a6adbb;--accent:#7c9cff;--accent-2:'+ac+';}\n'
+    + '*{box-sizing:border-box;}\nbody{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;}\n'
+    + '.wrap{max-width:780px;margin:0 auto;padding:56px 24px 96px;}\n'
+    + '.badge{display:inline-block;font-size:12.5px;letter-spacing:.04em;color:var(--accent-2);background:rgba(255,255,255,.04);border:1px solid var(--accent-2);opacity:.95;padding:6px 12px;border-radius:100px;margin-bottom:20px;}\n'
+    + 'h1{font-size:27px;line-height:1.3;margin:0 0 8px;font-weight:650;letter-spacing:-0.01em;}\n'
+    + '.sub{color:var(--text-dim);font-size:15.5px;margin-bottom:40px;}\n'
+    + '.greeting{font-size:17px;margin-bottom:32px;}\nsection{margin-bottom:36px;}\n'
+    + 'h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-2);margin:0 0 14px;font-weight:600;}\n'
+    + 'p{margin:0 0 14px;color:var(--text);font-size:16px;}\n'
+    + '.card{background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;padding:24px 26px;}\n'
+    + 'ul{margin:0;padding-left:20px;}\nli{margin-bottom:10px;color:var(--text);}\nli b{color:var(--text);}\n'
+    + '.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;}\n'
+    + '.stat{background:var(--bg-elev-2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}\n'
+    + '.stat .num{font-size:22px;font-weight:700;color:var(--accent-2);}\n.stat .label{font-size:13px;color:var(--text-dim);margin-top:4px;}\n'
+    + '.offer{background:linear-gradient(135deg,rgba(124,156,255,.12),rgba(255,255,255,.05));border:1px solid rgba(124,156,255,.35);border-radius:16px;padding:28px 26px;text-align:center;}\n'
+    + '.offer .price{font-size:36px;font-weight:750;color:#fff;letter-spacing:-0.02em;}\n.offer .term{font-size:15px;color:var(--text-dim);margin-top:6px;}\n'
+    + '.divider{height:1px;background:var(--border);margin:36px 0;}\n'
+    + '.ranking{display:flex;align-items:center;gap:14px;background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;padding:20px 22px;}\n'
+    + '.ranking .icon{font-size:22px;}\n.ranking p{margin:0;font-size:15px;color:var(--text-dim);}\n.ranking b{color:var(--text);}\n'
+    + '.signoff{margin-top:40px;color:var(--text-dim);font-size:15.5px;}\n.signoff .name{display:block;color:var(--text);font-weight:600;font-size:17px;margin-top:4px;}\n'
+    + '.demo-card{border-color:var(--accent-2);}\n.demo-title{font-size:17px;font-weight:650;margin-bottom:8px;}\n.demo-line{font-size:14.5px;color:var(--text-dim);padding:2px 0;}\n.demo-destaque{margin-top:10px;font-size:20px;font-weight:750;color:var(--accent-2);}\n'
+    + anim + '\n'
+    + '@media (max-width:520px){.grid{grid-template-columns:1fr;}h1{font-size:23px;}.offer .price{font-size:30px;}}\n'
+    + '</style>\n</head>\n<body>\n<div class="wrap">\n'
+    + '<span class="badge rv">Proposta técnica</span>\n'
+    + '<h1 class="rv">'+(c.titulo||"Proposta")+'</h1>\n'
+    + '<p class="sub rv">Preparada para '+cliente+'</p>\n'
+    + '<p class="greeting rv">Oi '+cliente+', tudo bem?</p>\n'
+    + '<section class="rv"><h2>Sobre o projeto</h2>'+sobre+'</section>\n'
+    + '<section class="rv"><h2>Como pretendo estruturar</h2><div class="card"><ul>'+itens+'</ul></div></section>\n'
+    + demo
+    + '<section class="rv"><h2>Experiência</h2><p>'+(c.experiencia||"")+'</p></section>\n'
+    + '<div class="grid rv"><div class="stat"><div class="num">17 anos</div><div class="label">de experiência em TI, incluindo operação crítica</div></div>'
+    + '<div class="stat"><div class="num">5.0</div><div class="label">avaliação na Workana, projetos entregues com nota máxima</div></div></div>\n'
+    + '<div class="divider"></div>\n'
+    + '<section class="rv"><h2>Proposta</h2><div class="offer"><div class="price">R$ '+fmtNum(finalPrice)+'</div><div class="term">Prazo de entrega: '+prazoUso+'</div></div>'
+    + '<p style="margin-top:18px;color:var(--text-dim);font-size:14.5px;">'+(c.protecao||"Prazo contado a partir do acesso ao material necessário. Ajustes fora do escopo descrito aqui são orçados à parte.")+'</p></section>\n'
+    + '<div class="ranking rv"><span class="icon">🏆</span><p><b>Entre os 0,01% mais bem classificados da Workana</b>, na posição 333 de 14,59 milhões de freelancers, nível Gold.</p></div>\n'
+    + '<div class="signoff rv">Fico à disposição para qualquer ajuste ou dúvida sobre a proposta.<span class="name">Diogo Pinotti</span></div>\n'
+    + '</div>\n</body>\n</html>';
+}
+
+function buildAcompanhamentoPrompt(){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const desc = document.getElementById("in-desc").value;
+  const plat = getPlataformaAtual();
+  return "Voce e o Diogo Pinotti, freelancer de TI no Brasil, escrevendo como um vendedor senior de multinacional: seguranca tranquila, direto, sem soar necessitado. Escreva o TEXTO CURTO DE ACOMPANHAMENTO para a caixa de proposta da plataforma " + plat + ", que acompanha o LINK de uma proposta HTML completa ja publicada.\n\n"
+    + 'Cliente: ' + cliente + "\n"
+    + "Projeto: " + desc + "\n\n"
+    + "ESTRUTURA (paragrafos curtos separados por linha em branco):\n"
+    + "1. Saudacao: 'Oi " + cliente + ", tudo bem?'\n"
+    + "2. 1 paragrafo curto provando leitura real do projeto e que o Diogo e o profissional certo pra ESTE projeto especifico (nao curriculo generico).\n"
+    + "3. 1 frase apresentando a proposta detalhada + o marcador LINK_DA_PROPOSTA sozinho em sua propria linha.\n"
+    + "4. 1 frase: 'La tem o raciocinio tecnico completo, valor e prazo.' (pode variar a construcao).\n"
+    + "5. Fechamento com o texto EXATO: 'Entre os 0,01% mais bem classificados da Workana, na posição 333 de 14,59 milhões de freelancers, nível Gold.'\n\n"
+    + "PROIBICOES: NUNCA citar valor nem prazo neste texto (estao no link — o objetivo e forcar a abertura). NUNCA 'fico a disposicao'. NUNCA se apresentar com 'Sou o Diogo'. Maximo 90 palavras.\n\n"
+    + "REGRAS: portugues correto com acentuacao completa. Sem emojis. Nunca mencionar IA. Tom humano e direto.";
+}
+
 async function gerarClaro(){
   if (!analysis || !finalPrice) return;
   const btn = document.getElementById("btn-claro");
-  btn.disabled = true; btn.textContent = "⏳ Gerando os dois textos...";
+  const ehHtml = deveGerarHtml();
+  btn.disabled = true; btn.textContent = ehHtml ? "⏳ Gerando apresentação + proposta HTML..." : "⏳ Gerando os dois textos...";
   try {
     const apresentacao = await callClaude(buildApresentacaoPrompt(false));
-    const proposta = await callClaude(buildPropostaPrompt(""));
-    renderTextos({ apresentacao: apresentacao, proposta: proposta, modo: "claro" });
+    if (ehHtml) {
+      const rawConteudo = await callClaude(buildPropostaConteudoPrompt(), 3000);
+      const conteudo = JSON.parse(rawConteudo.replace(/```json|```/g,"").trim());
+      const acomp = await callClaude(buildAcompanhamentoPrompt());
+      renderTextos({ apresentacao: apresentacao, proposta: acomp, propostaHtml: montarHtmlProposta(conteudo), modo: "claro-html" });
+    } else {
+      const proposta = await callClaude(buildPropostaPrompt(""));
+      renderTextos({ apresentacao: apresentacao, proposta: proposta, modo: "claro" });
+    }
   } catch(e) { alert("Erro: "+e.message); }
   btn.disabled = false; btn.textContent = "✅ Escopo claro — gerar apresentação + proposta";
+}
+
+function baixarPropostaHtml(){
+  const blob = new Blob([window._propostaHtml||""], {type:"text/html;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "proposta-"+slugCliente()+".html";
+  a.click();
+}
+
+function verPropostaHtml(){
+  const blob = new Blob([window._propostaHtml||""], {type:"text/html;charset=utf-8"});
+  window.open(URL.createObjectURL(blob), "_blank");
+}
+
+async function publicarVercel(){
+  const btn = document.getElementById("btn-publicar");
+  const st = document.getElementById("publicar-status");
+  if (!window._propostaHtml) { alert("Gere a proposta HTML primeiro."); return; }
+  btn.disabled = true; btn.textContent = "⏳ Publicando...";
+  try {
+    const res = await fetch("/api/deploy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ name: "proposta-"+slugCliente(), html: window._propostaHtml })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || "Erro "+res.status);
+    window._linkProposta = data.url;
+    // troca o marcador no texto de acompanhamento automaticamente
+    window._proposta = (window._proposta||"").replace(/LINK_DA_PROPOSTA/g, data.url);
+    const acomp = document.getElementById("acomp-text");
+    if (acomp) acomp.textContent = window._proposta;
+    st.innerHTML = '✅ <strong style="color:var(--green)">Publicado:</strong> <a href="'+data.url+'" target="_blank" style="color:var(--accent)">'+data.url+'</a>'
+      + ' <button class="btn btn-sm btn-success" style="margin-left:6px" onclick="copyText(window._linkProposta, this)">📋 Copiar link</button>'
+      + '<div style="margin-top:4px;color:var(--muted)">Link já inserido no texto de acompanhamento abaixo. Abra numa aba anônima pra conferir antes de enviar.</div>';
+    btn.textContent = "✓ Publicado";
+  } catch(e) {
+    st.innerHTML = '⚠️ <span style="color:var(--gold)">'+e.message+'</span><div style="margin-top:4px;color:var(--muted)">Alternativa: use ⬇️ Baixar e publique manualmente no Vercel, trocando o LINK_DA_PROPOSTA no texto.</div>';
+    btn.disabled = false; btn.textContent = "🚀 Publicar no Vercel";
+  }
 }
 
 async function gerarIncerto(){
@@ -737,7 +906,7 @@ function buildParceriaPrompt(){
   const plat = getPlataformaAtual();
   const ehW = plataformaGrupo(plat) === "Workana";
   const linhasCred = ehW
-    ? "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes + "\nStatus Top 1% na Workana: sim"
+    ? "Avaliacoes 5 estrelas na Workana: " + profile.avaliacoes + "\nRanking Workana: entre os 0,01% mais bem classificados, posicao 333 de 14,59 milhoes de freelancers, nivel Gold (sempre citar assim, nunca so 'Top 1%')"
     : "Credenciais: 17 anos em operacao critica de TI, cases reais em lupixa.com";
   return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA DE PARCERIA CURTA para a plataforma " + plat + ". Aqui o cliente NAO quer um projeto unico: ele busca um PARCEIRO FIXO/RECORRENTE para atender os clientes dele. Voce esta se candidatando a fornecedor de confianca.\n\n"
     + "Cliente: " + cliente + "\n"
@@ -751,7 +920,7 @@ function buildParceriaPrompt(){
     + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
     + "2. OBJETIVO DIRETO (1 frase curta, SEM anunciar que entendeu): va direto ao objetivo da parceria. Comece com 'Para [objetivo especifico desta parceria], proponho:' — onde [objetivo especifico] captura o PROPOSITO REAL e um detalhe UNICO DESTE anuncio. NUNCA use 'Entendi que', 'Entendo que', 'Vejo que', 'Percebi que', 'Notei que' ou qualquer frase que anuncia que voce leu o anuncio. NUNCA adicione qualificadores genericos como 'parceria solida', 'servico de qualidade', 'atendimento diferenciado' — so o proposito concreto desta parceria.\n\n"
     + "3. O QUE VOCE OFERECE: a frase 'proponho:' do item 2 JA introduz a lista. Entao coloque DIRETAMENTE 3 a 4 itens concretos do que voce entrega como parceiro, cada um em sua linha comecando com hifen, 4 a 7 palavras cada. Foque no que ele pediu neste anuncio especifico.\n\n"
-    + "4. CONFIANCA (1 paragrafo curto): " + (ehW ? "ancore com 'Top 1% na Workana, nota 5 estrelas em todos os projetos' e cases reais que ele pode ver em lupixa.com. Cite os 17 anos em operacao critica de TI (prazo curto e zero erro)." : "ancore com os 17 anos em operacao critica de TI (prazo curto e zero erro) e cases reais que ele pode ver em lupixa.com.") + " Se houver INFORMACAO ADICIONAL do Diogo, USE-A AQUI como prova concreta. Amarre ao que reduz o risco dele: entrega pronta, sem atraso, sem retrabalho.\n\n"
+    + "4. CONFIANCA (1 paragrafo curto): " + (ehW ? "ancore com 'entre os 0,01% mais bem classificados da Workana, na posicao 333 de 14,59 milhoes de freelancers, nivel Gold, nota 5 em todos os projetos' e cases reais que ele pode ver em lupixa.com. Cite os 17 anos em operacao critica de TI (prazo curto e zero erro)." : "ancore com os 17 anos em operacao critica de TI (prazo curto e zero erro) e cases reais que ele pode ver em lupixa.com.") + " Se houver INFORMACAO ADICIONAL do Diogo, USE-A AQUI como prova concreta. Amarre ao que reduz o risco dele: entrega pronta, sem atraso, sem retrabalho.\n\n"
     + "5. PRECO DE PARCERIA: " + precoTxt + " Deixe claro que volume de parceria tem condicao diferente de projeto avulso.\n\n"
     + "6. PERGUNTA NO MEIO-FIM (1 linha): a duvida que, dependendo da resposta, MUDA como voce estrutura esta parceria. Criterios obrigatorios: o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples); a resposta altera a operacao ou a tabela de valores; NUNCA pergunte o que o anuncio ja responde. Deve ser sobre OPERACAO desta parceria especifica (ferramentas usadas, como chegam os briefings, o que ele ja tem estruturado, quem aprova as entregas). PROIBIDO: perguntas genericas que servem para qualquer anuncio. A pergunta deve provar que voce leu ESTE anuncio.\n\n"
     + "7. PROXIMO PASSO QUE CONDUZ (1 linha, OBRIGATORIO ser personalizado para ESTE anuncio): NAO termine de forma passiva. Proponha uma acao CONCRETA e ESPECIFICA que faca sentido para esta parceria — algo que o cliente pode responder em 30 segundos. NUNCA use exemplos fixos como 'me indica um projeto atual' ou frases que serviriam para qualquer parceria. VARIE conforme o anuncio real e seja especifico.\n\n"
@@ -778,7 +947,32 @@ async function gerarParceria(){
 function renderTextos(o){
   window._apresentacao = o.apresentacao;
   window._proposta = o.proposta || "";
+  window._propostaHtml = o.propostaHtml || "";
   const col = document.getElementById("resultado-col");
+
+  if (o.modo === "claro-html") {
+    const slug = slugCliente();
+    let h = '<div class="card">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:600">💬 Mensagem de apresentação</div>'
+      + '<button class="btn btn-sm btn-success" onclick="copyText(window._apresentacao, this)">📋 Copiar</button></div>'
+      + '<div style="font-size:12px;color:var(--purple);margin-bottom:8px">👉 Envie como primeira mensagem (na Workana: botão "Fazer uma pergunta")</div>'
+      + '<div class="gen-text">'+o.apresentacao+'</div></div>';
+    h += '<div class="card" style="border:1px solid var(--accent)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px"><div style="font-weight:600">🌐 Proposta HTML (valor ≥ R$1.000)</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm btn-ghost" onclick="verPropostaHtml()">👁️ Visualizar</button>'
+      + '<button class="btn btn-sm btn-ghost" onclick="baixarPropostaHtml()">⬇️ Baixar</button>'
+      + '<button class="btn btn-sm btn-primary" id="btn-publicar" onclick="publicarVercel()">🚀 Publicar no Vercel</button></div></div>'
+      + '<div id="publicar-status" style="font-size:12px;line-height:1.7;color:var(--muted)">Clique em <strong style="color:var(--accent)">Publicar no Vercel</strong> — o link sai pronto e entra sozinho no texto abaixo. Projeto: <strong>proposta-'+slug+'</strong>.</div></div>';
+    h += '<div class="card">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:600">✍️ Texto de acompanhamento do link</div>'
+      + '<button class="btn btn-sm btn-success" onclick="copyText(window._proposta, this)">📋 Copiar</button></div>'
+      + '<div style="font-size:12px;color:var(--accent);margin-bottom:8px">👉 Vai na caixa de proposta da Workana, junto com o link. Sem valor/prazo de propósito — força o cliente a abrir o link.</div>'
+      + '<div class="gen-text" id="acomp-text">'+o.proposta+'</div></div>';
+    h += '<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:8px">Publicou o link e enviou a proposta?</div>'
+      + '<button class="btn btn-sm btn-primary" onclick="registrarCRM(\'proposta enviada\')">✓ Registrar como proposta enviada</button></div>';
+    col.innerHTML = h;
+    return;
+  }
 
   if (o.modo === "parceria") {
     let h = '<div class="card">'
@@ -1255,7 +1449,7 @@ async function gerarPropostaFinalCRM(id, valor, prazo){
   const platC = r.plataforma || "Workana";
   const ehWC = plataformaGrupo(platC) === "Workana";
   const provaSocial = ehWC
-    ? "avaliacoes 5 estrelas na Workana (" + profile.avaliacoes + " projetos), 17 anos em operacao critica de TI, portfolio em lupixa.com"
+    ? "entre os 0,01% mais bem classificados da Workana (posicao 333 de 14,59 milhoes de freelancers, nivel Gold), avaliacao 5.0 em " + profile.avaliacoes + " projetos, 17 anos em operacao critica de TI, portfolio em lupixa.com. REGRA DO RANKING: sempre citar numero bruto E porcentagem juntos, nunca so 'Top 1%'"
     : "17 anos em operacao critica de TI, portfolio com cases reais em lupixa.com";
   const prompt = "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a plataforma " + platC + ". IMPORTANTE: este cliente JA CONVERSOU com voce e respondeu suas perguntas — a proposta precisa deixar visivel que as respostas dele moldaram o que voce esta propondo.\n\n"
     + 'Cliente: ' + (r.cliente||"cliente") + "\n"
@@ -1279,8 +1473,11 @@ async function gerarPropostaFinalCRM(id, valor, prazo){
   try {
     const text = await callClaude(prompt);
     window["_prop_"+id] = text;
-    box.innerHTML =
-      '<div class="gen-text" style="margin-bottom:8px">'+text+'</div>'
+    const avisoHtml = (valor >= 1000)
+      ? '<div style="font-size:12px;color:var(--gold);background:var(--gold-dim);border-radius:8px;padding:8px 12px;margin-bottom:8px">⚠️ Valor ≥ R$1.000: pela regra, esse cliente merece proposta HTML no Vercel. Gere pela aba Analisar (cole a descrição + resposta dele) e use este texto só como acompanhamento do link, removendo o valor/prazo dele.</div>'
+      : '';
+    box.innerHTML = avisoHtml
+      + '<div class="gen-text" style="margin-bottom:8px">'+text+'</div>'
       + '<button class="btn btn-sm btn-success" onclick="copyText(window[\'_prop_'+id+'\'], this)">📋 Copiar proposta</button> '
       + '<button class="btn btn-sm btn-primary" onclick="updateCRMItem(\''+id+'\',{status:\'proposta enviada\',followup:\''+addDays(today(),2)+'\'})">✓ Marcar como proposta enviada</button>';
   } catch(e) { box.innerHTML=''; alert("Erro ao gerar proposta: "+e.message); }
