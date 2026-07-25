@@ -700,7 +700,7 @@ function buildPropostaConteudoPrompt(){
   return "Voce escreve o CONTEUDO de uma proposta comercial do Diogo Pinotti, freelancer de TI no Brasil. O layout ja existe; sua tarefa e so o texto, adaptado a ESTE projeto.\n\n"
     + 'Cliente: ' + cliente + "\n"
     + "Projeto descrito pelo cliente: " + desc + contextoTxt + "\n\n"
-    + "ADAPTACAO (CRITICO): se o cliente pediu animacoes/efeitos, marque animar=true. Se o nicho e claro (imobiliaria, restaurante, advocacia, clinica, moda, e-commerce, barbearia...), escolha uma cor de acento hex que combine com o nicho (clara o bastante pra ler em fundo escuro #0b0d12) e, quando fizer sentido, preencha o campo demo com uma demonstracao visual do nicho (ex: imobiliaria = mini card de imovel; restaurante = item de cardapio; e-commerce = card de produto). Sem nicho claro: accent \"#9fe6c8\" e demo null.\n\n"
+    + "ADAPTACAO (CRITICO): se o cliente pediu animacoes/efeitos, marque animar=true. Se o nicho e claro (imobiliaria, restaurante, advocacia, clinica, moda, e-commerce, barbearia...), escolha uma cor de acento hex que combine com o nicho (clara o bastante pra ler em fundo escuro #0b0d12) e preencha o campo demo com uma VITRINE de 2 a 3 cards demonstrando como o produto/servico do cliente vai aparecer no site dele (imobiliaria = imoveis com quartos/vagas/metragem e preco; restaurante = pratos com preco; e-commerce = produtos; barbearia = servicos). A vitrine e a parte mais importante da adaptacao: e a PROVA VISUAL do que ele vai receber. Invente exemplos realistas do nicho e da cidade/publico citados no anuncio. Sem nicho claro com produto exibivel: demo null e accent \"#9fe6c8\".\n\n"
     + "CONTEUDO: portugues correto com acentuacao completa. Segunda pessoa (voce). Frases curtas. Nunca mencionar IA. Nada generico que serviria pra qualquer projeto — cite detalhes especificos do anuncio.\n\n"
     + "Responda SOMENTE em JSON valido, sem markdown, com EXATAMENTE estes campos:\n"
     + '{"titulo":"objetivo especifico do projeto para o H1 (sem o nome do cliente)",'
@@ -708,15 +708,15 @@ function buildPropostaConteudoPrompt(){
     + '"animar":true ou false,'
     + '"sobre":["paragrafo 1 provando leitura real do anuncio","paragrafo 2 com a abordagem geral (opcional, senao lista com 1 item)"],'
     + '"estrutura":[{"t":"titulo curto do item tecnico","d":"explicacao curta especifica deste projeto"} com 4 a 5 itens],'
-    + '"demo":null ou {"rotulo":"ex: Exemplo de como um imovel apareceria no site","titulo":"titulo do card demo","linhas":["linha 1","linha 2"],"destaque":"ex: R$ 450.000 ou preco do prato"},'
+    + '"demo":null ou {"rotulo":"ex: Uma previa de como seus imoveis vao aparecer no site","icone":"1 emoji do nicho (ex: 🏠 🍽️ 🛒 💈)","acao":"texto curto do botao de acao do nicho (ex: Falar com o corretor / Pedir agora / Comprar)","cards":[{"titulo":"nome do item","chips":["2 a 3 caracteristicas curtas (ex: 3 quartos, 2 vagas, 120m²)"],"destaque":"preco (ex: R$ 750.000)"} com 2 a 3 cards de exemplos realistas]},'
     + '"experiencia":"1 paragrafo conectando a experiencia do Diogo (17 anos TI, projetos web/automacao reais) a ESTE tipo de projeto",'
-    + '"protecao":"frase de protecao de escopo citando o material/acesso especifico DESTE projeto que dispara o inicio do prazo"}';
+    + '"protecao":"frase de protecao de escopo citando o material/acesso especifico DESTE projeto que dispara o inicio do prazo — PROIBIDO citar qualquer numero de dias ou prazo aqui (o prazo ja aparece no bloco de investimento; citar outro numero gera contradicao)"}';
 }
 
 function montarHtmlProposta(c){
   const cliente = document.getElementById("in-cliente").value||"cliente";
   const prazoUso = finalPrazo || (analysis ? analysis.prazoEstimado : "");
-  const ac = /^#[0-9a-fA-F]{3,8}$/.test(c.accent||"") ? c.accent : "#9fe6c8";
+  const ac = /^#[0-9a-fA-F]{6}$/.test(c.accent||"") ? c.accent : "#9fe6c8";
   const anim = c.animar
     ? ".rv{opacity:0;animation:fadeUp .7s ease forwards}@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}"
       + "section:nth-of-type(2) .rv{animation-delay:.15s}section:nth-of-type(3) .rv{animation-delay:.3s}"
@@ -724,13 +724,30 @@ function montarHtmlProposta(c){
     : ".rv{}";
   const sobre = (c.sobre||[]).map(function(p){ return '<p>'+p+'</p>'; }).join("");
   const itens = (c.estrutura||[]).map(function(i){ return '<li><b>'+i.t+'</b> — '+i.d+'</li>'; }).join("");
-  const demo = c.demo
-    ? '<section class="rv"><h2>'+(c.demo.rotulo||"Demonstração")+'</h2><div class="card demo-card">'
-      + '<div class="demo-title">'+(c.demo.titulo||"")+'</div>'
-      + (c.demo.linhas||[]).map(function(l){ return '<div class="demo-line">'+l+'</div>'; }).join("")
-      + (c.demo.destaque ? '<div class="demo-destaque">'+c.demo.destaque+'</div>' : "")
-      + '</div></section>'
-    : "";
+  let demo = "";
+  if (c.demo) {
+    // compat: formato antigo (titulo/linhas) vira um card unico no formato novo
+    let cards = c.demo.cards;
+    if (!cards && c.demo.titulo) {
+      cards = [{ titulo: c.demo.titulo, chips: c.demo.linhas || [], destaque: c.demo.destaque || "" }];
+    }
+    const icone = c.demo.icone || "✨";
+    const acao = c.demo.acao || "";
+    const cardsHtml = (cards||[]).map(function(cd){
+      return '<div class="imv">'
+        + '<div class="imv-foto">'+icone+'</div>'
+        + '<div class="imv-body">'
+        + '<div class="imv-title">'+(cd.titulo||"")+'</div>'
+        + '<div class="chips">'+(cd.chips||[]).map(function(ch){ return '<span class="chip">'+ch+'</span>'; }).join("")+'</div>'
+        + (cd.destaque ? '<div class="imv-preco">'+cd.destaque+'</div>' : "")
+        + (acao ? '<span class="imv-btn">'+acao+'</span>' : "")
+        + '</div></div>';
+    }).join("");
+    demo = '<section class="rv"><h2>'+(c.demo.rotulo||"Uma prévia do seu site")+'</h2>'
+      + '<div class="vitrine">'+cardsHtml+'</div>'
+      + '<p style="margin-top:12px;font-size:13px;color:var(--text-dim)">Exemplo ilustrativo de layout — no site final, com as fotos e os dados reais dos seus itens.</p>'
+      + '</section>';
+  }
   return '<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
     + '<title>Proposta — '+(c.titulo||"Projeto")+'</title>\n<style>\n'
     + ':root{--bg:#0b0d12;--bg-elev:#12151c;--bg-elev-2:#171b24;--border:#242938;--text:#eef1f7;--text-dim:#a6adbb;--accent:#7c9cff;--accent-2:'+ac+';}\n'
@@ -753,7 +770,15 @@ function montarHtmlProposta(c){
     + '.ranking{display:flex;align-items:center;gap:14px;background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;padding:20px 22px;}\n'
     + '.ranking .icon{font-size:22px;}\n.ranking p{margin:0;font-size:15px;color:var(--text-dim);}\n.ranking b{color:var(--text);}\n'
     + '.signoff{margin-top:40px;color:var(--text-dim);font-size:15.5px;}\n.signoff .name{display:block;color:var(--text);font-weight:600;font-size:17px;margin-top:4px;}\n'
-    + '.demo-card{border-color:var(--accent-2);}\n.demo-title{font-size:17px;font-weight:650;margin-bottom:8px;}\n.demo-line{font-size:14.5px;color:var(--text-dim);padding:2px 0;}\n.demo-destaque{margin-top:10px;font-size:20px;font-weight:750;color:var(--accent-2);}\n'
+    + '.vitrine{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;}\n'
+    + '.imv{background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;overflow:hidden;}\n'
+    + '.imv-foto{height:104px;background:linear-gradient(135deg,'+ac+'33,'+ac+'0d 55%,rgba(255,255,255,.03));border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:34px;}\n'
+    + '.imv-body{padding:14px 16px 16px;}\n'
+    + '.imv-title{font-weight:650;font-size:15px;margin-bottom:8px;}\n'
+    + '.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}\n'
+    + '.chip{font-size:11.5px;color:var(--text-dim);border:1px solid var(--border);border-radius:100px;padding:3px 9px;white-space:nowrap;}\n'
+    + '.imv-preco{font-size:17px;font-weight:750;color:var(--accent-2);margin-bottom:10px;}\n'
+    + '.imv-btn{display:inline-block;font-size:12.5px;font-weight:600;background:#1f8a5b;color:#fff;padding:7px 12px;border-radius:8px;}\n'
     + anim + '\n'
     + '@media (max-width:520px){.grid{grid-template-columns:1fr;}h1{font-size:23px;}.offer .price{font-size:30px;}}\n'
     + '</style>\n</head>\n<body>\n<div class="wrap">\n'
