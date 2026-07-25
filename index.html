@@ -691,37 +691,88 @@ function limparHtmlGerado(raw){
   return t;
 }
 
-function buildPropostaHtmlPrompt(){
+// A IA gera SO o conteudo (JSON). O layout e um template fixo de qualidade comprovada (montarHtmlProposta) — nunca fica na mao do modelo.
+function buildPropostaConteudoPrompt(){
   const cliente = document.getElementById("in-cliente").value||"cliente";
   const desc = document.getElementById("in-desc").value;
   const contexto = document.getElementById("in-contexto").value.trim();
   const contextoTxt = contexto ? "\n\nInformacao adicional do Diogo (usar como prova de vivencia pratica): " + contexto : "";
-  const prazoUso = finalPrazo || (analysis ? analysis.prazoEstimado : "");
-  return "Voce e um desenvolvedor front-end senior trabalhando para o Diogo Pinotti, freelancer de TI no Brasil. Gere um documento HTML COMPLETO e AUTOCONTIDO de proposta comercial para ser publicado no Vercel e enviado como link ao cliente.\n\n"
+  return "Voce escreve o CONTEUDO de uma proposta comercial do Diogo Pinotti, freelancer de TI no Brasil. O layout ja existe; sua tarefa e so o texto, adaptado a ESTE projeto.\n\n"
     + 'Cliente: ' + cliente + "\n"
-    + "Projeto descrito pelo cliente: " + desc + contextoTxt + "\n"
-    + "Valor: R$ " + fmtNum(finalPrice) + "\n"
-    + "Prazo: " + prazoUso + "\n\n"
-    + "BASE VISUAL PADRAO (usar como fundacao): dark mode, fundo #0b0d12, cards #12151c com borda #242938 e border-radius 14px, texto #eef1f7, texto secundario #a6adbb, acentos #9fe6c8 (verde-agua) e #7c9cff (azul), max-width 780px centralizado, font-family system-ui, todo CSS inline em <style> unico no <head>, ZERO recursos externos (sem imagens, sem fonts, sem scripts).\n\n"
-    + "ESTRUTURA OBRIGATORIA, nesta ordem:\n"
-    + "1. Badge pequeno 'Proposta tecnica' no topo.\n"
-    + "2. H1 com o objetivo do projeto (especifico, nao generico) + subtitulo 'Preparada para " + cliente + "'.\n"
-    + "3. Saudacao: 'Oi " + cliente + ", tudo bem?'.\n"
-    + "4. Secao 'Sobre o projeto': 1-2 paragrafos provando leitura real do que o cliente descreveu, citando detalhes especificos do anuncio.\n"
-    + "5. Secao 'Como pretendo estruturar': card com lista de 4-5 itens tecnicos, cada um com titulo em <b> e explicacao curta, especificos DESTE projeto.\n"
-    + "6. Secao 'Experiencia': 1 paragrafo conectando a experiencia do Diogo a ESTE tipo de projeto.\n"
-    + "7. Grid de 2 stats: '17 anos' (de experiencia em TI, incluindo operacao critica) e '5.0' (avaliacao na Workana, projetos entregues com nota maxima).\n"
-    + "8. Bloco de investimento em destaque (gradiente sutil dos acentos): 'R$ " + fmtNum(finalPrice) + "' grande + 'Prazo de entrega: " + prazoUso + "'. Logo abaixo, em texto menor, protecao de escopo: prazo contado a partir do acesso ao material/credenciais necessarios DESTE projeto (especifique o que e neste caso), e ajustes fora do escopo descrito orcados a parte.\n"
-    + "9. Bloco de ranking com 🏆 e o texto EXATO: 'Entre os 0,01% mais bem classificados da Workana, na posição 333 de 14,59 milhões de freelancers, nível Gold.' (a primeira parte em <b>).\n"
-    + "10. Assinatura: 'Fico à disposição para qualquer ajuste ou dúvida sobre a proposta.' + nome 'Diogo Pinotti' em destaque.\n"
-    + "11. Responsivo: @media max-width 520px com grid em 1 coluna e fontes reduzidas.\n\n"
-    + "ADAPTACAO AO PROJETO (REGRA CRITICA — e o que separa esta proposta de uma generica):\n"
-    + "- Se o cliente PEDIU animacoes ou efeitos: inclua animacoes CSS reais e elegantes na propria proposta (fade-in nas secoes, hover nos cards, transicoes) — a proposta VIRA a prova de que voce domina o que ele pediu.\n"
-    + "- Se o nicho e claro (imobiliaria, restaurante, advocacia, clinica, moda, e-commerce, barbearia etc): adapte o formato — vocabulario das secoes no tom do nicho, e quando fizer sentido inclua UMA demonstracao visual do nicho dentro da proposta (ex: imobiliaria = um mini card de imovel de exemplo; restaurante = um trecho de cardapio estilizado; e-commerce = um mini card de produto). Ajuste a cor de acento pra combinar com o nicho MANTENDO dark mode e alta legibilidade.\n"
-    + "- Se o cliente descreveu funcionalidades especificas: cada uma precisa aparecer nos itens tecnicos com a abordagem de solucao.\n"
-    + "- Se o cliente nao deu detalhes de estilo/nicho: use a base visual padrao sem inventar tema.\n\n"
-    + "CONTEUDO: portugues correto com acentuacao completa em todas as palavras. Segunda pessoa (voce). Paragrafos curtos. Nunca mencionar IA. Sem frases genericas que serviriam pra qualquer projeto.\n\n"
-    + "SAIDA: responda SOMENTE com o codigo HTML completo, comecando em <!DOCTYPE html> e terminando em </html>. Sem markdown, sem explicacao antes ou depois.";
+    + "Projeto descrito pelo cliente: " + desc + contextoTxt + "\n\n"
+    + "ADAPTACAO (CRITICO): se o cliente pediu animacoes/efeitos, marque animar=true. Se o nicho e claro (imobiliaria, restaurante, advocacia, clinica, moda, e-commerce, barbearia...), escolha uma cor de acento hex que combine com o nicho (clara o bastante pra ler em fundo escuro #0b0d12) e, quando fizer sentido, preencha o campo demo com uma demonstracao visual do nicho (ex: imobiliaria = mini card de imovel; restaurante = item de cardapio; e-commerce = card de produto). Sem nicho claro: accent \"#9fe6c8\" e demo null.\n\n"
+    + "CONTEUDO: portugues correto com acentuacao completa. Segunda pessoa (voce). Frases curtas. Nunca mencionar IA. Nada generico que serviria pra qualquer projeto — cite detalhes especificos do anuncio.\n\n"
+    + "Responda SOMENTE em JSON valido, sem markdown, com EXATAMENTE estes campos:\n"
+    + '{"titulo":"objetivo especifico do projeto para o H1 (sem o nome do cliente)",'
+    + '"accent":"#hex de acento adequado ao nicho",'
+    + '"animar":true ou false,'
+    + '"sobre":["paragrafo 1 provando leitura real do anuncio","paragrafo 2 com a abordagem geral (opcional, senao lista com 1 item)"],'
+    + '"estrutura":[{"t":"titulo curto do item tecnico","d":"explicacao curta especifica deste projeto"} com 4 a 5 itens],'
+    + '"demo":null ou {"rotulo":"ex: Exemplo de como um imovel apareceria no site","titulo":"titulo do card demo","linhas":["linha 1","linha 2"],"destaque":"ex: R$ 450.000 ou preco do prato"},'
+    + '"experiencia":"1 paragrafo conectando a experiencia do Diogo (17 anos TI, projetos web/automacao reais) a ESTE tipo de projeto",'
+    + '"protecao":"frase de protecao de escopo citando o material/acesso especifico DESTE projeto que dispara o inicio do prazo"}';
+}
+
+function montarHtmlProposta(c){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const prazoUso = finalPrazo || (analysis ? analysis.prazoEstimado : "");
+  const ac = /^#[0-9a-fA-F]{3,8}$/.test(c.accent||"") ? c.accent : "#9fe6c8";
+  const anim = c.animar
+    ? ".rv{opacity:0;animation:fadeUp .7s ease forwards}@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}"
+      + "section:nth-of-type(2) .rv{animation-delay:.15s}section:nth-of-type(3) .rv{animation-delay:.3s}"
+      + ".card{transition:transform .25s ease,border-color .25s ease}.card:hover{transform:translateY(-3px);border-color:var(--accent-2)}"
+    : ".rv{}";
+  const sobre = (c.sobre||[]).map(function(p){ return '<p>'+p+'</p>'; }).join("");
+  const itens = (c.estrutura||[]).map(function(i){ return '<li><b>'+i.t+'</b> — '+i.d+'</li>'; }).join("");
+  const demo = c.demo
+    ? '<section class="rv"><h2>'+(c.demo.rotulo||"Demonstração")+'</h2><div class="card demo-card">'
+      + '<div class="demo-title">'+(c.demo.titulo||"")+'</div>'
+      + (c.demo.linhas||[]).map(function(l){ return '<div class="demo-line">'+l+'</div>'; }).join("")
+      + (c.demo.destaque ? '<div class="demo-destaque">'+c.demo.destaque+'</div>' : "")
+      + '</div></section>'
+    : "";
+  return '<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
+    + '<title>Proposta — '+(c.titulo||"Projeto")+'</title>\n<style>\n'
+    + ':root{--bg:#0b0d12;--bg-elev:#12151c;--bg-elev-2:#171b24;--border:#242938;--text:#eef1f7;--text-dim:#a6adbb;--accent:#7c9cff;--accent-2:'+ac+';}\n'
+    + '*{box-sizing:border-box;}\nbody{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;}\n'
+    + '.wrap{max-width:780px;margin:0 auto;padding:56px 24px 96px;}\n'
+    + '.badge{display:inline-block;font-size:12.5px;letter-spacing:.04em;color:var(--accent-2);background:rgba(255,255,255,.04);border:1px solid var(--accent-2);opacity:.95;padding:6px 12px;border-radius:100px;margin-bottom:20px;}\n'
+    + 'h1{font-size:27px;line-height:1.3;margin:0 0 8px;font-weight:650;letter-spacing:-0.01em;}\n'
+    + '.sub{color:var(--text-dim);font-size:15.5px;margin-bottom:40px;}\n'
+    + '.greeting{font-size:17px;margin-bottom:32px;}\nsection{margin-bottom:36px;}\n'
+    + 'h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-2);margin:0 0 14px;font-weight:600;}\n'
+    + 'p{margin:0 0 14px;color:var(--text);font-size:16px;}\n'
+    + '.card{background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;padding:24px 26px;}\n'
+    + 'ul{margin:0;padding-left:20px;}\nli{margin-bottom:10px;color:var(--text);}\nli b{color:var(--text);}\n'
+    + '.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;}\n'
+    + '.stat{background:var(--bg-elev-2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}\n'
+    + '.stat .num{font-size:22px;font-weight:700;color:var(--accent-2);}\n.stat .label{font-size:13px;color:var(--text-dim);margin-top:4px;}\n'
+    + '.offer{background:linear-gradient(135deg,rgba(124,156,255,.12),rgba(255,255,255,.05));border:1px solid rgba(124,156,255,.35);border-radius:16px;padding:28px 26px;text-align:center;}\n'
+    + '.offer .price{font-size:36px;font-weight:750;color:#fff;letter-spacing:-0.02em;}\n.offer .term{font-size:15px;color:var(--text-dim);margin-top:6px;}\n'
+    + '.divider{height:1px;background:var(--border);margin:36px 0;}\n'
+    + '.ranking{display:flex;align-items:center;gap:14px;background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;padding:20px 22px;}\n'
+    + '.ranking .icon{font-size:22px;}\n.ranking p{margin:0;font-size:15px;color:var(--text-dim);}\n.ranking b{color:var(--text);}\n'
+    + '.signoff{margin-top:40px;color:var(--text-dim);font-size:15.5px;}\n.signoff .name{display:block;color:var(--text);font-weight:600;font-size:17px;margin-top:4px;}\n'
+    + '.demo-card{border-color:var(--accent-2);}\n.demo-title{font-size:17px;font-weight:650;margin-bottom:8px;}\n.demo-line{font-size:14.5px;color:var(--text-dim);padding:2px 0;}\n.demo-destaque{margin-top:10px;font-size:20px;font-weight:750;color:var(--accent-2);}\n'
+    + anim + '\n'
+    + '@media (max-width:520px){.grid{grid-template-columns:1fr;}h1{font-size:23px;}.offer .price{font-size:30px;}}\n'
+    + '</style>\n</head>\n<body>\n<div class="wrap">\n'
+    + '<span class="badge rv">Proposta técnica</span>\n'
+    + '<h1 class="rv">'+(c.titulo||"Proposta")+'</h1>\n'
+    + '<p class="sub rv">Preparada para '+cliente+'</p>\n'
+    + '<p class="greeting rv">Oi '+cliente+', tudo bem?</p>\n'
+    + '<section class="rv"><h2>Sobre o projeto</h2>'+sobre+'</section>\n'
+    + '<section class="rv"><h2>Como pretendo estruturar</h2><div class="card"><ul>'+itens+'</ul></div></section>\n'
+    + demo
+    + '<section class="rv"><h2>Experiência</h2><p>'+(c.experiencia||"")+'</p></section>\n'
+    + '<div class="grid rv"><div class="stat"><div class="num">17 anos</div><div class="label">de experiência em TI, incluindo operação crítica</div></div>'
+    + '<div class="stat"><div class="num">5.0</div><div class="label">avaliação na Workana, projetos entregues com nota máxima</div></div></div>\n'
+    + '<div class="divider"></div>\n'
+    + '<section class="rv"><h2>Proposta</h2><div class="offer"><div class="price">R$ '+fmtNum(finalPrice)+'</div><div class="term">Prazo de entrega: '+prazoUso+'</div></div>'
+    + '<p style="margin-top:18px;color:var(--text-dim);font-size:14.5px;">'+(c.protecao||"Prazo contado a partir do acesso ao material necessário. Ajustes fora do escopo descrito aqui são orçados à parte.")+'</p></section>\n'
+    + '<div class="ranking rv"><span class="icon">🏆</span><p><b>Entre os 0,01% mais bem classificados da Workana</b>, na posição 333 de 14,59 milhões de freelancers, nível Gold.</p></div>\n'
+    + '<div class="signoff rv">Fico à disposição para qualquer ajuste ou dúvida sobre a proposta.<span class="name">Diogo Pinotti</span></div>\n'
+    + '</div>\n</body>\n</html>';
 }
 
 function buildAcompanhamentoPrompt(){
@@ -749,9 +800,10 @@ async function gerarClaro(){
   try {
     const apresentacao = await callClaude(buildApresentacaoPrompt(false));
     if (ehHtml) {
-      const htmlProposta = await callClaude(buildPropostaHtmlPrompt(), 8000);
+      const rawConteudo = await callClaude(buildPropostaConteudoPrompt(), 3000);
+      const conteudo = JSON.parse(rawConteudo.replace(/```json|```/g,"").trim());
       const acomp = await callClaude(buildAcompanhamentoPrompt());
-      renderTextos({ apresentacao: apresentacao, proposta: acomp, propostaHtml: limparHtmlGerado(htmlProposta), modo: "claro-html" });
+      renderTextos({ apresentacao: apresentacao, proposta: acomp, propostaHtml: montarHtmlProposta(conteudo), modo: "claro-html" });
     } else {
       const proposta = await callClaude(buildPropostaPrompt(""));
       renderTextos({ apresentacao: apresentacao, proposta: proposta, modo: "claro" });
@@ -771,6 +823,34 @@ function baixarPropostaHtml(){
 function verPropostaHtml(){
   const blob = new Blob([window._propostaHtml||""], {type:"text/html;charset=utf-8"});
   window.open(URL.createObjectURL(blob), "_blank");
+}
+
+async function publicarVercel(){
+  const btn = document.getElementById("btn-publicar");
+  const st = document.getElementById("publicar-status");
+  if (!window._propostaHtml) { alert("Gere a proposta HTML primeiro."); return; }
+  btn.disabled = true; btn.textContent = "⏳ Publicando...";
+  try {
+    const res = await fetch("/api/deploy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ name: "proposta-"+slugCliente(), html: window._propostaHtml })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || "Erro "+res.status);
+    window._linkProposta = data.url;
+    // troca o marcador no texto de acompanhamento automaticamente
+    window._proposta = (window._proposta||"").replace(/LINK_DA_PROPOSTA/g, data.url);
+    const acomp = document.getElementById("acomp-text");
+    if (acomp) acomp.textContent = window._proposta;
+    st.innerHTML = '✅ <strong style="color:var(--green)">Publicado:</strong> <a href="'+data.url+'" target="_blank" style="color:var(--accent)">'+data.url+'</a>'
+      + ' <button class="btn btn-sm btn-success" style="margin-left:6px" onclick="copyText(window._linkProposta, this)">📋 Copiar link</button>'
+      + '<div style="margin-top:4px;color:var(--muted)">Link já inserido no texto de acompanhamento abaixo. Abra numa aba anônima pra conferir antes de enviar.</div>';
+    btn.textContent = "✓ Publicado";
+  } catch(e) {
+    st.innerHTML = '⚠️ <span style="color:var(--gold)">'+e.message+'</span><div style="margin-top:4px;color:var(--muted)">Alternativa: use ⬇️ Baixar e publique manualmente no Vercel, trocando o LINK_DA_PROPOSTA no texto.</div>';
+    btn.disabled = false; btn.textContent = "🚀 Publicar no Vercel";
+  }
 }
 
 async function gerarIncerto(){
@@ -878,15 +958,16 @@ function renderTextos(o){
       + '<div style="font-size:12px;color:var(--purple);margin-bottom:8px">👉 Envie como primeira mensagem (na Workana: botão "Fazer uma pergunta")</div>'
       + '<div class="gen-text">'+o.apresentacao+'</div></div>';
     h += '<div class="card" style="border:1px solid var(--accent)">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:600">🌐 Proposta HTML (valor ≥ R$1.000)</div>'
-      + '<div style="display:flex;gap:6px"><button class="btn btn-sm btn-ghost" onclick="verPropostaHtml()">👁️ Visualizar</button>'
-      + '<button class="btn btn-sm btn-primary" onclick="baixarPropostaHtml()">⬇️ Baixar HTML</button></div></div>'
-      + '<div style="font-size:12px;line-height:1.7;color:var(--muted)">Publicar no Vercel como projeto <strong style="color:var(--accent)">proposta-'+slug+'</strong> (arquivo como index.html). Depois: testar o link em aba anônima (tem que abrir sem login) e trocar o marcador <strong style="color:var(--gold)">LINK_DA_PROPOSTA</strong> no texto abaixo pelo link real (formato proposta-'+slug+'.vercel.app).</div></div>';
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px"><div style="font-weight:600">🌐 Proposta HTML (valor ≥ R$1.000)</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm btn-ghost" onclick="verPropostaHtml()">👁️ Visualizar</button>'
+      + '<button class="btn btn-sm btn-ghost" onclick="baixarPropostaHtml()">⬇️ Baixar</button>'
+      + '<button class="btn btn-sm btn-primary" id="btn-publicar" onclick="publicarVercel()">🚀 Publicar no Vercel</button></div></div>'
+      + '<div id="publicar-status" style="font-size:12px;line-height:1.7;color:var(--muted)">Clique em <strong style="color:var(--accent)">Publicar no Vercel</strong> — o link sai pronto e entra sozinho no texto abaixo. Projeto: <strong>proposta-'+slug+'</strong>.</div></div>';
     h += '<div class="card">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-weight:600">✍️ Texto de acompanhamento do link</div>'
       + '<button class="btn btn-sm btn-success" onclick="copyText(window._proposta, this)">📋 Copiar</button></div>'
       + '<div style="font-size:12px;color:var(--accent);margin-bottom:8px">👉 Vai na caixa de proposta da Workana, junto com o link. Sem valor/prazo de propósito — força o cliente a abrir o link.</div>'
-      + '<div class="gen-text">'+o.proposta+'</div></div>';
+      + '<div class="gen-text" id="acomp-text">'+o.proposta+'</div></div>';
     h += '<div class="card"><div style="font-size:13px;color:var(--muted);margin-bottom:8px">Publicou o link e enviou a proposta?</div>'
       + '<button class="btn btn-sm btn-primary" onclick="registrarCRM(\'proposta enviada\')">✓ Registrar como proposta enviada</button></div>';
     col.innerHTML = h;
