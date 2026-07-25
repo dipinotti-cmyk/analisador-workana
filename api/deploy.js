@@ -51,14 +51,20 @@ export default async function handler(req) {
     }
     if (state === 'ERROR') return json({ error: 'Deploy falhou no Vercel. Confira o painel.' }, 500);
 
-    // escolhe o alias mais curto (tipo proposta-nome.vercel.app)
-    let url = 'https://' + (info.url || dep.url);
-    const aliases = info.alias || [];
-    if (aliases.length) {
-      const curto = aliases.slice().sort((a, b) => a.length - b.length)[0];
-      url = 'https://' + curto;
+    // garante o alias curto (proposta-nome.vercel.app): em deploy muito rapido ele demora alguns segundos pra aparecer
+    const curtoEsperado = name + '.vercel.app';
+    let aliases = info.alias || [];
+    for (let i = 0; i < 4 && aliases.indexOf(curtoEsperado) === -1; i++) {
+      await new Promise(r => setTimeout(r, 1500));
+      const chk2 = await fetch('https://api.vercel.com/v13/deployments/' + dep.id + qs, { headers: auth });
+      const inf2 = await chk2.json();
+      if (inf2.alias && inf2.alias.length) aliases = inf2.alias;
     }
-    return json({ url: url, state: state, deploymentId: dep.id });
+    let host;
+    if (aliases.indexOf(curtoEsperado) !== -1) host = curtoEsperado;
+    else if (aliases.length) host = aliases.slice().sort((a, b) => a.length - b.length)[0];
+    else host = info.url || dep.url;
+    return json({ url: 'https://' + host, state: state, deploymentId: dep.id });
   } catch (e) {
     return json({ error: 'Erro ao publicar: ' + e.message }, 500);
   }
