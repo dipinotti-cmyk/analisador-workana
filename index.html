@@ -853,28 +853,37 @@ function buildAcompanhamentoPrompt(){
   const plat = getPlataformaAtual();
   const ehW = plataformaGrupo(plat) === "Workana";
   const angulos = [
-    "DIAGNOSTICO — abra apontando o gargalo concreto que um negocio desse tipo vive hoje sem a solucao (ex: cliente que marca e nao aparece, pedido que se perde no meio da conversa, planilha que ninguem atualiza).",
-    "CENA DO DIA A DIA — abra descrevendo em uma frase a cena real de hoje: quem faz, em que momento do dia, com qual ferramenta improvisada.",
-    "CUSTO SILENCIOSO — abra pelo que continua se perdendo enquanto o problema fica como esta (tempo, venda, retrabalho). Proibido inventar numero ou estatistica.",
-    "DECISAO TECNICA — abra por uma escolha tecnica concreta deste projeto que muda o resultado e que a maioria das propostas ignora."
+    "DECISAO TECNICA: aponte a escolha concreta que decide o resultado deste projeto (ex: de onde vem o dado, qual integracao, qual plataforma) e diga que os caminhos ja estao comparados na proposta.",
+    "ARMADILHA: aponte o erro que costuma matar esse tipo de projeto na pratica e diga em meia frase como voce evita.",
+    "CORTE INTELIGENTE: diga o que entra na primeira entrega pra ja funcionar antes, e o que fica pra depois sem travar o comeco.",
+    "PERGUNTA QUE QUALIFICA: faca UMA pergunta objetiva de escopo que mostra que voce ja pensou alem do anuncio e que muda a execucao dependendo da resposta."
   ];
   const angulo = angulos[Math.floor(Math.random()*angulos.length)];
-  return "Voce e o Diogo Pinotti, freelancer de TI no Brasil, escrevendo como um vendedor senior: seguranca tranquila, direto, sem soar necessitado. Escreva o TEXTO CURTO DE ACOMPANHAMENTO para a caixa de proposta da plataforma " + plat + ", que acompanha o LINK de uma proposta completa ja publicada.\n\n"
+  return "Voce e o Diogo Pinotti, freelancer de TI no Brasil, escrevendo como um vendedor senior: direto, seguro, sem rodeio. Escreva o TEXTO CURTO DE ACOMPANHAMENTO para a caixa de proposta da plataforma " + plat + ", que acompanha o LINK de uma proposta ja publicada.\n\n"
     + 'Cliente: ' + cliente + "\n"
     + "Projeto: " + desc + "\n\n"
+    + "OBJETIVO REAL DESTA MENSAGEM: fazer o cliente CLICAR NO LINK. Ela nao explica o projeto, nao resume o problema e nao conta historia. Ela mostra, em uma frase, que voce ja pensou no projeto mais fundo do que os outros candidatos.\n\n"
+    + "REGRA MAIS IMPORTANTE DE TODAS: PROIBIDO descrever de volta pro cliente o problema, o objetivo ou o beneficio que ELE MESMO escreveu no anuncio. Ele ja sabe. Se a frase que voce escreveu poderia ter sido escrita pelo proprio cliente, ela esta ERRADA — apague e escreva outra com INFORMACAO NOVA (uma decisao tecnica, um risco, um corte de escopo, uma pergunta).\n\n"
     + "ANGULO OBRIGATORIO DESTA MENSAGEM (use este, nenhum outro): " + angulo + "\n\n"
-    + "ESTRUTURA (paragrafos curtos separados por linha em branco, no maximo 90 palavras no total):\n"
+    + "TAMANHO: no maximo 70 palavras no total. Cada palavra precisa ganhar seu lugar.\n\n"
+    + "ESTRUTURA (paragrafos curtos separados por linha em branco):\n"
     + "1. Saudacao: 'Oi " + cliente + ", tudo bem?'\n"
-    + "2. UM paragrafo de no maximo 2 frases seguindo o angulo acima. REGRA DURA: a PRIMEIRA frase fala do NEGOCIO DO CLIENTE, nunca de voce, nunca do projeto em abstrato. Cite pelo menos um detalhe concreto tirado do anuncio: o que ele vende, para quem, a ferramenta que usa hoje, o volume, a cidade, o horario de pico. Se o anuncio for pobre em detalhe, use o tipo de operacao dele.\n"
-    + "3. 1 frase apresentando a proposta detalhada + o marcador LINK_DA_PROPOSTA sozinho em sua propria linha.\n"
-    + "4. 1 frase dizendo que no link esta o raciocinio completo, com valor e prazo. Varie a construcao a cada mensagem.\n"
+    + "2. UMA a DUAS frases seguindo o angulo acima, em segunda pessoa (voce, seu, sua), citando um detalhe concreto DESTE anuncio.\n"
+    + "3. 1 frase curta apresentando a proposta + o marcador LINK_DA_PROPOSTA sozinho em sua propria linha.\n"
+    + "4. 1 frase curta e natural dizendo o que tem no link (escopo, valor e prazo). Varie a construcao.\n"
     + (ehW
-        ? "5. Fechamento em 1 linha com a credencial. Mantenha SEMPRE os dois numeros juntos (0,01% mais bem classificados da Workana e posicao 333 de 14,59 milhoes de freelancers, nivel Gold), mas VARIE a construcao da frase a cada mensagem — nunca repita a mesma formula literal.\n\n"
-        : "5. NAO cite ranking nem posicao da Workana: esta plataforma nao e a Workana. Feche com 1 linha simples se colocando a disposicao para ajustar o escopo.\n\n")
-    + "LISTA NEGRA — se qualquer uma destas aparecer, a mensagem esta ERRADA e voce reescreve antes de responder: 'chamou minha atencao', 'me chamou a atencao', 'estou confiante', 'tenho certeza de que posso', 'alinhado a minha experiencia', 'alinhada ao meu perfil', 'caracteristicas alinhadas', 'solucao robusta', 'solucao eficiente', 'plataforma intuitiva', 'sob medida para suas necessidades', 'atender suas expectativas', 'venho por meio deste', 'sou especialista em', 'com certeza posso ajudar'. Proibido tambem empilhar adjetivo vazio: robusto, eficiente, intuitivo, escalavel, completo, moderno, personalizado, otimizado.\n\n"
-    + "PROIBICOES: NUNCA citar valor nem prazo neste texto (estao no link — o objetivo e forcar a abertura). NUNCA 'fico a disposicao'. NUNCA se apresentar com 'Sou o Diogo'. NUNCA comecar frase falando de si mesmo antes de falar do cliente. NUNCA INVENTAR experiencia setorial que o Diogo nao afirmou ter (ex: 'ja atendi restaurantes', 'experiencia com clinicas') — a credencial real e: sites, automacoes e 17 anos de TI.\n\n"
-    + "TESTE FINAL antes de responder: se essa mesma mensagem serviria, trocando so o nome, para qualquer outro cliente de qualquer outro ramo, ela esta generica demais. Reescreva o paragrafo 2 com um detalhe que so existe NESTE anuncio.\n\n"
-    + "REGRAS: portugues correto com acentuacao completa. Sem emojis. Nunca mencionar IA. Tom humano e direto, mensagem de WhatsApp bem escrita, nao carta formal.";
+        ? "5. Fechamento em 1 linha com a credencial, mantendo os dois numeros juntos (0,01% mais bem classificados da Workana, posicao 333 de 14,59 milhoes de freelancers, nivel Gold), mas VARIANDO a construcao a cada mensagem.\n\n"
+        : "5. NAO cite ranking nem posicao da Workana: esta plataforma nao e a Workana. Feche com 1 linha simples se colocando a disposicao pra ajustar o escopo.\n\n")
+    + "EXEMPLO DO QUE NUNCA FAZER (mensagem real que deu errado, para um projeto de comparador de precos):\n"
+    + "'Hoje, muitos usuarios perdem tempo ao tentar comparar promocoes em varias lojas online, resultando em uma experiencia de compra frustrante e ineficiente. Desenvolver uma plataforma que consolide essas informacoes solucionara esse problema.'\n"
+    + "Por que esta errado: e redacao de escola, fala de 'muitos usuarios' em terceira pessoa, e devolve ao cliente exatamente o que ele ja tinha escrito no anuncio. Nao vende nada.\n\n"
+    + "COMO DEVERIA TER SIDO (mesmo projeto, angulo de decisao tecnica):\n"
+    + "'O que decide esse projeto e de onde vem o preco: raspagem das lojas ou integracao oficial com cada parceiro. Deixei os dois caminhos comparados na proposta, com o que muda em custo e em manutencao.'\n\n"
+    + "OUTRO EXEMPLO BOM (projeto de agendamento, angulo de armadilha):\n"
+    + "'Sistema de agendamento costuma travar num detalhe: o cliente marca, some, e ninguem avisa. Por isso o lembrete automatico entra desde a primeira versao, e nao como extra depois.'\n\n"
+    + "LISTA NEGRA — se qualquer uma aparecer, reescreva antes de responder: 'chamou minha atencao', 'estou confiante', 'tenho certeza de que posso', 'alinhado a minha experiencia', 'caracteristicas alinhadas', 'solucao robusta', 'solucao eficiente', 'plataforma intuitiva', 'sob medida para suas necessidades', 'atender suas expectativas', 'sou especialista em', 'com certeza posso ajudar', 'ira solucionar esse problema', 'permitindo aos clientes', 'experiencia frustrante', 'de forma eficiente'. Proibido comecar a mensagem com 'Hoje,', 'Atualmente', 'Muitos', 'No mercado atual', 'Com o crescimento'. Proibido adjetivo empilhado: robusto, eficiente, intuitivo, escalavel, completo, moderno, personalizado, otimizado.\n\n"
+    + "PROIBICOES: NUNCA citar valor nem prazo aqui (estao no link, o objetivo e forcar a abertura). NUNCA 'fico a disposicao'. NUNCA se apresentar com 'Sou o Diogo'. NUNCA falar de 'usuarios' ou 'clientes' em terceira pessoa abstrata — fale com 'voce' e 'seu'. NUNCA INVENTAR experiencia setorial que o Diogo nao tem.\n\n"
+    + "REGRAS: portugues correto com acentuacao completa. Sem emojis. Nunca mencionar IA. Tom de mensagem de WhatsApp bem escrita, nao de carta formal.";
 }
 
 async function gerarClaro(){
