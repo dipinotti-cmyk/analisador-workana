@@ -706,20 +706,26 @@ function buildPropostaConteudoPrompt(){
     + "- agenda: agendamento, reserva, consulta, barbearia, salao, clinica. Grade de horarios de um dia, misturando ocupado e livre.\n"
     + "- conversa: chatbot, atendimento no WhatsApp, IA de atendimento, qualificacao de lead. As primeiras mensagens entre o cliente final e o robo, mostrando o robo resolvendo sozinho.\n"
     + "- painel: sistema, CRM, dashboard, relatorio, automacao interna, planilha. Numeros no topo e uma lista de registros.\n"
+    + "- fluxo: pagamento, checkout, cadastro, processo com etapas, ou QUALQUER caso em que o anuncio NAO diz o que o cliente vende. Mostra o caminho que a pessoa percorre, passo a passo, ate o objetivo.\n"
+    + "REGRA ANTI-INVENCAO: so use vitrine se o anuncio deixar claro O QUE o cliente vende. Se nao deixar, NAO invente produto, servico nem preco dele — use fluxo, agenda, conversa ou painel. Inventar catalogo falso queima a proposta na hora que o cliente le.\n"
     + "Invente exemplos realistas do ramo, da cidade e do publico citados no anuncio, com nomes, servicos e valores plausiveis do Brasil. Essa e a PROVA VISUAL da proposta: sem ela o cliente nao ve o que esta comprando.\n\n"
-    + "CONTEUDO: portugues correto com acentuacao completa. Segunda pessoa (voce). Frases curtas. Nunca mencionar IA. Nada generico que serviria pra qualquer projeto — cite detalhes especificos do anuncio.\n\n"
+    + "CONTEUDO: portugues correto com acentuacao completa. Segunda pessoa (voce). Frases curtas. Nunca mencionar IA.\n\n"
+    + "LISTA NEGRA DE ADJETIVO VAZIO (se aparecer, reescreva): robusto, profissional, atraente, intuitivo, moderno, eficiente, escalavel, completo, otimizado, personalizado, de alta qualidade, sob medida, presenca digital, experiencia unica. Adjetivo nao prova nada. Troque por FATO: o que o sistema faz, com o que ele conversa, o que acontece quando o cliente clica.\n\n"
+    + "LEITURA DO ANUNCIO (faca ANTES de escrever, e deixe isso visivel no texto): 1) o que o cliente JA TEM ou JA VAI FORNECER (arte, layout, conteudo, sistema, conta) — reconheca isso explicitamente, porque muda o trabalho e mostra que voce leu; 2) o que ficou EM ABERTO ou indefinido no anuncio — esse e o maior risco do projeto e precisa aparecer, seja num item da estrutura, seja na frase de protecao; 3) a restricao tecnica que mais pesa aqui.\n\n"
+    + "ESTRUTURA (regra dura): os itens saem DESTE anuncio, nao de um checklist padrao. PROIBIDO incluir item que o cliente nao pediu so pra encher (SEO, redes sociais, blog, newsletter, analytics) — so entra se o anuncio citar ou se for consequencia direta do que ele pediu. PELO MENOS UM item precisa tratar do ponto em aberto identificado na leitura. Cada explicacao cita algo concreto do anuncio; se a explicacao serviria pra qualquer site, ela esta errada.\n\n"
     + "Responda SOMENTE em JSON valido, sem markdown, com EXATAMENTE estes campos:\n"
     + '{"titulo":"objetivo especifico do projeto para o H1 (sem o nome do cliente)",'
     + '"accent":"#hex de acento adequado ao nicho",'
     + '"animar":true ou false,'
     + '"sobre":["paragrafo 1 provando leitura real do anuncio","paragrafo 2 com a abordagem geral (opcional, senao lista com 1 item)"],'
     + '"estrutura":[{"t":"titulo curto do item tecnico","d":"explicacao curta especifica deste projeto"} com 4 a 5 itens],'
-    + '"demo":{"tipo":"vitrine|agenda|conversa|painel","rotulo":"titulo curto da secao falando com o cliente (ex: Como sua agenda vai ficar, Uma previa de como seus imoveis aparecem, O que seu cliente recebe no WhatsApp)","dia":"rotulo do topo da simulacao (ex: Terca, 12 de agosto / WhatsApp / Painel do mes)","resumo":"informacao curta no canto do topo (ex: 6 de 9 horarios ocupados / respondido em 4 segundos)",'
+    + '"demo":{"tipo":"vitrine|agenda|conversa|painel|fluxo","rotulo":"titulo curto da secao falando com o cliente (ex: Como sua agenda vai ficar, Uma previa de como seus imoveis aparecem, O que seu cliente recebe no WhatsApp)","dia":"rotulo do topo da simulacao (ex: Terca, 12 de agosto / WhatsApp / Painel do mes)","resumo":"informacao curta no canto do topo (ex: 6 de 9 horarios ocupados / respondido em 4 segundos)",'
     + 'e MAIS os campos do tipo escolhido: '
     + 'vitrine -> "icone":"1 emoji do ramo","acao":"texto curto do botao (ex: Falar com o corretor)","cards":[{"titulo":"nome do item","chips":["2 a 3 caracteristicas curtas"],"destaque":"preco"}] com 2 a 3 cards. '
     + 'agenda -> "slots":[{"hora":"09:00","cliente":"nome da pessoa","servico":"servico contratado","status":"ocupado"} ou {"hora":"11:00","status":"livre"}] com 5 a 7 horarios em ordem. '
     + 'conversa -> "mensagens":[{"de":"cliente","texto":"pergunta tipica de quem chama esse negocio"},{"de":"bot","texto":"resposta que resolve sozinha"}] com 4 a 6 mensagens alternadas. '
-    + 'painel -> "metricas":[{"num":"128","label":"atendimentos no mes"}] com 2 a 3, e "linhas":[{"titulo":"nome do registro","valor":"valor ou data","tag":"status curto"}] com 3 a 4},'
+    + 'painel -> "metricas":[{"num":"128","label":"atendimentos no mes"}] com 2 a 3, e "linhas":[{"titulo":"nome do registro","valor":"valor ou data","tag":"status curto"}] com 3 a 4. '
+    + 'fluxo -> "passos":[{"titulo":"acao curta da etapa","detalhe":"o que acontece por tras, especifico deste projeto"}] com 4 a 5 etapas na ordem real},'
     + '"experiencia":"1 paragrafo conectando a experiencia REAL do Diogo (17 anos TI, sites e automacoes reais em producao) a ESTE tipo de projeto — PROIBIDO inventar experiencia setorial que ele nao tem (ex: ja atendi restaurantes/imobiliarias); a ponte e a habilidade tecnica, nao um case falso",'
     + '"protecao":"frase de protecao de escopo citando o material/acesso especifico DESTE projeto que dispara o inicio do prazo — PROIBIDO citar qualquer numero de dias ou prazo aqui (o prazo ja aparece no bloco de investimento; citar outro numero gera contradicao)"}';
 }
@@ -739,7 +745,7 @@ function montarHtmlProposta(c){
   if (c.demo) {
     const d = c.demo;
     let tipo = String(d.tipo||"").toLowerCase();
-    if (!tipo) tipo = d.slots ? "agenda" : (d.mensagens ? "conversa" : (d.metricas ? "painel" : "vitrine"));
+    if (!tipo) tipo = d.slots ? "agenda" : (d.mensagens ? "conversa" : (d.metricas ? "painel" : (d.passos ? "fluxo" : "vitrine")));
     const rotulo = d.rotulo || "Uma prévia do que você vai receber";
     let inner = "";
     if (tipo === "agenda") {
@@ -756,6 +762,13 @@ function montarHtmlProposta(c){
             const de = String(m.de||"").toLowerCase();
             const bot = de.indexOf("bot") >= 0 || de.indexOf("voc") >= 0 || de.indexOf("sistema") >= 0;
             return '<div class="msg'+(bot?" bot":"")+'">'+(m.texto||"")+'</div>';
+          }).join("") + '</div>';
+    } else if (tipo === "fluxo") {
+      inner = '<div class="sim"><div class="sim-top"><span class="sim-t">'+(d.dia||"Passo a passo")+'</span><span class="sim-tag">'+(d.resumo||"")+'</span></div>'
+        + (d.passos||[]).map(function(x,i){
+            return '<div class="passo"><span class="passo-n">'+(i+1)+'</span><span class="passo-b">'
+              + '<span class="passo-t">'+(x.titulo||"")+'</span>'
+              + '<span class="passo-d">'+(x.detalhe||"")+'</span></span></div>';
           }).join("") + '</div>';
     } else if (tipo === "painel") {
       inner = '<div class="sim"><div class="sim-top"><span class="sim-t">'+(d.dia||"Painel")+'</span><span class="sim-tag">'+(d.resumo||"")+'</span></div>'
@@ -820,6 +833,10 @@ function montarHtmlProposta(c){
     + '.slot.livre{background:transparent;border:1px dashed var(--border);}\n.slot.livre .slot-c{color:var(--text-dim);}\n'
     + '.chat .msg{max-width:80%;width:fit-content;font-size:14px;line-height:1.5;padding:9px 12px;border-radius:12px;background:var(--bg-elev-2);margin:0 8px 8px;}\n'
     + '.chat .msg.bot{margin-left:auto;background:rgba(31,138,91,.20);border:1px solid rgba(31,138,91,.45);}\n'
+    + '.passo{display:flex;gap:12px;align-items:flex-start;padding:11px 12px;margin:0 8px 6px;border-radius:10px;background:var(--bg-elev-2);}\n'
+    + '.passo-n{flex:0 0 23px;height:23px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:750;background:'+ac+';color:#0b0d12;margin-top:1px;}\n'
+    + '.passo-b{display:flex;flex-direction:column;gap:2px;}\n'
+    + '.passo-t{font-size:14px;font-weight:650;}\n.passo-d{font-size:12.5px;color:var(--text-dim);line-height:1.45;}\n'
     + '.mets{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:0 8px 12px;}\n'
     + '.met{background:var(--bg-elev-2);border-radius:10px;padding:12px 14px;}\n'
     + '.met-n{font-size:20px;font-weight:750;color:'+ac+';}\n.met-l{font-size:12px;color:var(--text-dim);margin-top:2px;}\n'
