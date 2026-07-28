@@ -856,7 +856,7 @@ function buildAcompanhamentoPrompt(){
     "DECISAO TECNICA: aponte a escolha concreta que decide o resultado deste projeto (ex: de onde vem o dado, qual integracao, qual plataforma) e diga que os caminhos ja estao comparados na proposta.",
     "ARMADILHA: aponte o erro que costuma matar esse tipo de projeto na pratica e diga em meia frase como voce evita.",
     "CORTE INTELIGENTE: diga o que entra na primeira entrega pra ja funcionar antes, e o que fica pra depois sem travar o comeco.",
-    "PERGUNTA QUE QUALIFICA: faca UMA pergunta objetiva de escopo que mostra que voce ja pensou alem do anuncio e que muda a execucao dependendo da resposta."
+    "NUMERO OU LIMITE: aponte a variavel de volume que mais muda o trabalho neste projeto (quantidade de itens, lojas, usuarios, integracoes) e diga que a proposta ja considera isso."
   ];
   const angulo = angulos[Math.floor(Math.random()*angulos.length)];
   return "Voce e o Diogo Pinotti, freelancer de TI no Brasil, escrevendo como um vendedor senior: direto, seguro, sem rodeio. Escreva o TEXTO CURTO DE ACOMPANHAMENTO para a caixa de proposta da plataforma " + plat + ", que acompanha o LINK de uma proposta ja publicada.\n\n"
@@ -865,15 +865,19 @@ function buildAcompanhamentoPrompt(){
     + "OBJETIVO REAL DESTA MENSAGEM: fazer o cliente CLICAR NO LINK. Ela nao explica o projeto, nao resume o problema e nao conta historia. Ela mostra, em uma frase, que voce ja pensou no projeto mais fundo do que os outros candidatos.\n\n"
     + "REGRA MAIS IMPORTANTE DE TODAS: PROIBIDO descrever de volta pro cliente o problema, o objetivo ou o beneficio que ELE MESMO escreveu no anuncio. Ele ja sabe. Se a frase que voce escreveu poderia ter sido escrita pelo proprio cliente, ela esta ERRADA — apague e escreva outra com INFORMACAO NOVA (uma decisao tecnica, um risco, um corte de escopo, uma pergunta).\n\n"
     + "ANGULO OBRIGATORIO DESTA MENSAGEM (use este, nenhum outro): " + angulo + "\n\n"
-    + "TAMANHO: no maximo 70 palavras no total. Cada palavra precisa ganhar seu lugar.\n\n"
+    + "TAMANHO: no maximo 80 palavras no total. Cada palavra precisa ganhar seu lugar.\n\n"
     + "ESTRUTURA (paragrafos curtos separados por linha em branco):\n"
     + "1. Saudacao: 'Oi " + cliente + ", tudo bem?'\n"
     + "2. UMA a DUAS frases seguindo o angulo acima, em segunda pessoa (voce, seu, sua), citando um detalhe concreto DESTE anuncio.\n"
     + "3. 1 frase curta apresentando a proposta + o marcador LINK_DA_PROPOSTA sozinho em sua propria linha.\n"
     + "4. 1 frase curta e natural dizendo o que tem no link (escopo, valor e prazo). Varie a construcao.\n"
     + (ehW
-        ? "5. Fechamento em 1 linha com a credencial, mantendo os dois numeros juntos (0,01% mais bem classificados da Workana, posicao 333 de 14,59 milhoes de freelancers, nivel Gold), mas VARIANDO a construcao a cada mensagem.\n\n"
-        : "5. NAO cite ranking nem posicao da Workana: esta plataforma nao e a Workana. Feche com 1 linha simples se colocando a disposicao pra ajustar o escopo.\n\n")
+        ? "5. Credencial em 1 linha, mantendo os dois numeros juntos (0,01% mais bem classificados da Workana, posicao 333 de 14,59 milhoes de freelancers, nivel Gold), variando a construcao a cada mensagem.\n"
+        : "5. NAO cite ranking nem posicao da Workana: esta plataforma nao e a Workana. Pule direto para o item 6.\n")
+    + "6. PERGUNTA FINAL (OBRIGATORIA, ULTIMA linha da mensagem, em paragrafo proprio): a mensagem TERMINA numa pergunta. Pergunta puxa resposta, e resposta abre a conversa que fecha o negocio. Escolha a duvida de ESCOPO ou EXECUCAO que, dependendo da resposta, MUDA o que voce vai executar.\n"
+    + "CRITERIOS DA PERGUNTA: o cliente responde em 1 linha (um numero, sim ou nao, o nome de uma ferramenta, ou a escolha entre duas opcoes). NUNCA pergunte o que o anuncio ja respondeu. NUNCA pergunte sobre cor, estetica ou design. NUNCA peca acesso, arquivo ou material nesta etapa, porque ele ainda nao te contratou. NUNCA use pedido generico que serviria pra qualquer vaga. A pergunta nao e formalidade: e a duvida que voce realmente precisaria tirar pra comecar.\n"
+    + "EXEMPLOS DE PERGUNTA BOA: 'Hoje o envio e pelos Correios, transportadora ou os dois?'; 'Voce comeca o comparador com quantas lojas, uma dezena ou ja passa de cem?'; 'A agenda precisa bloquear horario de mais de um profissional ou e so voce?'; 'O conteudo dos cursos ja esta gravado ou entra depois?'\n"
+    + "EXEMPLOS DE PERGUNTA RUIM (proibidas): 'O que voce acha?'; 'Podemos conversar?'; 'Me conta mais sobre sua ideia?'; 'Quando podemos comecar?'; 'Faz sentido pra voce?'\n\n"
     + "EXEMPLO DO QUE NUNCA FAZER (mensagem real que deu errado, para um projeto de comparador de precos):\n"
     + "'Hoje, muitos usuarios perdem tempo ao tentar comparar promocoes em varias lojas online, resultando em uma experiencia de compra frustrante e ineficiente. Desenvolver uma plataforma que consolide essas informacoes solucionara esse problema.'\n"
     + "Por que esta errado: e redacao de escola, fala de 'muitos usuarios' em terceira pessoa, e devolve ao cliente exatamente o que ele ja tinha escrito no anuncio. Nao vende nada.\n\n"
