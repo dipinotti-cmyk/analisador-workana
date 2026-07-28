@@ -700,7 +700,13 @@ function buildPropostaConteudoPrompt(){
   return "Voce escreve o CONTEUDO de uma proposta comercial do Diogo Pinotti, freelancer de TI no Brasil. O layout ja existe; sua tarefa e so o texto, adaptado a ESTE projeto.\n\n"
     + 'Cliente: ' + cliente + "\n"
     + "Projeto descrito pelo cliente: " + desc + contextoTxt + "\n\n"
-    + "ADAPTACAO (CRITICO): se o cliente pediu animacoes/efeitos, marque animar=true. Se o nicho e claro (imobiliaria, restaurante, advocacia, clinica, moda, e-commerce, barbearia...), escolha uma cor de acento hex que combine com o nicho (clara o bastante pra ler em fundo escuro #0b0d12) e preencha o campo demo com uma VITRINE de 2 a 3 cards demonstrando como o produto/servico do cliente vai aparecer no site dele (imobiliaria = imoveis com quartos/vagas/metragem e preco; restaurante = pratos com preco; e-commerce = produtos; barbearia = servicos). A vitrine e a parte mais importante da adaptacao: e a PROVA VISUAL do que ele vai receber. Invente exemplos realistas do nicho e da cidade/publico citados no anuncio. Sem nicho claro com produto exibivel: demo null e accent \"#9fe6c8\".\n\n"
+    + "ADAPTACAO (CRITICO): se o cliente pediu animacoes/efeitos, marque animar=true. Escolha uma cor de acento hex que combine com o ramo do cliente e que seja clara o bastante pra ler em fundo escuro #0b0d12.\n\n"
+    + "SIMULACAO (CAMPO MAIS IMPORTANTE — demo NUNCA pode vir null): toda proposta precisa MOSTRAR visualmente o que o cliente vai receber. Escolha o tipo mais proximo do que foi pedido:\n"
+    + "- vitrine: site, loja, catalogo, portfolio. Cards do que ele vende (imovel, prato, produto, servico) com caracteristicas e preco.\n"
+    + "- agenda: agendamento, reserva, consulta, barbearia, salao, clinica. Grade de horarios de um dia, misturando ocupado e livre.\n"
+    + "- conversa: chatbot, atendimento no WhatsApp, IA de atendimento, qualificacao de lead. As primeiras mensagens entre o cliente final e o robo, mostrando o robo resolvendo sozinho.\n"
+    + "- painel: sistema, CRM, dashboard, relatorio, automacao interna, planilha. Numeros no topo e uma lista de registros.\n"
+    + "Invente exemplos realistas do ramo, da cidade e do publico citados no anuncio, com nomes, servicos e valores plausiveis do Brasil. Essa e a PROVA VISUAL da proposta: sem ela o cliente nao ve o que esta comprando.\n\n"
     + "CONTEUDO: portugues correto com acentuacao completa. Segunda pessoa (voce). Frases curtas. Nunca mencionar IA. Nada generico que serviria pra qualquer projeto — cite detalhes especificos do anuncio.\n\n"
     + "Responda SOMENTE em JSON valido, sem markdown, com EXATAMENTE estes campos:\n"
     + '{"titulo":"objetivo especifico do projeto para o H1 (sem o nome do cliente)",'
@@ -708,7 +714,12 @@ function buildPropostaConteudoPrompt(){
     + '"animar":true ou false,'
     + '"sobre":["paragrafo 1 provando leitura real do anuncio","paragrafo 2 com a abordagem geral (opcional, senao lista com 1 item)"],'
     + '"estrutura":[{"t":"titulo curto do item tecnico","d":"explicacao curta especifica deste projeto"} com 4 a 5 itens],'
-    + '"demo":null ou {"rotulo":"ex: Uma previa de como seus imoveis vao aparecer no site","icone":"1 emoji do nicho (ex: 🏠 🍽️ 🛒 💈)","acao":"texto curto do botao de acao do nicho (ex: Falar com o corretor / Pedir agora / Comprar)","cards":[{"titulo":"nome do item","chips":["2 a 3 caracteristicas curtas (ex: 3 quartos, 2 vagas, 120m²)"],"destaque":"preco (ex: R$ 750.000)"} com 2 a 3 cards de exemplos realistas]},'
+    + '"demo":{"tipo":"vitrine|agenda|conversa|painel","rotulo":"titulo curto da secao falando com o cliente (ex: Como sua agenda vai ficar, Uma previa de como seus imoveis aparecem, O que seu cliente recebe no WhatsApp)","dia":"rotulo do topo da simulacao (ex: Terca, 12 de agosto / WhatsApp / Painel do mes)","resumo":"informacao curta no canto do topo (ex: 6 de 9 horarios ocupados / respondido em 4 segundos)",'
+    + 'e MAIS os campos do tipo escolhido: '
+    + 'vitrine -> "icone":"1 emoji do ramo","acao":"texto curto do botao (ex: Falar com o corretor)","cards":[{"titulo":"nome do item","chips":["2 a 3 caracteristicas curtas"],"destaque":"preco"}] com 2 a 3 cards. '
+    + 'agenda -> "slots":[{"hora":"09:00","cliente":"nome da pessoa","servico":"servico contratado","status":"ocupado"} ou {"hora":"11:00","status":"livre"}] com 5 a 7 horarios em ordem. '
+    + 'conversa -> "mensagens":[{"de":"cliente","texto":"pergunta tipica de quem chama esse negocio"},{"de":"bot","texto":"resposta que resolve sozinha"}] com 4 a 6 mensagens alternadas. '
+    + 'painel -> "metricas":[{"num":"128","label":"atendimentos no mes"}] com 2 a 3, e "linhas":[{"titulo":"nome do registro","valor":"valor ou data","tag":"status curto"}] com 3 a 4},'
     + '"experiencia":"1 paragrafo conectando a experiencia REAL do Diogo (17 anos TI, sites e automacoes reais em producao) a ESTE tipo de projeto — PROIBIDO inventar experiencia setorial que ele nao tem (ex: ja atendi restaurantes/imobiliarias); a ponte e a habilidade tecnica, nao um case falso",'
     + '"protecao":"frase de protecao de escopo citando o material/acesso especifico DESTE projeto que dispara o inicio do prazo — PROIBIDO citar qualquer numero de dias ou prazo aqui (o prazo ja aparece no bloco de investimento; citar outro numero gera contradicao)"}';
 }
@@ -726,27 +737,47 @@ function montarHtmlProposta(c){
   const itens = (c.estrutura||[]).map(function(i){ return '<li><b>'+i.t+'</b> — '+i.d+'</li>'; }).join("");
   let demo = "";
   if (c.demo) {
-    // compat: formato antigo (titulo/linhas) vira um card unico no formato novo
-    let cards = c.demo.cards;
-    if (!cards && c.demo.titulo) {
-      cards = [{ titulo: c.demo.titulo, chips: c.demo.linhas || [], destaque: c.demo.destaque || "" }];
+    const d = c.demo;
+    let tipo = String(d.tipo||"").toLowerCase();
+    if (!tipo) tipo = d.slots ? "agenda" : (d.mensagens ? "conversa" : (d.metricas ? "painel" : "vitrine"));
+    const rotulo = d.rotulo || "Uma prévia do que você vai receber";
+    let inner = "";
+    if (tipo === "agenda") {
+      inner = '<div class="sim"><div class="sim-top"><span class="sim-t">'+(d.dia||"Hoje")+'</span><span class="sim-tag">'+(d.resumo||"")+'</span></div>'
+        + (d.slots||[]).map(function(s){
+            const livre = String(s.status||"").toLowerCase().indexOf("livre") >= 0;
+            return '<div class="slot'+(livre?" livre":"")+'"><span class="slot-h">'+(s.hora||"")+'</span>'
+              + '<span class="slot-c">'+(livre?"Horário livre":(s.cliente||""))+'</span>'
+              + '<span class="slot-s">'+(livre?"":(s.servico||""))+'</span></div>';
+          }).join("") + '</div>';
+    } else if (tipo === "conversa") {
+      inner = '<div class="sim chat"><div class="sim-top"><span class="sim-t">'+(d.dia||"WhatsApp")+'</span><span class="sim-tag">'+(d.resumo||"resposta automática")+'</span></div>'
+        + (d.mensagens||[]).map(function(m){
+            const de = String(m.de||"").toLowerCase();
+            const bot = de.indexOf("bot") >= 0 || de.indexOf("voc") >= 0 || de.indexOf("sistema") >= 0;
+            return '<div class="msg'+(bot?" bot":"")+'">'+(m.texto||"")+'</div>';
+          }).join("") + '</div>';
+    } else if (tipo === "painel") {
+      inner = '<div class="sim"><div class="sim-top"><span class="sim-t">'+(d.dia||"Painel")+'</span><span class="sim-tag">'+(d.resumo||"")+'</span></div>'
+        + '<div class="mets">'+(d.metricas||[]).map(function(x){ return '<div class="met"><div class="met-n">'+(x.num||"")+'</div><div class="met-l">'+(x.label||"")+'</div></div>'; }).join("")+'</div>'
+        + (d.linhas||[]).map(function(l){ return '<div class="plin"><span class="plin-t">'+(l.titulo||"")+'</span><span class="plin-v">'+(l.valor||"")+'</span>'+(l.tag?'<span class="plin-tag">'+l.tag+'</span>':"")+'</div>'; }).join("")
+        + '</div>';
+    } else {
+      let cards = d.cards;
+      if (!cards && d.titulo) cards = [{ titulo: d.titulo, chips: d.linhas || [], destaque: d.destaque || "" }];
+      const icone = d.icone || "✨";
+      const acao = d.acao || "";
+      inner = '<div class="vitrine">' + (cards||[]).map(function(cd){
+          return '<div class="imv"><div class="imv-foto">'+icone+'</div><div class="imv-body">'
+            + '<div class="imv-title">'+(cd.titulo||"")+'</div>'
+            + '<div class="chips">'+(cd.chips||[]).map(function(ch){ return '<span class="chip">'+ch+'</span>'; }).join("")+'</div>'
+            + (cd.destaque ? '<div class="imv-preco">'+cd.destaque+'</div>' : "")
+            + (acao ? '<span class="imv-btn">'+acao+'</span>' : "")
+            + '</div></div>';
+        }).join("") + '</div>';
     }
-    const icone = c.demo.icone || "✨";
-    const acao = c.demo.acao || "";
-    const cardsHtml = (cards||[]).map(function(cd){
-      return '<div class="imv">'
-        + '<div class="imv-foto">'+icone+'</div>'
-        + '<div class="imv-body">'
-        + '<div class="imv-title">'+(cd.titulo||"")+'</div>'
-        + '<div class="chips">'+(cd.chips||[]).map(function(ch){ return '<span class="chip">'+ch+'</span>'; }).join("")+'</div>'
-        + (cd.destaque ? '<div class="imv-preco">'+cd.destaque+'</div>' : "")
-        + (acao ? '<span class="imv-btn">'+acao+'</span>' : "")
-        + '</div></div>';
-    }).join("");
-    demo = '<section class="rv"><h2>'+(c.demo.rotulo||"Uma prévia do seu site")+'</h2>'
-      + '<div class="vitrine">'+cardsHtml+'</div>'
-      + '<p style="margin-top:12px;font-size:13px;color:var(--text-dim)">Exemplo ilustrativo de layout — no site final, com as fotos e os dados reais dos seus itens.</p>'
-      + '</section>';
+    demo = '<section class="rv"><h2>'+rotulo+'</h2>'+inner
+      + '<p style="margin-top:12px;font-size:13px;color:var(--text-dim)">Exemplo ilustrativo — no projeto final, com os dados reais do seu negócio.</p></section>';
   }
   return '<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
     + '<title>Proposta — '+(c.titulo||"Projeto")+'</title>\n<style>\n'
@@ -779,6 +810,22 @@ function montarHtmlProposta(c){
     + '.chip{font-size:11.5px;color:var(--text-dim);border:1px solid var(--border);border-radius:100px;padding:3px 9px;white-space:nowrap;}\n'
     + '.imv-preco{font-size:17px;font-weight:750;color:var(--accent-2);margin-bottom:10px;}\n'
     + '.imv-btn{display:inline-block;font-size:12.5px;font-weight:600;background:#1f8a5b;color:#fff;padding:7px 12px;border-radius:8px;}\n'
+    + '.sim{background:var(--bg-elev);border:1px solid var(--border);border-radius:14px;padding:8px 4px 10px;}\n'
+    + '.sim-top{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px 12px;border-bottom:1px solid var(--border);margin-bottom:10px;}\n'
+    + '.sim-t{font-weight:650;font-size:14.5px;}\n'
+    + '.sim-tag{font-size:11.5px;color:var(--text-dim);border:1px solid var(--border);border-radius:100px;padding:3px 9px;white-space:nowrap;}\n'
+    + '.slot{display:grid;grid-template-columns:58px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--bg-elev-2);margin:0 8px 6px;}\n'
+    + '.slot-h{font-weight:700;font-size:14px;color:'+ac+';}\n'
+    + '.slot-c{font-size:14px;}\n.slot-s{font-size:12px;color:var(--text-dim);text-align:right;}\n'
+    + '.slot.livre{background:transparent;border:1px dashed var(--border);}\n.slot.livre .slot-c{color:var(--text-dim);}\n'
+    + '.chat .msg{max-width:80%;width:fit-content;font-size:14px;line-height:1.5;padding:9px 12px;border-radius:12px;background:var(--bg-elev-2);margin:0 8px 8px;}\n'
+    + '.chat .msg.bot{margin-left:auto;background:rgba(31,138,91,.20);border:1px solid rgba(31,138,91,.45);}\n'
+    + '.mets{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:0 8px 12px;}\n'
+    + '.met{background:var(--bg-elev-2);border-radius:10px;padding:12px 14px;}\n'
+    + '.met-n{font-size:20px;font-weight:750;color:'+ac+';}\n.met-l{font-size:12px;color:var(--text-dim);margin-top:2px;}\n'
+    + '.plin{display:flex;align-items:center;gap:10px;padding:10px 4px;border-top:1px solid var(--border);margin:0 12px;}\n'
+    + '.plin-t{flex:1;font-size:14px;}\n.plin-v{font-size:14px;font-weight:650;}\n'
+    + '.plin-tag{font-size:11px;color:var(--text-dim);border:1px solid var(--border);border-radius:100px;padding:2px 8px;white-space:nowrap;}\n'
     + anim + '\n'
     + '@media (max-width:520px){.grid{grid-template-columns:1fr;}h1{font-size:23px;}.offer .price{font-size:30px;}}\n'
     + '</style>\n</head>\n<body>\n<div class="wrap">\n'
@@ -804,17 +851,30 @@ function buildAcompanhamentoPrompt(){
   const cliente = document.getElementById("in-cliente").value||"cliente";
   const desc = document.getElementById("in-desc").value;
   const plat = getPlataformaAtual();
-  return "Voce e o Diogo Pinotti, freelancer de TI no Brasil, escrevendo como um vendedor senior de multinacional: seguranca tranquila, direto, sem soar necessitado. Escreva o TEXTO CURTO DE ACOMPANHAMENTO para a caixa de proposta da plataforma " + plat + ", que acompanha o LINK de uma proposta HTML completa ja publicada.\n\n"
+  const ehW = plataformaGrupo(plat) === "Workana";
+  const angulos = [
+    "DIAGNOSTICO — abra apontando o gargalo concreto que um negocio desse tipo vive hoje sem a solucao (ex: cliente que marca e nao aparece, pedido que se perde no meio da conversa, planilha que ninguem atualiza).",
+    "CENA DO DIA A DIA — abra descrevendo em uma frase a cena real de hoje: quem faz, em que momento do dia, com qual ferramenta improvisada.",
+    "CUSTO SILENCIOSO — abra pelo que continua se perdendo enquanto o problema fica como esta (tempo, venda, retrabalho). Proibido inventar numero ou estatistica.",
+    "DECISAO TECNICA — abra por uma escolha tecnica concreta deste projeto que muda o resultado e que a maioria das propostas ignora."
+  ];
+  const angulo = angulos[Math.floor(Math.random()*angulos.length)];
+  return "Voce e o Diogo Pinotti, freelancer de TI no Brasil, escrevendo como um vendedor senior: seguranca tranquila, direto, sem soar necessitado. Escreva o TEXTO CURTO DE ACOMPANHAMENTO para a caixa de proposta da plataforma " + plat + ", que acompanha o LINK de uma proposta completa ja publicada.\n\n"
     + 'Cliente: ' + cliente + "\n"
     + "Projeto: " + desc + "\n\n"
-    + "ESTRUTURA (paragrafos curtos separados por linha em branco):\n"
+    + "ANGULO OBRIGATORIO DESTA MENSAGEM (use este, nenhum outro): " + angulo + "\n\n"
+    + "ESTRUTURA (paragrafos curtos separados por linha em branco, no maximo 90 palavras no total):\n"
     + "1. Saudacao: 'Oi " + cliente + ", tudo bem?'\n"
-    + "2. 1 paragrafo curto provando leitura real do projeto e que o Diogo e o profissional certo pra ESTE projeto especifico (nao curriculo generico).\n"
+    + "2. UM paragrafo de no maximo 2 frases seguindo o angulo acima. REGRA DURA: a PRIMEIRA frase fala do NEGOCIO DO CLIENTE, nunca de voce, nunca do projeto em abstrato. Cite pelo menos um detalhe concreto tirado do anuncio: o que ele vende, para quem, a ferramenta que usa hoje, o volume, a cidade, o horario de pico. Se o anuncio for pobre em detalhe, use o tipo de operacao dele.\n"
     + "3. 1 frase apresentando a proposta detalhada + o marcador LINK_DA_PROPOSTA sozinho em sua propria linha.\n"
-    + "4. 1 frase: 'La tem o raciocinio tecnico completo, valor e prazo.' (pode variar a construcao).\n"
-    + "5. Fechamento com o texto EXATO: 'Entre os 0,01% mais bem classificados da Workana, na posição 333 de 14,59 milhões de freelancers, nível Gold.'\n\n"
-    + "PROIBICOES: NUNCA citar valor nem prazo neste texto (estao no link — o objetivo e forcar a abertura). NUNCA 'fico a disposicao'. NUNCA se apresentar com 'Sou o Diogo'. NUNCA INVENTAR experiencia setorial que o Diogo nao afirmou ter (ex: 'experiencia com restaurantes', 'ja atendi imobiliarias') — a credencial real e: sites, automacoes e 17 anos de TI; conecte ESSA experiencia ao projeto, sem criar cases falsos que o cliente pode pedir pra ver. Maximo 90 palavras.\n\n"
-    + "REGRAS: portugues correto com acentuacao completa. Sem emojis. Nunca mencionar IA. Tom humano e direto.";
+    + "4. 1 frase dizendo que no link esta o raciocinio completo, com valor e prazo. Varie a construcao a cada mensagem.\n"
+    + (ehW
+        ? "5. Fechamento em 1 linha com a credencial. Mantenha SEMPRE os dois numeros juntos (0,01% mais bem classificados da Workana e posicao 333 de 14,59 milhoes de freelancers, nivel Gold), mas VARIE a construcao da frase a cada mensagem — nunca repita a mesma formula literal.\n\n"
+        : "5. NAO cite ranking nem posicao da Workana: esta plataforma nao e a Workana. Feche com 1 linha simples se colocando a disposicao para ajustar o escopo.\n\n")
+    + "LISTA NEGRA — se qualquer uma destas aparecer, a mensagem esta ERRADA e voce reescreve antes de responder: 'chamou minha atencao', 'me chamou a atencao', 'estou confiante', 'tenho certeza de que posso', 'alinhado a minha experiencia', 'alinhada ao meu perfil', 'caracteristicas alinhadas', 'solucao robusta', 'solucao eficiente', 'plataforma intuitiva', 'sob medida para suas necessidades', 'atender suas expectativas', 'venho por meio deste', 'sou especialista em', 'com certeza posso ajudar'. Proibido tambem empilhar adjetivo vazio: robusto, eficiente, intuitivo, escalavel, completo, moderno, personalizado, otimizado.\n\n"
+    + "PROIBICOES: NUNCA citar valor nem prazo neste texto (estao no link — o objetivo e forcar a abertura). NUNCA 'fico a disposicao'. NUNCA se apresentar com 'Sou o Diogo'. NUNCA comecar frase falando de si mesmo antes de falar do cliente. NUNCA INVENTAR experiencia setorial que o Diogo nao afirmou ter (ex: 'ja atendi restaurantes', 'experiencia com clinicas') — a credencial real e: sites, automacoes e 17 anos de TI.\n\n"
+    + "TESTE FINAL antes de responder: se essa mesma mensagem serviria, trocando so o nome, para qualquer outro cliente de qualquer outro ramo, ela esta generica demais. Reescreva o paragrafo 2 com um detalhe que so existe NESTE anuncio.\n\n"
+    + "REGRAS: portugues correto com acentuacao completa. Sem emojis. Nunca mencionar IA. Tom humano e direto, mensagem de WhatsApp bem escrita, nao carta formal.";
 }
 
 async function gerarClaro(){
