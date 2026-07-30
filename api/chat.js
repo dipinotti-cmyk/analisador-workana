@@ -83,44 +83,33 @@ export default async function handler(req) {
   };
 
   const tentativas = [];
+  const ESPERAS_MS = [2000, 5000];
 
   try {
     for (const candidato of fila) {
-      let r = await chamar(candidato);
+      let r = null;
+      let detalhe = '';
 
-      // Limite gratuito por minuto: uma espera curta resolve a maioria.
-      if (r.status === 429) {
-        await espera(3000);
+      // So o 429 (limite por minuto) merece insistir no MESMO modelo, porque
+      // e questao de esperar. 503 significa modelo sobrecarregado do lado do
+      // Google, e 404/400 sao definitivos: nos tres casos trocar de modelo e
+      // mais rapido que esperar, entao cai direto pro proximo da fila.
+      for (let tentativa = 0; tentativa <= ESPERAS_MS.length; tentativa++) {
         r = await chamar(candidato);
+        if (r.ok) break;
+        detalhe = (await r.text()).slice(0, 200);
+        const temporario = r.status === 429;
+        if (!temporario || tentativa === ESPERAS_MS.length) break;
+        await espera(ESPERAS_MS[tentativa]);
       }
 
-      // Modelo inexistente (404) ou parâmetro recusado (400): tenta o próximo
-      // da fila em vez de devolver erro na cara do usuário.
-      if (r.status === 404 || r.status === 400) {
-        let detalhe = '';
-        try {
-          const corpoErro = await r.json();
-          detalhe = corpoErro && corpoErro.error && corpoErro.error.message ? corpoErro.error.message : '';
-        } catch (e) {
-          detalhe = 'sem corpo de erro';
-        }
-        tentativas.push(candidato.model + ' -> ' + r.status + (detalhe ? ' (' + detalhe.slice(0, 120) + ')' : ''));
+      // Qualquer falha que sobreviveu as tentativas: proximo modelo da fila.
+      if (!r.ok) {
+        tentativas.push(candidato.model + ' -> ' + r.status + ' ' + detalhe);
         continue;
       }
 
-      if (r.status === 429) {
-        return json({ error: 'Limite gratuito da Gemini atingido. Espere 1 minuto e tente de novo.' }, 429);
-      }
-
       const data = await r.json();
-
-      if (data.error) {
-        return json({ error: 'Gemini (' + candidato.model + '): ' + (data.error.message || JSON.stringify(data.error)) }, 500);
-      }
-      if (!r.ok) {
-        return json({ error: 'Gemini (' + candidato.model + ') respondeu ' + r.status + '. Resposta: ' + JSON.stringify(data).slice(0, 300) }, 500);
-      }
-
       const choice = data.choices && data.choices[0];
       const text = (choice && choice.message && choice.message.content) || '';
 
@@ -134,7 +123,7 @@ export default async function handler(req) {
     }
 
     return json({
-      error: 'Nenhum modelo da Gemini respondeu. Tentativas: ' + tentativas.join(' | ')
+      error: 'Nenhum modelo da Gemini respondeu agora. Tentativas: ' + tentativas.join(' | ')
     }, 502);
   } catch (e) {
     return json({ error: 'Erro na chamada da Gemini: ' + e.message }, 500);
