@@ -142,6 +142,14 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
               <button type="button" class="btn btn-sm btn-ghost" id="tipo-hora" onclick="setTipo('hora')" style="flex:1">Por hora</button>
             </div>
           </div>
+          <div class="field">
+            <label style="display:flex;align-items:center;gap:6px">🕵️ O que a vaga mostra <span style="font-weight:400;color:var(--muted);font-size:11px">— opcional, muda o posicionamento</span></label>
+            <div style="display:flex;gap:8px">
+              <input type="number" id="in-n-propostas" placeholder="Nº de propostas" style="flex:1">
+              <input type="number" id="in-media-conc" placeholder="Média R$ dos concorrentes" style="flex:1">
+            </div>
+            <input type="number" id="in-taxa-contrat" placeholder="Taxa de contratação do cliente (%)" style="margin-top:8px">
+          </div>
           <button class="btn btn-primary btn-lg" style="width:100%" onclick="avaliar()" id="btn-avaliar">⚡ Avaliar projeto</button>
         </div>
 
@@ -176,8 +184,9 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
             <div class="field"><label>Informação adicional (opcional)</label><textarea id="in-contexto" rows="3" placeholder="Ex: já fui dono de loja na Nuvemshop com 200 produtos. Cole cases, links de portfólio ou detalhes relevantes..."></textarea></div>
             <label>Como você quer abordar este cliente?</label>
             <div id="escopo-hint" style="font-size:12px;line-height:1.5;margin-bottom:10px;padding:10px 12px;border-radius:8px"></div>
-            <button class="btn btn-success btn-lg" style="width:100%;margin-bottom:8px" onclick="gerarClaro()" id="btn-claro">✅ Escopo claro — gerar apresentação + proposta</button>
-            <button class="btn btn-purple btn-lg" style="width:100%" onclick="gerarIncerto()" id="btn-incerto">❓ Escopo incerto — gerar só apresentação com perguntas</button>
+            <button class="btn btn-purple btn-lg" style="width:100%;margin-bottom:6px" onclick="gerarIncerto()" id="btn-incerto">💬 Fazer uma pergunta — abrir a conversa</button>
+            <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:12px">Caminho recomendado pela própria Workana: briefing gerado por IA é raso, e em vaga disputada uma pergunta cirúrgica se destaca mais que um textão. A proposta você gera depois, pelo CRM, com os dados reais que ele te der.</div>
+            <button class="btn btn-ghost btn-lg" style="width:100%" onclick="gerarClaro()" id="btn-claro">📄 Já tenho tudo — gerar apresentação + proposta</button>
           </div>
         </div>
       </div>
@@ -433,6 +442,17 @@ function comPortfolio(texto){
   return partes.join("\n\n");
 }
 
+// No acompanhamento do link a mensagem existe pra levar ao link da PROPOSTA.
+// Uma segunda URL logo na abertura disputa o clique com ela, entao aqui a
+// linha entra junto da credencial, no fim, sem roubar a pergunta final.
+function comPortfolioFim(texto){
+  if (!texto) return texto;
+  if (texto.indexOf("lupixa.com") !== -1) return texto;
+  const partes = texto.split(/\n\s*\n/);
+  partes.splice(Math.max(1, partes.length - 1), 0, LINHA_PORTFOLIO);
+  return partes.join("\n\n");
+}
+
 async function callClaude(prompt, maxTokens){
   const res = await fetch("/api/chat", {
     method:"POST",
@@ -479,13 +499,19 @@ async function avaliar(){
     ? "A cobranca e POR HORA. Nos cenarios de preco, os valores devem ser VALOR POR HORA em reais."
     : "A cobranca e POR PROJETO (valor fechado). Os cenarios de preco sao o valor total do projeto.";
 
+  const conc = dadosConcorrencia();
+  const concTxt = conc.texto
+    ? "\n\nO QUE A ABA CONCORRENTES E O PERFIL DO CLIENTE MOSTRAM (use na analise): " + conc.texto + "\n"
+      + "Leia isso como um vendedor senior: media baixa NAO significa que a vaga vale pouco. Media baixa com escopo complexo significa leilao de centavos, e a jogada certa e se posicionar acima, como quem resolve a bagunca que o barateiro vai deixar. Diga isso na recomendacao, com todas as letras.\n"
+      + "Taxa de contratacao abaixo de 30% e cliente que costuma abandonar projeto: nesse caso a recomendacao vira CAUTELA mesmo que o escopo seja bom, e o motivo tem que citar o numero.\n"
+    : "";
   const platA = getPlataformaAtual();
   const prompt = "Voce e um consultor de precificacao para freelancers da plataforma " + platA + " no Brasil. Avalie o projeto abaixo para um profissional de TI com este perfil:\n"
     + "Avaliacoes 5 estrelas: " + profile.avaliacoes + "\n"
     + "Habilidades: " + profile.habilidades + "\n\n"
     + 'Projeto do cliente "' + cliente + '":\n'
     + desc + "\n\n"
-    + cobrancaTxt + "\n\n"
+    + cobrancaTxt + concTxt + "\n\n"
     + "INSTRUCOES DE PRECIFICACAO (CRITICO):\n"
     + "NAO invente um numero unico de preco. Preco de freelance depende de negociacao e percepcao de valor. Sua tarefa e ANALISAR a situacao e dar uma DECISAO ASSISTIDA.\n"
     + "1. Detecte se o cliente sinalizou um orcamento ou faixa na descricao. Se sim, extraia.\n"
@@ -590,7 +616,17 @@ function renderDecisao(){
     + '<span><span style="font-size:13px;font-weight:600">Gerar página interativa e publicar</span>'
     + '<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:2px">Tipo detectado: <strong>'+rotuloTipo+'</strong>. '
     + (rende ? 'Tem tela pra mostrar, então vale a página.' : 'Sem tela pra mostrar — o padrão é só texto. Marque se quiser forçar.')
-    + '</span></span></label></div>';
+    + '</span></span></label>'
+    + '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'
+    + '<label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px">Tipo da prévia — você viu o anúncio, o modelo não</label>'
+    + '<select id="sel-previa" style="width:100%">'
+    + '<option value="">Deixar a IA escolher</option>'
+    + '<option value="vitrine">Vitrine — imóveis, pratos, produtos, serviços</option>'
+    + '<option value="agenda">Agenda — horários de um dia</option>'
+    + '<option value="conversa">Conversa — atendimento no WhatsApp</option>'
+    + '<option value="painel">Painel — números e registros</option>'
+    + '<option value="fluxo">Fluxo — passo a passo do processo</option>'
+    + '</select></div></div>';
 
   document.getElementById("preco-decisao").innerHTML = html;
   const prazoInput = document.getElementById("in-prazo");
@@ -618,12 +654,12 @@ function confirmarValor(){
     const htmlNote = deveGerarHtml()
       ? " Como o projeto tem tela, será gerada <strong>página interativa</strong> (pra publicar no Vercel) + texto de acompanhamento sem valor/prazo."
       : " Sem página interativa nesta: o projeto não tem tela pra demonstrar, então vai proposta em texto com valor e prazo.";
-    hint.innerHTML = "💡 A IA avaliou: <strong>escopo claro</strong>. Recomendado gerar apresentação + proposta e enviar as duas." + htmlNote;
+    hint.innerHTML = "💡 A IA avaliou: <strong>escopo claro</strong> — mas escopo claro no anúncio raramente é escopo claro na prática. Se ainda houver qualquer decisão técnica em aberto, comece pela pergunta." + htmlNote;
   } else {
     hint.style.background = "var(--purple-dim)";
     hint.style.color = "var(--purple)";
     let f = (analysis && analysis.escopoFalta && analysis.escopoFalta.length) ? " Falta: "+analysis.escopoFalta.join("; ")+"." : "";
-    hint.innerHTML = "💡 A IA avaliou: <strong>escopo incerto</strong>. Recomendado abrir conversa só com a apresentação e perguntas." + f;
+    hint.innerHTML = "💡 A IA avaliou: <strong>escopo incerto</strong>. Abra a conversa com a pergunta — mandar preço agora é chute." + f;
   }
 }
 
@@ -679,6 +715,10 @@ function buildPropostaPrompt(respostaCliente){
     ? "\n\nO CLIENTE RESPONDEU AS PERGUNTAS (use estas informacoes para ajustar a proposta a realidade dele): " + respostaCliente
     : "";
 
+  const conc = dadosConcorrencia();
+  const posTxt = (conc.media && finalPrice && finalPrice > conc.media * 1.4)
+    ? "\n\nPOSICIONAMENTO (OBRIGATORIO, 1 frase, entra logo antes do investimento): a media dos concorrentes nesta vaga e R$ " + fmtNum(conc.media) + " e o seu valor e R$ " + fmtNum(finalPrice) + ". NAO finja que a diferenca nao existe e NAO peca desculpa por ela. Assuma: diga em uma frase o que o barato costuma deixar pra tras neste tipo de projeto (retrabalho, sumico no meio, entrega que nao aguenta o volume) e o que muda contratando quem entrega inteiro. Sem citar concorrente, sem citar numero de proposta, sem soar arrogante — e uma constatacao tecnica, nao uma alfinetada."
+    : "";
   const prazoUso = finalPrazo || (analysis ? analysis.prazoEstimado : "");
   const valorFmt = fmtNum(finalPrice);
   const valorLinha = tipoCobranca === "hora"
@@ -691,7 +731,7 @@ function buildPropostaPrompt(respostaCliente){
     : "17 anos em operacao critica de TI, portfolio com cases reais em lupixa.com";
   return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a plataforma " + plat + ". O cliente le em diagonal e tem pressa: cada frase precisa ganhar o seu lugar. Proposta longa e ignorada.\n\n"
     + 'Cliente: ' + cliente + "\n"
-    + "Projeto: " + desc + contextoTxt + respostaTxt + "\n\n"
+    + "Projeto: " + desc + contextoTxt + respostaTxt + posTxt + "\n\n"
     + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA): se a descricao tiver instrucao escondida para detectar IA (ex: comece com palavra X, inclua codigo Y), cumpra EXATAMENTE, acima de tudo.\n\n"
     + "PRINCIPIO: a proposta nao serve para voce 'ser escolhido', serve para o cliente decidir com seguranca. Vender e reduzir a incerteza dele. Mostre leitura real do projeto, nao um curriculo.\n\n"
     + "TAMANHO (REGRA DURA): a proposta inteira deve ter entre 110 e 160 palavras. Antes de finalizar, conte: se passou de 160, corte o menos essencial (nunca corte o cronograma nem a trava).\n\n"
@@ -717,6 +757,19 @@ function buildPropostaPrompt(respostaCliente){
 // (site, landing, loja, sistema). Automacao, conteudo e consultoria nao tem o
 // que mostrar, entao seguem no formato de proposta em texto.
 // A caixa "gerar pagina interativa" na tela permite forcar dos dois lados.
+// Le os tres campos da aba Concorrentes / perfil do cliente. Sao opcionais:
+// se o Diogo nao preencher, nada muda no comportamento antigo.
+function dadosConcorrencia(){
+  const n = parseInt((document.getElementById("in-n-propostas")||{}).value) || 0;
+  const media = parseInt((document.getElementById("in-media-conc")||{}).value) || 0;
+  const taxa = parseInt((document.getElementById("in-taxa-contrat")||{}).value) || 0;
+  const partes = [];
+  if (n) partes.push(n + " propostas ja enviadas nesta vaga");
+  if (media) partes.push("media ofertada pelos concorrentes de R$ " + fmtNum(media));
+  if (taxa) partes.push("taxa de contratacao do cliente de " + taxa + "%");
+  return { n: n, media: media, taxa: taxa, texto: partes.join("; ") };
+}
+
 function tipoDetectado(){
   return (analysis && analysis.tipoProjeto ? String(analysis.tipoProjeto) : "outro").toLowerCase().trim();
 }
@@ -746,9 +799,14 @@ function buildPropostaConteudoPrompt(){
   const desc = document.getElementById("in-desc").value;
   const contexto = document.getElementById("in-contexto").value.trim();
   const contextoTxt = contexto ? "\n\nInformacao adicional do Diogo (usar como prova de vivencia pratica): " + contexto : "";
+  const tipoTxt = "\n\nTIPO DE PROJETO JA DETECTADO NA ANALISE: " + tipoDetectado() + ".";
+  const forcado = (document.getElementById("sel-previa") ? document.getElementById("sel-previa").value : "");
+  const previaTxt = forcado
+    ? "\n\nTIPO DE SIMULACAO ESCOLHIDO PELO DIOGO (OBRIGATORIO, nao troque por outro): " + forcado + "."
+    : "";
   return "Voce escreve o CONTEUDO de uma proposta comercial do Diogo Pinotti, freelancer de TI no Brasil. O layout ja existe; sua tarefa e so o texto, adaptado a ESTE projeto.\n\n"
     + 'Cliente: ' + cliente + "\n"
-    + "Projeto descrito pelo cliente: " + desc + contextoTxt + "\n\n"
+    + "Projeto descrito pelo cliente: " + desc + contextoTxt + tipoTxt + previaTxt + "\n\n"
     + "ADAPTACAO (CRITICO): se o cliente pediu animacoes/efeitos, marque animar=true. Escolha uma cor de acento hex que combine com o ramo do cliente e que seja clara o bastante pra ler em fundo escuro #0b0d12.\n\n"
     + "SIMULACAO (CAMPO MAIS IMPORTANTE — demo NUNCA pode vir null): toda proposta precisa MOSTRAR visualmente o que o cliente vai receber. Escolha o tipo mais proximo do que foi pedido:\n"
     + "- vitrine: site, loja, catalogo, portfolio. Cards do que ele vende (imovel, prato, produto, servico) com caracteristicas e preco.\n"
@@ -756,7 +814,8 @@ function buildPropostaConteudoPrompt(){
     + "- conversa: chatbot, atendimento no WhatsApp, IA de atendimento, qualificacao de lead. As primeiras mensagens entre o cliente final e o robo, mostrando o robo resolvendo sozinho.\n"
     + "- painel: sistema, CRM, dashboard, relatorio, automacao interna, planilha. Numeros no topo e uma lista de registros.\n"
     + "- fluxo: pagamento, checkout, cadastro, processo com etapas, ou QUALQUER caso em que o anuncio NAO diz o que o cliente vende. Mostra o caminho que a pessoa percorre, passo a passo, ate o objetivo.\n"
-    + "REGRA ANTI-INVENCAO: so use vitrine se o anuncio deixar claro O QUE o cliente vende. Se nao deixar, NAO invente produto, servico nem preco dele — use fluxo, agenda, conversa ou painel. Inventar catalogo falso queima a proposta na hora que o cliente le.\n"
+    + "RAMO DO CLIENTE (faca isto ANTES de escolher a simulacao): identifique o ramo em 1 ou 2 palavras a partir do anuncio (imobiliaria, restaurante, barbearia, clinica, advocacia, loja de roupa, oficina, escola...). Se o ramo estiver CLARO, a simulacao TEM QUE mostrar itens tipicos DESSE ramo, com nomes, caracteristicas e valores plausiveis do Brasil: imobiliaria mostra imoveis, restaurante mostra pratos, oficina mostra servicos. Isso nao e inventar, e ilustrar — a propria pagina avisa embaixo que o exemplo e ilustrativo. Cair no fluxo generico quando o ramo esta claro e o pior erro possivel: e justamente a prova visual que faz o cliente entender o que esta comprando.\n"
+    + "REGRA ANTI-INVENCAO (o que de fato e proibido): nunca invente o RAMO do cliente, nunca apresente numeros como se fossem dados reais dele, e nunca cite nome de empresa que nao apareceu no anuncio. Se o anuncio nao deixar claro nem o ramo, ai sim troque a vitrine por fluxo, agenda, conversa ou painel.\n"
     + "Invente exemplos realistas do ramo, da cidade e do publico citados no anuncio, com nomes, servicos e valores plausiveis do Brasil. Essa e a PROVA VISUAL da proposta: sem ela o cliente nao ve o que esta comprando.\n\n"
     + "CONTEUDO: portugues correto com acentuacao completa. Segunda pessoa (voce). Frases curtas. Nunca mencionar IA.\n\n"
     + "LISTA NEGRA DE ADJETIVO VAZIO (se aparecer, reescreva): robusto, profissional, atraente, intuitivo, moderno, eficiente, escalavel, completo, otimizado, personalizado, de alta qualidade, sob medida, presenca digital, experiencia unica. Adjetivo nao prova nada. Troque por FATO: o que o sistema faz, com o que ele conversa, o que acontece quando o cliente clica.\n\n"
@@ -779,6 +838,7 @@ function buildPropostaConteudoPrompt(){
     + '"etapas":[{"t":"nome curto da etapa","d":"o que acontece nela, especifico deste projeto","dias":"2 dias"} com 2 a 3 etapas cuja soma de dias bate EXATAMENTE com o prazo total informado],'
     + '"trava":"1 frase dizendo que estao inclusas ate 2 rodadas de ajuste sobre o que foi combinado e que mudanca de escopo depois da aprovacao e orcada a parte — sem citar numero de dias",'
     + '"experiencia":"1 paragrafo conectando a experiencia REAL do Diogo (17 anos TI, sites e automacoes reais em producao) a ESTE tipo de projeto — PROIBIDO inventar experiencia setorial que ele nao tem (ex: ja atendi restaurantes/imobiliarias); a ponte e a habilidade tecnica, nao um case falso",'
+    + '"pergunta":"a PERGUNTA DE DECISAO que fecha a pagina: uma escolha entre dois caminhos do NEGOCIO do cliente, que ele responde em 1 linha e que muda o que voce entrega. PROIBIDO pergunta de cartorio (dominio, hospedagem, acesso, logo, conteudo pronto, prazo dele, orcamento dele) e pergunta vazia (o que voce acha, podemos conversar, faz sentido). Ex bons: Voce prefere que o cliente agende a visita direto pela agenda ou que o contato caia no seu WhatsApp?",'
     + '"protecao":"frase de protecao de escopo citando o material/acesso especifico DESTE projeto que dispara o inicio do prazo — PROIBIDO citar qualquer numero de dias ou prazo aqui (o prazo ja aparece no bloco de investimento; citar outro numero gera contradicao)"}';
 }
 
@@ -879,7 +939,15 @@ function montarHtmlProposta(c){
       + '<p style="margin-top:12px;font-size:13px;color:var(--text-dim)">Exemplo ilustrativo — no projeto final, com os dados reais do seu negócio.</p></section>';
   }
   return '<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
-    + '<title>Proposta — '+(c.titulo||"Projeto")+'</title>\n<style>\n'
+    + '<title>Proposta — '+(c.titulo||"Projeto")+'</title>\n'
+    + '<meta name="description" content="Proposta preparada para '+cliente+': escopo, etapas, prazo e valor, com uma prévia interativa do que você recebe.">\n'
+    + '<meta name="theme-color" content="'+ac+'">\n'
+    + '<meta property="og:type" content="website">\n'
+    + '<meta property="og:title" content="Proposta — '+(c.titulo||"Projeto")+'">\n'
+    + '<meta property="og:description" content="Escopo, etapas, prazo e valor. Com uma prévia interativa do que você recebe.">\n'
+    + '<meta property="og:site_name" content="Diogo Pinotti · lupixa.com">\n'
+    + '<meta name="twitter:card" content="summary">\n'
+    + '<style>\n'
     + ':root{--bg:#0b0d12;--bg-elev:#12151c;--bg-elev-2:#171b24;--border:#242938;--text:#eef1f7;--text-dim:#a6adbb;--accent:#7c9cff;--accent-2:'+ac+';}\n'
     + '*{box-sizing:border-box;}\nbody{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;}\n'
     + '.wrap{max-width:780px;margin:0 auto;padding:56px 24px 96px;}\n'
@@ -962,6 +1030,12 @@ function montarHtmlProposta(c){
     + '.imv{transition:border-color .2s ease,transform .2s ease;}\n'
     + '.imv.off{display:none;}\n'
     + '.imv-btn{cursor:pointer;border:0;font-family:inherit;}\n'
+    + '.port{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 22px;}\n'
+    + '.port p{margin:0;font-size:14.5px;color:var(--text-dim);}\n'
+    + '.port-link{font-size:15px;font-weight:700;color:'+ac+';text-decoration:none;border:1px solid '+ac+';border-radius:100px;padding:8px 18px;white-space:nowrap;}\n'
+    + '.cta-box{background:linear-gradient(135deg,'+ac+'1f,rgba(255,255,255,.04));border:1px solid '+ac+'66;border-radius:16px;padding:26px 24px;}\n'
+    + '.cta-q{margin:0 0 12px;font-size:19px;font-weight:650;line-height:1.4;color:#fff;}\n'
+    + '.cta-a{margin:0;font-size:14.5px;color:var(--text-dim);}\n'
     + anim + '\n'
     + '@media (max-width:520px){.grid{grid-template-columns:1fr;}h1{font-size:23px;}.offer .price{font-size:30px;}}\n'
     + '</style>\n</head>\n<body>\n<div class="wrap">\n'
@@ -981,7 +1055,11 @@ function montarHtmlProposta(c){
     + travaHtml
     + '<p style="margin-top:18px;color:var(--text-dim);font-size:14.5px;">'+(c.protecao||"Prazo contado a partir do acesso ao material necessário. Ajustes fora do escopo descrito aqui são orçados à parte.")+'</p></section>\n'
     + '<div class="ranking rv"><span class="icon">🏆</span><p><b>Entre os 0,01% mais bem classificados da Workana</b>, na posição 333 de 14,59 milhões de freelancers, nível Gold.</p></div>\n'
-    + '<div class="signoff rv">Fico à disposição para qualquer ajuste ou dúvida sobre a proposta.<span class="name">Diogo Pinotti</span></div>\n'
+    + '<section class="rv"><h2>Outros trabalhos</h2><div class="card port"><p>Cases reais, com prints e demonstrações de projetos parecidos com o seu.</p>'
+    + '<a class="port-link" href="https://lupixa.com" target="_blank" rel="noopener">lupixa.com</a></div></section>\n'
+    + '<section class="rv"><h2>Próximo passo</h2><div class="cta-box"><p class="cta-q">'+(c.pergunta||"Você prefere começar por qual parte?")+'</p>'
+    + '<p class="cta-a">Me responda essa única linha por aqui mesmo, pela plataforma, e eu já começo a preparar o início. Se preferir ajustar algo da proposta, é só dizer o que muda.</p></div></section>\n'
+    + '<div class="signoff rv">Combinado?<span class="name">Diogo Pinotti</span></div>\n'
     + '</div>\n<script>'+jsDemo+'<\/script>\n</body>\n</html>';
 }
 
@@ -997,9 +1075,13 @@ function buildAcompanhamentoPrompt(){
     "NUMERO OU LIMITE: aponte a variavel de volume que mais muda o trabalho neste projeto (quantidade de itens, lojas, usuarios, integracoes) e diga que a proposta ja considera isso."
   ];
   const angulo = angulos[Math.floor(Math.random()*angulos.length)];
+  const concA = dadosConcorrencia();
+  const posA = (concA.media && finalPrice && finalPrice > concA.media * 1.4)
+    ? "\n\nCONTEXTO DE PRECO (nao cite numeros na mensagem): a media dos concorrentes e R$ " + fmtNum(concA.media) + " e o seu valor e R$ " + fmtNum(finalPrice) + ". Escreva como quem esta acima do leilao, com seguranca tranquila. Uma frase pode tocar no que o barato deixa pra tras, sem citar concorrente e sem soar arrogante.\n"
+    : "";
   return "Voce e o Diogo Pinotti, freelancer de TI no Brasil, escrevendo como um vendedor senior: direto, seguro, sem rodeio. Escreva o TEXTO CURTO DE ACOMPANHAMENTO para a caixa de proposta da plataforma " + plat + ", que acompanha o LINK de uma proposta ja publicada.\n\n"
     + 'Cliente: ' + cliente + "\n"
-    + "Projeto: " + desc + "\n\n"
+    + "Projeto: " + desc + posA + "\n\n"
     + "OBJETIVO REAL DESTA MENSAGEM: fazer o cliente CLICAR NO LINK. Ela nao explica o projeto, nao resume o problema e nao conta historia. Ela mostra, em uma frase, que voce ja pensou no projeto mais fundo do que os outros candidatos.\n\n"
     + "REGRA MAIS IMPORTANTE DE TODAS: PROIBIDO descrever de volta pro cliente o problema, o objetivo ou o beneficio que ELE MESMO escreveu no anuncio. Ele ja sabe. Se a frase que voce escreveu poderia ter sido escrita pelo proprio cliente, ela esta ERRADA — apague e escreva outra com INFORMACAO NOVA (uma decisao tecnica, um risco concreto, um corte de escopo). TAMBEM PROIBIDO falar da CATEGORIA em vez do negocio dele: nada de 'sites institucionais costumam falhar em X', 'muitas empresas perdem leads', 'lojas virtuais sofrem com Y'. Fale do projeto DELE, com o detalhe DELE.\n\n"
     + "ANGULO OBRIGATORIO DESTA MENSAGEM (use este, nenhum outro): " + angulo + "\n\n"
@@ -1045,10 +1127,10 @@ async function gerarClaro(){
     if (ehHtml) {
       const rawConteudo = await callClaude(buildPropostaConteudoPrompt(), 3000);
       const conteudo = JSON.parse(rawConteudo.replace(/```json|```/g,"").trim());
-      const acomp = await callClaude(buildAcompanhamentoPrompt());
+      const acomp = comPortfolioFim(await callClaude(buildAcompanhamentoPrompt()));
       renderTextos({ apresentacao: apresentacao, proposta: acomp, propostaHtml: montarHtmlProposta(conteudo), modo: "claro-html" });
     } else {
-      const proposta = await callClaude(buildPropostaPrompt(""));
+      const proposta = comPortfolio(await callClaude(buildPropostaPrompt("")));
       renderTextos({ apresentacao: apresentacao, proposta: proposta, modo: "claro" });
     }
   } catch(e) { alert("Erro: "+e.message); }
@@ -1181,7 +1263,7 @@ async function gerarParceria(){
   const btn = document.getElementById("btn-parceria");
   btn.disabled = true; btn.textContent = "⏳ Gerando proposta de parceria...";
   try {
-    const proposta = await callClaude(buildParceriaPrompt());
+    const proposta = comPortfolio(await callClaude(buildParceriaPrompt()));
     renderTextos({ apresentacao: null, proposta: proposta, modo: "parceria" });
   } catch(e) { alert("Erro: "+e.message); }
   btn.disabled = false; btn.textContent = "🤝 Gerar proposta de parceria";
@@ -1714,7 +1796,7 @@ async function gerarPropostaFinalCRM(id, valor, prazo){
     + "FORMATACAO OBRIGATORIA: separe o texto em PARAGRAFOS curtos, com UMA LINHA EM BRANCO entre cada paragrafo (quebras de linha duplas). NUNCA entregue tudo grudado num paragrafo unico. Cada entregavel em sua propria linha.";
 
   try {
-    const text = await callClaude(prompt);
+    const text = comPortfolio(await callClaude(prompt));
     window["_prop_"+id] = text;
     const avisoHtml = (valor >= 1000)
       ? '<div style="font-size:12px;color:var(--gold);background:var(--gold-dim);border-radius:8px;padding:8px 12px;margin-bottom:8px">⚠️ Valor ≥ R$1.000: pela regra, esse cliente merece proposta HTML no Vercel. Gere pela aba Analisar (cole a descrição + resposta dele) e use este texto só como acompanhamento do link, removendo o valor/prazo dele.</div>'
