@@ -621,7 +621,8 @@ function renderDecisao(){
     + '<label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px">Tipo da prévia — você viu o anúncio, o modelo não</label>'
     + '<select id="sel-previa" style="width:100%">'
     + '<option value="">Deixar a IA escolher</option>'
-    + '<option value="vitrine">Vitrine — imóveis, pratos, produtos, serviços</option>'
+    + '<option value="site">Site navegável — maquete com menu, listagem e detalhe</option>'
+    + '<option value="vitrine">Vitrine — só a grade de cards</option>'
     + '<option value="agenda">Agenda — horários de um dia</option>'
     + '<option value="conversa">Conversa — atendimento no WhatsApp</option>'
     + '<option value="painel">Painel — números e registros</option>'
@@ -801,15 +802,18 @@ function buildPropostaConteudoPrompt(){
   const contextoTxt = contexto ? "\n\nInformacao adicional do Diogo (usar como prova de vivencia pratica): " + contexto : "";
   const tipoTxt = "\n\nTIPO DE PROJETO JA DETECTADO NA ANALISE: " + tipoDetectado() + ".";
   const forcado = (document.getElementById("sel-previa") ? document.getElementById("sel-previa").value : "");
+  const t = tipoDetectado();
+  const sugerido = (t === "site" || t === "landing" || t === "loja") ? "site" : "";
   const previaTxt = forcado
     ? "\n\nTIPO DE SIMULACAO ESCOLHIDO PELO DIOGO (OBRIGATORIO, nao troque por outro): " + forcado + "."
-    : "";
+    : (sugerido ? "\n\nTIPO DE SIMULACAO RECOMENDADO PARA ESTE PROJETO: " + sugerido + " (maquete navegavel). Use este, a menos que o projeto claramente nao tenha paginas." : "");
   return "Voce escreve o CONTEUDO de uma proposta comercial do Diogo Pinotti, freelancer de TI no Brasil. O layout ja existe; sua tarefa e so o texto, adaptado a ESTE projeto.\n\n"
     + 'Cliente: ' + cliente + "\n"
     + "Projeto descrito pelo cliente: " + desc + contextoTxt + tipoTxt + previaTxt + "\n\n"
     + "ADAPTACAO (CRITICO): se o cliente pediu animacoes/efeitos, marque animar=true. Escolha uma cor de acento hex que combine com o ramo do cliente e que seja clara o bastante pra ler em fundo escuro #0b0d12.\n\n"
     + "SIMULACAO (CAMPO MAIS IMPORTANTE — demo NUNCA pode vir null): toda proposta precisa MOSTRAR visualmente o que o cliente vai receber. Escolha o tipo mais proximo do que foi pedido:\n"
-    + "- vitrine: site, loja, catalogo, portfolio. Cards do que ele vende (imovel, prato, produto, servico) com caracteristicas e preco.\n"
+    + "- site: PADRAO E PREFERIDO para site, landing page, loja virtual, catalogo, portfolio e qualquer coisa com paginas navegaveis. Monta uma MAQUETE NAVEGAVEL do site do cliente, com menu, pagina inicial, listagem e pagina de detalhe. E a prova visual mais forte que existe: o cliente navega e ve o proprio negocio na tela. So NAO use se o projeto nao tiver paginas.\n"
+    + "- vitrine: versao curta do site, so a grade de cards. Use apenas quando o pedido for pequeno demais para justificar uma maquete inteira.\n"
     + "- agenda: agendamento, reserva, consulta, barbearia, salao, clinica. Grade de horarios de um dia, misturando ocupado e livre.\n"
     + "- conversa: chatbot, atendimento no WhatsApp, IA de atendimento, qualificacao de lead. As primeiras mensagens entre o cliente final e o robo, mostrando o robo resolvendo sozinho.\n"
     + "- painel: sistema, CRM, dashboard, relatorio, automacao interna, planilha. Numeros no topo e uma lista de registros.\n"
@@ -830,6 +834,7 @@ function buildPropostaConteudoPrompt(){
     + '"estrutura":[{"t":"titulo curto do item tecnico","d":"explicacao curta especifica deste projeto"} com 4 a 5 itens],'
     + '"demo":{"tipo":"vitrine|agenda|conversa|painel|fluxo","rotulo":"titulo curto da secao falando com o cliente (ex: Como sua agenda vai ficar, Uma previa de como seus imoveis aparecem, O que seu cliente recebe no WhatsApp)","dia":"rotulo do topo da simulacao (ex: Terca, 12 de agosto / WhatsApp / Painel do mes)","resumo":"informacao curta no canto do topo (ex: 6 de 9 horarios ocupados / respondido em 4 segundos)",'
     + 'e MAIS os campos do tipo escolhido: '
+    + 'site -> "site":{"marca":"nome ficticio plausivel do negocio, no estilo do ramo e da cidade citados","menu":["3 a 4 itens curtos, o primeiro sempre a home, o segundo sempre a listagem"],"hero":{"titulo":"chamada da home, fala do cliente final","sub":"1 linha de apoio","cta":"texto curto do botao"},"filtros":["2 a 4 filtros tipicos do ramo, ex: Bairro, Tipo, Ate R$ 400 mil"],"itens":[{"titulo":"nome do item","chips":["2 a 3 caracteristicas"],"preco":"valor plausivel"} com 4 a 6 itens],"detalhe":{"titulo":"um dos itens acima","preco":"o preco dele","specs":[{"k":"rotulo","v":"valor"} com 4],"texto":"1 paragrafo descrevendo o item","cta":"texto do botao de contato"},"paginas":[{"nome":"nome igual ao item do menu","titulo":"titulo da pagina","texto":"1 paragrafo"} com 1 a 2, correspondendo aos itens 3 e 4 do menu],"rodape":"1 linha curta de rodape com telefone ficticio"}, '
     + 'vitrine -> "icone":"1 emoji do ramo","acao":"texto curto do botao (ex: Falar com o corretor)","cards":[{"titulo":"nome do item","chips":["2 a 3 caracteristicas curtas"],"destaque":"preco"}] com 2 a 3 cards. '
     + 'agenda -> "slots":[{"hora":"09:00","cliente":"nome da pessoa","servico":"servico contratado","status":"ocupado"} ou {"hora":"11:00","status":"livre"}] com 5 a 7 horarios em ordem. '
     + 'conversa -> "mensagens":[{"de":"cliente","texto":"pergunta tipica de quem chama esse negocio"},{"de":"bot","texto":"resposta que resolve sozinha"}] com 4 a 6 mensagens alternadas. '
@@ -854,7 +859,7 @@ function montarHtmlProposta(c){
   const sobre = (c.sobre||[]).map(function(p){ return '<p>'+p+'</p>'; }).join("");
   const slugProp = slugCliente();
   const trackUrl = APP_BASE + "/api/view?slug=" + encodeURIComponent("proposta-" + slugProp) + "&c=" + encodeURIComponent(cliente);
-  const jsDemo = "\n(function(){\n  var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };\n  var alvo = function(ev, sel){\n    var n = ev.target;\n    while (n && n.nodeType === 1) { if (n.matches && n.matches(sel)) return n; n = n.parentElement; }\n    return null;\n  };\n\n  try { var _t = fetch(\"__TRACK__\", { mode: \"no-cors\", keepalive: true, cache: \"no-store\" }); if (_t && _t.catch) _t.catch(function(){}); } catch (e) {}\n\n  $$('[data-sim=\"agenda\"]').forEach(function(sim){\n    var tag = sim.querySelector(\"[data-tag]\");\n    sim.addEventListener(\"click\", function(ev){\n      var el = alvo(ev, \".slot.livre\");\n      if (!el) return;\n      el.classList.remove(\"livre\");\n      el.classList.add(\"feito\");\n      var c = el.querySelector(\".slot-c\"), s = el.querySelector(\".slot-s\");\n      if (c) c.textContent = \"Reservado agora\";\n      if (s) s.textContent = \"confirmado \u2713\";\n      if (tag) {\n        var n = $$(\".slot.feito\", sim).length;\n        tag.textContent = n + (n === 1 ? \" hor\u00e1rio reservado por aqui\" : \" hor\u00e1rios reservados por aqui\");\n      }\n    });\n  });\n\n  $$('[data-sim=\"conversa\"]').forEach(function(sim){\n    var msgs = $$(\".msg\", sim), tp = sim.querySelector(\"[data-typing]\"), bt = sim.querySelector(\"[data-play]\");\n    if (!bt) return;\n    bt.addEventListener(\"click\", function(){\n      bt.disabled = true;\n      bt.textContent = \"Reproduzindo...\";\n      msgs.forEach(function(m){ m.classList.remove(\"on\"); });\n      var i = 0;\n      var passo = function(){\n        if (i >= msgs.length) {\n          if (tp) tp.classList.remove(\"on\");\n          bt.disabled = false;\n          bt.textContent = \"\u21ba Repetir\";\n          return;\n        }\n        var m = msgs[i], bot = m.classList.contains(\"bot\");\n        if (bot && tp) {\n          tp.classList.add(\"on\");\n          setTimeout(function(){ tp.classList.remove(\"on\"); m.classList.add(\"on\"); i++; setTimeout(passo, 420); }, 780);\n        } else {\n          m.classList.add(\"on\"); i++; setTimeout(passo, 620);\n        }\n      };\n      setTimeout(passo, 180);\n    });\n  });\n\n  $$('[data-sim=\"fluxo\"]').forEach(function(sim){\n    var passos = $$(\".passo\", sim), prog = sim.querySelector(\"[data-prog]\");\n    var bn = sim.querySelector(\"[data-next]\"), br = sim.querySelector(\"[data-reset]\");\n    var i = 0;\n    var pintar = function(){\n      passos.forEach(function(p, k){ p.classList.toggle(\"on\", k < i); });\n      if (prog) prog.style.width = (passos.length ? Math.round((i / passos.length) * 100) : 0) + \"%\";\n      if (bn) {\n        bn.disabled = i >= passos.length;\n        bn.textContent = i >= passos.length ? \"Conclu\u00eddo \u2713\" : \"Avan\u00e7ar \u2192\";\n      }\n    };\n    if (bn) bn.addEventListener(\"click\", function(){ if (i < passos.length) { i++; pintar(); } });\n    if (br) br.addEventListener(\"click\", function(){ i = 0; pintar(); });\n    passos.forEach(function(p, k){ p.addEventListener(\"click\", function(){ i = k + 1; pintar(); }); });\n    i = 1; pintar();\n  });\n\n  $$('[data-sim=\"painel\"]').forEach(function(sim){\n    var nums = $$(\".met-n\", sim), botoes = $$(\"[data-per]\", sim), tag = sim.querySelector(\"[data-tag]\");\n    var baseTag = tag ? tag.textContent : \"\";\n    botoes.forEach(function(b){\n      b.addEventListener(\"click\", function(){\n        botoes.forEach(function(o){ o.classList.remove(\"on\"); });\n        b.classList.add(\"on\");\n        var f = parseFloat(b.getAttribute(\"data-per\")) || 1;\n        nums.forEach(function(n){\n          var bruto = n.getAttribute(\"data-base\") || n.textContent;\n          var m = bruto.match(/[\\d.,]+/);\n          if (!m) { n.textContent = bruto; return; }\n          var v = parseFloat(m[0].replace(/\\./g, \"\").replace(\",\", \".\"));\n          if (isNaN(v)) { n.textContent = bruto; return; }\n          n.textContent = bruto.replace(m[0], Math.round(v * f).toLocaleString(\"pt-BR\"));\n        });\n        if (tag) tag.textContent = f === 1 ? baseTag : \"proje\u00e7\u00e3o para \" + (f === 3 ? \"3 meses\" : \"12 meses\");\n      });\n    });\n  });\n\n  $$('[data-sim=\"vitrine\"]').forEach(function(bar){\n    var wrap = bar.parentElement;\n    var botoes = $$(\"[data-f]\", bar);\n    botoes.forEach(function(b){\n      b.addEventListener(\"click\", function(){\n        botoes.forEach(function(o){ o.classList.remove(\"on\"); });\n        b.classList.add(\"on\");\n        var f = b.getAttribute(\"data-f\");\n        $$(\".imv\", wrap).forEach(function(card){\n          var chips = (card.getAttribute(\"data-chips\") || \"\").split(\"|\");\n          card.classList.toggle(\"off\", !!f && chips.indexOf(f) === -1);\n        });\n      });\n    });\n  });\n\n  document.addEventListener(\"click\", function(ev){\n    var b = alvo(ev, \"[data-acao]\");\n    if (!b || b.disabled) return;\n    b.disabled = true;\n    b.textContent = \"Contato enviado \u2713\";\n  });\n})();\n".replace("__TRACK__", trackUrl);
+  const jsDemo = "\n(function(){\n  var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };\n  var alvo = function(ev, sel){\n    var n = ev.target;\n    while (n && n.nodeType === 1) { if (n.matches && n.matches(sel)) return n; n = n.parentElement; }\n    return null;\n  };\n\n  try { var _t = fetch(\"__TRACK__\", { mode: \"no-cors\", keepalive: true, cache: \"no-store\" }); if (_t && _t.catch) _t.catch(function(){}); } catch (e) {}\n\n  /* MAQUETE DE SITE: menu navega, card abre o detalhe, voltar retorna */\n  $$('[data-sim=\"site\"]').forEach(function(mk){\n    var telas = $$(\".mk-tela\", mk), navs = $$(\".mk-nav-b\", mk);\n    var det = mk.querySelector(\"#tdet\");\n    var itens = $$(\".mk-card\", mk);\n    var abrir = function(id){\n      telas.forEach(function(t){ t.classList.toggle(\"on\", t.id === id); });\n      navs.forEach(function(n){ n.classList.toggle(\"on\", n.getAttribute(\"data-tela\") === id); });\n      mk.querySelector(\".mk-corpo\").scrollTop = 0;\n    };\n    navs.forEach(function(n){ n.addEventListener(\"click\", function(){ abrir(n.getAttribute(\"data-tela\")); }); });\n    var cta = mk.querySelector(\".mk-hero .mk-cta\");\n    if (cta) cta.addEventListener(\"click\", function(){ abrir(\"t1\"); });\n    itens.forEach(function(card){\n      card.addEventListener(\"click\", function(){\n        if (!det) return;\n        var t = card.querySelector(\".mk-card-t\"), pr = card.querySelector(\".mk-preco\");\n        var dt = det.querySelector(\"[data-det-t]\"), dp = det.querySelector(\"[data-det-p]\");\n        if (t && dt) dt.textContent = t.textContent;\n        if (pr && dp) dp.textContent = pr.textContent;\n        abrir(\"tdet\");\n      });\n    });\n    var vb = mk.querySelector(\"[data-voltar]\");\n    if (vb) vb.addEventListener(\"click\", function(){ abrir(\"t1\"); });\n  });\n\n  $$('[data-sim=\"agenda\"]').forEach(function(sim){\n    var tag = sim.querySelector(\"[data-tag]\");\n    sim.addEventListener(\"click\", function(ev){\n      var el = alvo(ev, \".slot.livre\");\n      if (!el) return;\n      el.classList.remove(\"livre\");\n      el.classList.add(\"feito\");\n      var c = el.querySelector(\".slot-c\"), s = el.querySelector(\".slot-s\");\n      if (c) c.textContent = \"Reservado agora\";\n      if (s) s.textContent = \"confirmado \u2713\";\n      if (tag) {\n        var n = $$(\".slot.feito\", sim).length;\n        tag.textContent = n + (n === 1 ? \" hor\u00e1rio reservado por aqui\" : \" hor\u00e1rios reservados por aqui\");\n      }\n    });\n  });\n\n  $$('[data-sim=\"conversa\"]').forEach(function(sim){\n    var msgs = $$(\".msg\", sim), tp = sim.querySelector(\"[data-typing]\"), bt = sim.querySelector(\"[data-play]\");\n    if (!bt) return;\n    bt.addEventListener(\"click\", function(){\n      bt.disabled = true;\n      bt.textContent = \"Reproduzindo...\";\n      msgs.forEach(function(m){ m.classList.remove(\"on\"); });\n      var i = 0;\n      var passo = function(){\n        if (i >= msgs.length) {\n          if (tp) tp.classList.remove(\"on\");\n          bt.disabled = false;\n          bt.textContent = \"\u21ba Repetir\";\n          return;\n        }\n        var m = msgs[i], bot = m.classList.contains(\"bot\");\n        if (bot && tp) {\n          tp.classList.add(\"on\");\n          setTimeout(function(){ tp.classList.remove(\"on\"); m.classList.add(\"on\"); i++; setTimeout(passo, 420); }, 780);\n        } else {\n          m.classList.add(\"on\"); i++; setTimeout(passo, 620);\n        }\n      };\n      setTimeout(passo, 180);\n    });\n  });\n\n  $$('[data-sim=\"fluxo\"]').forEach(function(sim){\n    var passos = $$(\".passo\", sim), prog = sim.querySelector(\"[data-prog]\");\n    var bn = sim.querySelector(\"[data-next]\"), br = sim.querySelector(\"[data-reset]\");\n    var i = 0;\n    var pintar = function(){\n      passos.forEach(function(p, k){ p.classList.toggle(\"on\", k < i); });\n      if (prog) prog.style.width = (passos.length ? Math.round((i / passos.length) * 100) : 0) + \"%\";\n      if (bn) {\n        bn.disabled = i >= passos.length;\n        bn.textContent = i >= passos.length ? \"Conclu\u00eddo \u2713\" : \"Avan\u00e7ar \u2192\";\n      }\n    };\n    if (bn) bn.addEventListener(\"click\", function(){ if (i < passos.length) { i++; pintar(); } });\n    if (br) br.addEventListener(\"click\", function(){ i = 0; pintar(); });\n    passos.forEach(function(p, k){ p.addEventListener(\"click\", function(){ i = k + 1; pintar(); }); });\n    i = 1; pintar();\n  });\n\n  $$('[data-sim=\"painel\"]').forEach(function(sim){\n    var nums = $$(\".met-n\", sim), botoes = $$(\"[data-per]\", sim), tag = sim.querySelector(\"[data-tag]\");\n    var baseTag = tag ? tag.textContent : \"\";\n    botoes.forEach(function(b){\n      b.addEventListener(\"click\", function(){\n        botoes.forEach(function(o){ o.classList.remove(\"on\"); });\n        b.classList.add(\"on\");\n        var f = parseFloat(b.getAttribute(\"data-per\")) || 1;\n        nums.forEach(function(n){\n          var bruto = n.getAttribute(\"data-base\") || n.textContent;\n          var m = bruto.match(/[\\d.,]+/);\n          if (!m) { n.textContent = bruto; return; }\n          var v = parseFloat(m[0].replace(/\\./g, \"\").replace(\",\", \".\"));\n          if (isNaN(v)) { n.textContent = bruto; return; }\n          n.textContent = bruto.replace(m[0], Math.round(v * f).toLocaleString(\"pt-BR\"));\n        });\n        if (tag) tag.textContent = f === 1 ? baseTag : \"proje\u00e7\u00e3o para \" + (f === 3 ? \"3 meses\" : \"12 meses\");\n      });\n    });\n  });\n\n  $$('[data-sim=\"vitrine\"]').forEach(function(bar){\n    var wrap = bar.parentElement;\n    var botoes = $$(\"[data-f]\", bar);\n    botoes.forEach(function(b){\n      b.addEventListener(\"click\", function(){\n        botoes.forEach(function(o){ o.classList.remove(\"on\"); });\n        b.classList.add(\"on\");\n        var f = b.getAttribute(\"data-f\");\n        $$(\".imv\", wrap).forEach(function(card){\n          var chips = (card.getAttribute(\"data-chips\") || \"\").split(\"|\");\n          card.classList.toggle(\"off\", !!f && chips.indexOf(f) === -1);\n        });\n      });\n    });\n  });\n\n  document.addEventListener(\"click\", function(ev){\n    var b = alvo(ev, \"[data-acao]\");\n    if (!b || b.disabled) return;\n    b.disabled = true;\n    b.textContent = \"Contato enviado \u2713\";\n  });\n})();\n".replace("__TRACK__", trackUrl);
   const etapasArr = c.etapas || [];
   const etapasHtml = etapasArr.length
     ? '<section class="rv"><h2>Etapas e prazos</h2><div class="etapas">'
@@ -877,7 +882,58 @@ function montarHtmlProposta(c){
     if (!tipo) tipo = d.slots ? "agenda" : (d.mensagens ? "conversa" : (d.metricas ? "painel" : (d.passos ? "fluxo" : "vitrine")));
     const rotulo = d.rotulo || "Uma prévia do que você vai receber";
     let inner = "";
-    if (tipo === "agenda") {
+    if (tipo === "site") {
+      const s = d.site || {};
+      const marca = s.marca || "Seu negócio";
+      const menu = (s.menu && s.menu.length) ? s.menu : ["Início","Catálogo"];
+      const hero = s.hero || {};
+      const itens = s.itens || [];
+      const det = s.detalhe || {};
+      const pgs = s.paginas || [];
+      const urlFake = marca.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"") + ".com.br";
+      const nav = menu.map(function(m,i){
+        return '<button class="mk-nav-b'+(i===0?" on":"")+'" data-tela="t'+i+'">'+m+'</button>';
+      }).join("");
+      const grade = itens.map(function(it,i){
+        return '<button class="mk-card" data-item="'+i+'">'
+          + '<span class="mk-foto">'+(d.icone||"◧")+'</span>'
+          + '<span class="mk-card-b"><span class="mk-card-t">'+(it.titulo||"")+'</span>'
+          + '<span class="mk-chips">'+((it.chips||[]).map(function(ch){ return '<span class="mk-chip">'+ch+'</span>'; }).join(""))+'</span>'
+          + '<span class="mk-preco">'+(it.preco||"")+'</span></span></button>';
+      }).join("");
+      const filtros = (s.filtros||[]).map(function(f,i){
+        return '<span class="mk-filtro'+(i===0?" on":"")+'">'+f+'</span>';
+      }).join("");
+      let telas = '<div class="mk-tela on" id="t0">'
+        + '<div class="mk-hero"><h3>'+(hero.titulo||marca)+'</h3><p>'+(hero.sub||"")+'</p>'
+        + '<span class="mk-cta">'+(hero.cta||"Ver tudo")+'</span></div>'
+        + '<div class="mk-sec">Destaques</div><div class="mk-grade">'+itens.slice(0,3).map(function(it,i){
+            return '<button class="mk-card" data-item="'+i+'"><span class="mk-foto">'+(d.icone||"◧")+'</span>'
+              + '<span class="mk-card-b"><span class="mk-card-t">'+(it.titulo||"")+'</span>'
+              + '<span class="mk-preco">'+(it.preco||"")+'</span></span></button>';
+          }).join("")+'</div></div>';
+      telas += '<div class="mk-tela" id="t1">'
+        + (filtros ? '<div class="mk-filtros">'+filtros+'</div>' : "")
+        + '<div class="mk-grade">'+grade+'</div></div>';
+      pgs.forEach(function(pg,i){
+        telas += '<div class="mk-tela" id="t'+(i+2)+'"><div class="mk-sec">'+(pg.titulo||pg.nome||"")+'</div>'
+          + '<p class="mk-txt">'+(pg.texto||"")+'</p></div>';
+      });
+      telas += '<div class="mk-tela" id="tdet"><button class="mk-voltar" data-voltar>\u2190 voltar</button>'
+        + '<div class="mk-det"><div class="mk-det-foto">'+(d.icone||"◧")+'</div>'
+        + '<div class="mk-det-t" data-det-t>'+(det.titulo||"")+'</div>'
+        + '<div class="mk-det-p" data-det-p>'+(det.preco||"")+'</div>'
+        + '<div class="mk-specs">'+((det.specs||[]).map(function(sp){ return '<span class="mk-spec"><b>'+(sp.k||"")+'</b>'+(sp.v||"")+'</span>'; }).join(""))+'</div>'
+        + '<p class="mk-txt">'+(det.texto||"")+'</p>'
+        + '<button class="mk-cta lg" data-acao>'+(det.cta||"Entrar em contato")+'</button></div></div>';
+      inner = '<p class="hint">\u261d Navegue pelo menu e toque nos itens. É uma maquete do seu site.</p>'
+        + '<div class="mk" data-sim="site">'
+        + '<div class="mk-bar"><span class="mk-dot"></span><span class="mk-dot"></span><span class="mk-dot"></span>'
+        + '<span class="mk-url">'+urlFake+'</span></div>'
+        + '<div class="mk-top"><span class="mk-marca">'+marca+'</span><nav class="mk-nav">'+nav+'</nav></div>'
+        + '<div class="mk-corpo">'+telas+'</div>'
+        + '<div class="mk-rodape">'+(s.rodape||marca)+'</div></div>';
+    } else if (tipo === "agenda") {
       inner = '<p class="hint">\u261d Toque num horário livre pra ver o agendamento acontecendo.</p>'
         + '<div class="sim" data-sim="agenda"><div class="sim-top"><span class="sim-t">'+(d.dia||"Hoje")+'</span><span class="sim-tag" data-tag>'+(d.resumo||"")+'</span></div>'
         + (d.slots||[]).map(function(s){
@@ -1030,6 +1086,46 @@ function montarHtmlProposta(c){
     + '.imv{transition:border-color .2s ease,transform .2s ease;}\n'
     + '.imv.off{display:none;}\n'
     + '.imv-btn{cursor:pointer;border:0;font-family:inherit;}\n'
+    + '.mk{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#0f1218;}\n'
+    + '.mk-bar{display:flex;align-items:center;gap:6px;padding:9px 12px;background:#191d26;border-bottom:1px solid var(--border);}\n'
+    + '.mk-dot{width:9px;height:9px;border-radius:50%;background:#3a4152;}\n'
+    + '.mk-url{flex:1;margin-left:8px;font-size:11.5px;color:var(--text-dim);background:#0f1218;border-radius:100px;padding:4px 12px;text-align:center;}\n'
+    + '.mk-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:13px 16px;border-bottom:1px solid var(--border);}\n'
+    + '.mk-marca{font-weight:750;font-size:15.5px;color:' + ac + ';}\n'
+    + '.mk-nav{display:flex;gap:4px;flex-wrap:wrap;}\n'
+    + '.mk-nav-b{font-family:inherit;font-size:12.5px;color:var(--text-dim);background:transparent;border:0;border-radius:8px;padding:6px 11px;cursor:pointer;}\n'
+    + '.mk-nav-b:hover{color:var(--text);background:rgba(255,255,255,.05);}\n'
+    + '.mk-nav-b.on{color:#0b0d12;background:' + ac + ';font-weight:650;}\n'
+    + '.mk-corpo{padding:16px;min-height:290px;}\n'
+    + '.mk-tela{display:none;}\n.mk-tela.on{display:block;animation:mkin .28s ease;}\n'
+    + '@keyframes mkin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}\n'
+    + '.mk-hero{background:linear-gradient(135deg,' + ac + '26,rgba(255,255,255,.03));border:1px solid ' + ac + '3d;border-radius:12px;padding:22px 20px;margin-bottom:16px;}\n'
+    + '.mk-hero h3{margin:0 0 6px;font-size:19px;line-height:1.3;color:#fff;font-weight:700;}\n'
+    + '.mk-hero p{margin:0 0 14px;font-size:13.5px;color:var(--text-dim);}\n'
+    + '.mk-cta{display:inline-block;font-size:13px;font-weight:650;background:' + ac + ';color:#0b0d12;border:0;border-radius:9px;padding:9px 17px;font-family:inherit;cursor:pointer;}\n'
+    + '.mk-cta.lg{margin-top:14px;padding:11px 22px;font-size:14px;}\n'
+    + '.mk-sec{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:10px;}\n'
+    + '.mk-filtros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}\n'
+    + '.mk-filtro{font-size:11.5px;color:var(--text-dim);border:1px solid var(--border);border-radius:100px;padding:5px 12px;}\n'
+    + '.mk-filtro.on{border-color:' + ac + ';color:' + ac + ';}\n'
+    + '.mk-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;}\n'
+    + '.mk-card{display:flex;flex-direction:column;text-align:left;background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;overflow:hidden;padding:0;cursor:pointer;font-family:inherit;transition:border-color .2s ease,transform .2s ease;}\n'
+    + '.mk-card:hover{border-color:' + ac + ';transform:translateY(-2px);}\n'
+    + '.mk-foto{height:74px;display:flex;align-items:center;justify-content:center;font-size:26px;background:linear-gradient(135deg,' + ac + '2e,rgba(255,255,255,.03));border-bottom:1px solid var(--border);}\n'
+    + '.mk-card-b{display:flex;flex-direction:column;gap:6px;padding:11px 12px 13px;}\n'
+    + '.mk-card-t{font-size:13.5px;font-weight:650;color:var(--text);line-height:1.35;}\n'
+    + '.mk-chips{display:flex;gap:5px;flex-wrap:wrap;}\n'
+    + '.mk-chip{font-size:10.5px;color:var(--text-dim);border:1px solid var(--border);border-radius:100px;padding:2px 8px;}\n'
+    + '.mk-preco{font-size:14.5px;font-weight:750;color:' + ac + ';}\n'
+    + '.mk-voltar{font-family:inherit;font-size:12.5px;color:var(--text-dim);background:transparent;border:0;padding:0 0 12px;cursor:pointer;}\n'
+    + '.mk-det-foto{height:150px;display:flex;align-items:center;justify-content:center;font-size:44px;background:linear-gradient(135deg,' + ac + '2e,rgba(255,255,255,.03));border:1px solid var(--border);border-radius:12px;margin-bottom:14px;}\n'
+    + '.mk-det-t{font-size:18px;font-weight:700;color:#fff;}\n'
+    + '.mk-det-p{font-size:21px;font-weight:750;color:' + ac + ';margin:4px 0 12px;}\n'
+    + '.mk-specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:14px;}\n'
+    + '.mk-spec{display:flex;flex-direction:column;gap:2px;background:var(--bg-elev-2);border-radius:9px;padding:9px 11px;font-size:13px;}\n'
+    + '.mk-spec b{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);}\n'
+    + '.mk-txt{font-size:13.5px;color:var(--text-dim);line-height:1.6;margin:0;}\n'
+    + '.mk-rodape{border-top:1px solid var(--border);padding:11px 16px;font-size:11.5px;color:var(--text-dim);}\n'
     + '.port{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 22px;}\n'
     + '.port p{margin:0;font-size:14.5px;color:var(--text-dim);}\n'
     + '.port-link{font-size:15px;font-weight:700;color:'+ac+';text-decoration:none;border:1px solid '+ac+';border-radius:100px;padding:8px 18px;white-space:nowrap;}\n'
@@ -2019,6 +2115,7 @@ function renderDashboard(){
   }
 
   carregarAberturas();
+  sincronizarVisualizadas();
 
   const distEl = document.getElementById("dash-dist");
   const listEl = document.getElementById("dash-status-list");
@@ -2061,6 +2158,35 @@ async function carregarAberturas(){
   } catch (e) {
     // tabela ainda nao criada no Supabase: o painel simplesmente nao aparece
     box.style.display = "none";
+  }
+}
+
+// A partir da SEGUNDA abertura, o registro em "proposta enviada" vira
+// "visualizada" sozinho. A primeira quase sempre e o proprio Diogo conferindo
+// o link antes de mandar, por isso ela nao conta.
+async function sincronizarVisualizadas(){
+  try {
+    const dados = await sbFetch("/rest/v1/proposta_views?select=cliente,slug&limit=1000");
+    if (!dados || !dados.length) return;
+    const contagem = {};
+    dados.forEach(function(v){
+      const chave = (v.cliente || v.slug || "").toLowerCase().trim();
+      if (!chave) return;
+      contagem[chave] = (contagem[chave] || 0) + 1;
+    });
+    const alvos = crm.filter(function(r){
+      if (r.status !== "proposta enviada") return false;
+      const c = (r.cliente || "").toLowerCase().trim();
+      return c && (contagem[c] || 0) >= 2;
+    });
+    if (!alvos.length) return;
+    for (const r of alvos) { await updateCRMItem(r.id, { status: "visualizada" }); }
+    renderCRM();
+    updateCrmBadge();
+    syncStatus("👁️ " + alvos.length + (alvos.length === 1 ? " proposta foi aberta pelo cliente" : " propostas foram abertas pelos clientes"), "#f5a623");
+    setTimeout(function(){ syncStatus(""); }, 6000);
+  } catch (e) {
+    // tabela ainda nao criada: segue sem sincronizar
   }
 }
 
