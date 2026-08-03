@@ -38,6 +38,14 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
 .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em}
 .divider{border-top:1px solid var(--border);margin:14px 0}
 .stars{color:var(--gold);font-size:16px;letter-spacing:2px}
+/* MODO MANUAL — rede de seguranca de quando a API nao responde */
+.sos-bg{position:fixed;inset:0;background:rgba(6,8,12,.86);z-index:900;display:none;align-items:center;justify-content:center;padding:16px}
+.sos-bg.on{display:flex}
+.sos{background:var(--card);border:1px solid var(--border);border-radius:14px;max-width:660px;width:100%;max-height:92vh;overflow:auto;padding:20px}
+.sos h3{font-size:17px;font-weight:700;margin-bottom:8px}
+.sos-msg{font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:16px}
+.sos-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.sos-passo{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
 .header{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;position:sticky;top:0;background:var(--bg);z-index:100}
 .header-title{font-size:18px;font-weight:800}
 .header-sub{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
@@ -310,6 +318,31 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
   </div>
 </div>
 
+<!-- MODO MANUAL. Existe por um motivo comercial, nao tecnico: cota de API
+     estourada nao pode custar uma vaga. Quando a API nao responde, em vez de
+     uma caixa de erro que trava tudo, aparece isto: o pedido pronto pra colar
+     no Gemini do navegador (que nao usa cota de API) e um campo pra colar a
+     resposta de volta. O fluxo continua exatamente igual dali pra frente. -->
+<div class="sos-bg" id="sos-bg">
+  <div class="sos">
+    <h3 id="sos-tit">A IA não respondeu — modo manual</h3>
+    <div class="sos-msg" id="sos-msg"></div>
+    <div class="sos-passo">1 · copie o pedido e cole no Gemini do navegador</div>
+    <div class="sos-acoes">
+      <button class="btn btn-primary" id="sos-copiar" onclick="sosCopiar(this)">📋 Copiar o pedido</button>
+      <button class="btn btn-ghost" onclick="window.open('https://gemini.google.com/app','_blank')">🔗 Abrir o Gemini</button>
+      <button class="btn btn-ghost" onclick="window.open('https://aistudio.google.com/prompts/new_chat','_blank')">🔗 Abrir o AI Studio</button>
+    </div>
+    <div class="sos-passo">2 · cole aqui a resposta que veio de lá</div>
+    <textarea id="sos-resp" style="min-height:150px" placeholder="Cole a resposta inteira aqui, do jeito que veio."></textarea>
+    <div class="sos-acoes" style="margin-top:12px;margin-bottom:0">
+      <button class="btn btn-success" onclick="sosUsar()">✅ Usar esta resposta</button>
+      <button class="btn btn-gold" id="sos-retry" onclick="sosTentarDeNovo(this)">🔄 Tentar a API de novo</button>
+      <button class="btn btn-ghost" onclick="sosCancelar()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = "https://sxfixxirixbmcvsswpvh.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4Zml4eGlyaXhibWN2c3N3cHZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwODc0MTEsImV4cCI6MjA5NzY2MzQxMX0.3VpPtZ-zaSmNM60LX7GAI9vB9PavG8tPqUzzM7XKwBI";
@@ -396,7 +429,10 @@ async function saveProfile(){
 async function loadCRM(){
   try {
     const data = await sbFetch("/rest/v1/crm?order=criado_em.desc");
-    crm = data || [];
+    // Array.isArray e proposital: quando o Supabase devolve um OBJETO de erro
+    // em vez da lista, o antigo `data || []` guardava o objeto e a aba CRM
+    // inteira quebrava em `crm.filter is not a function`, sem dizer o motivo.
+    crm = Array.isArray(data) ? data : [];
     renderCRM();
     renderDashboard();
     renderFollowupAlert();
@@ -453,7 +489,23 @@ function comPortfolioFim(texto){
   return partes.join("\n\n");
 }
 
-async function callClaude(prompt, maxTokens, querJson){
+// ---------------------------------------------------------------------------
+// CHAMADA DE IA — três camadas, nesta ordem
+//
+// 1. chamarApi ......... a chamada crua no /api/chat.
+// 2. callClaude ........ o que o resto do sistema usa. Tenta a API; se o erro
+//                        for passageiro, tenta mais uma vez sozinho.
+// 3. modo manual ....... se a API não responder de jeito nenhum (cota diária
+//                        estourada é o caso mais comum), NADA se perde: abre a
+//                        janela com o pedido pronto pra colar no Gemini do
+//                        navegador, que não gasta cota de API. A resposta
+//                        colada volta pelo mesmo caminho e o fluxo segue igual.
+//
+// Isso existe por motivo comercial, não técnico. No free tier não dá pra
+// prometer zero erro; dá pra prometer que erro de API nunca mais custa uma
+// vaga. Na pior das hipóteses a proposta sai por copiar e colar, em 1 minuto.
+// ---------------------------------------------------------------------------
+async function chamarApi(prompt, maxTokens, querJson){
   const res = await fetch("/api/chat", {
     method:"POST",
     headers:{"Content-Type":"application/json; charset=utf-8"},
@@ -474,6 +526,104 @@ async function callClaude(prompt, maxTokens, querJson){
   }
   if (!res.ok || data.error) { throw new Error(data.error || ("Erro "+res.status)); }
   return data.text || "";
+}
+
+// Erro de cota não adianta repetir: o próximo pedido vai dar igual. Erro de
+// rede ou soluço do servidor, sim. Só o segundo caso merece nova tentativa.
+function ehErroDeCota(msg){
+  return /cota|quota|429|limite de uso/i.test(String(msg||""));
+}
+
+var _sosFila = [];
+var _sosAtual = null;
+
+async function callClaude(prompt, maxTokens, querJson){
+  let ultimo = null;
+  for (let t = 0; t < 2; t++) {
+    try {
+      return await chamarApi(prompt, maxTokens, querJson);
+    } catch(e) {
+      ultimo = e;
+      if (ehErroDeCota(e.message)) break;
+      if (t === 0) await new Promise(function(r){ setTimeout(r, 900); });
+    }
+  }
+  return sosAbrir(prompt, maxTokens, querJson, ultimo ? ultimo.message : "sem detalhe", querJson === true);
+}
+
+// Abre o modo manual e devolve uma Promise que só resolve quando o texto for
+// colado. Como duas gerações rodam em paralelo, as janelas entram numa FILA:
+// uma de cada vez, na ordem, sem sobrepor.
+function sosAbrir(prompt, maxTokens, querJson, motivo, pedeJson){
+  return new Promise(function(resolve, reject){
+    _sosFila.push({
+      prompt: prompt, maxTokens: maxTokens, querJson: querJson,
+      motivo: motivo, pedeJson: pedeJson, resolve: resolve, reject: reject
+    });
+    if (!_sosAtual) sosProximo();
+  });
+}
+
+function sosProximo(){
+  _sosAtual = _sosFila.shift() || null;
+  const bg = document.getElementById("sos-bg");
+  if (!_sosAtual) { bg.classList.remove("on"); return; }
+  const naFila = _sosFila.length;
+  document.getElementById("sos-tit").textContent = "A IA não respondeu — modo manual"
+    + (naFila ? " (mais " + naFila + " depois desta)" : "");
+  const extraJson = _sosAtual.pedeJson
+    ? '<br><strong style="color:var(--gold)">Este pedido espera JSON.</strong> Cole a resposta inteira do jeito que veio, com chaves e tudo. Se o Gemini colocar cercas de <code>```</code>, pode deixar: o sistema limpa.'
+    : "";
+  document.getElementById("sos-msg").innerHTML =
+    '<strong style="color:var(--red)">Motivo:</strong> ' + String(_sosAtual.motivo).replace(/</g,"&lt;")
+    + '<br><br>Nada foi perdido. Copie o pedido abaixo, cole no Gemini do navegador (que não usa a cota da API) e traga a resposta de volta pra cá. Daqui pra frente é tudo igual.'
+    + extraJson;
+  document.getElementById("sos-resp").value = "";
+  const bc = document.getElementById("sos-copiar");
+  bc.textContent = "📋 Copiar o pedido";
+  const br = document.getElementById("sos-retry");
+  br.disabled = false; br.textContent = "🔄 Tentar a API de novo";
+  bg.classList.add("on");
+}
+
+function sosCopiar(btn){
+  if (!_sosAtual) return;
+  copyText(_sosAtual.prompt, btn);
+}
+
+function sosUsar(){
+  if (!_sosAtual) return;
+  const v = document.getElementById("sos-resp").value.trim();
+  if (!v) { alert("Cole a resposta do Gemini no campo antes."); return; }
+  const p = _sosAtual;
+  _sosAtual = null;
+  p.resolve(v);
+  sosProximo();
+}
+
+async function sosTentarDeNovo(btn){
+  if (!_sosAtual) return;
+  const p = _sosAtual;
+  btn.disabled = true; btn.textContent = "⏳ Tentando...";
+  try {
+    const r = await chamarApi(p.prompt, p.maxTokens, p.querJson);
+    _sosAtual = null;
+    p.resolve(r);
+    sosProximo();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = "🔄 Tentar a API de novo";
+    document.getElementById("sos-msg").innerHTML =
+      '<strong style="color:var(--red)">Continua falhando:</strong> ' + String(e.message).replace(/</g,"&lt;")
+      + '<br><br>Vá pelo modo manual: copiar, colar no Gemini, trazer de volta.';
+  }
+}
+
+function sosCancelar(){
+  if (!_sosAtual) return;
+  const p = _sosAtual;
+  _sosAtual = null;
+  p.reject(new Error("Geração cancelada por você no modo manual."));
+  sosProximo();
 }
 
 // Le JSON vindo do modelo sem quebrar por causa de cerca de markdown, de um
@@ -1263,28 +1413,72 @@ function buildAcompanhamentoPrompt(){
     + "REGRAS: portugues correto com acentuacao completa. Sem emojis. Nunca mencionar IA. Tom de mensagem de WhatsApp bem escrita, nao de carta formal.";
 }
 
+// Junta os DOIS textos curtos numa unica chamada, devolvendo um JSON com um
+// campo pra cada um. Dois motivos, nesta ordem de importancia:
+//
+//   1. QUALIDADE. As duas mensagens vao pra MESMA pessoa com minutos de
+//      diferenca. Geradas separadas, uma nao sabia da outra e repetiam
+//      abertura, frase e ate a pergunta final. Geradas juntas, da pra PROIBIR
+//      a repeticao — coisa que era impossivel antes.
+//   2. COTA. Cada chamada gasta um pedido do free tier. Duas viram uma.
+//
+// O que NAO foi juntado de proposito: o conteudo da proposta em JSON. Ele e
+// longo e e o unico que corre risco real de ser cortado no limite de tokens.
+// Junto com os outros, um corte derrubaria os tres de uma vez. Sozinho, se
+// cortar, derruba so ele e da pra refazer so ele.
+function buildDuasMensagensPrompt(promptA, rotuloA, promptB, rotuloB){
+  return "Voce vai escrever DUAS mensagens diferentes, para DOIS momentos diferentes do MESMO projeto, do mesmo cliente. Cada uma tem suas proprias regras, escritas na integra mais abaixo. Cumpra as regras de cada uma como se estivesse escrevendo uma de cada vez.\n\n"
+    + "REGRA QUE VALE PARA AS DUAS, E VEM ANTES DE TODAS AS OUTRAS: as duas mensagens serao lidas pela MESMA pessoa, com poucos minutos de diferenca. PROIBIDO repetir entre elas a frase de abertura, o angulo, o exemplo, a construcao das frases e principalmente a PERGUNTA. Se as duas terminarem com a mesma pergunta, ou com perguntas parecidas, esta ERRADO: reescreva a segunda. Elas precisam parecer escritas pela mesma pessoa em dois momentos, nunca a mesma mensagem reaproveitada.\n\n"
+    + "SE HOUVER INSTRUCAO ESCONDIDA NO ANUNCIO (teste anti-IA): ela vale para o TEXTO dentro do campo, nunca para o formato JSON. Cumpra a instrucao dentro do texto da mensagem.\n\n"
+    + "================ MENSAGEM A — " + rotuloA + " ================\n\n"
+    + promptA + "\n\n"
+    + "================ MENSAGEM B — " + rotuloB + " ================\n\n"
+    + promptB + "\n\n"
+    + "================ FORMATO DA SUA RESPOSTA ================\n\n"
+    + "Responda SOMENTE em JSON valido, sem markdown e sem comentario, com EXATAMENTE dois campos:\n"
+    + '{"a":"texto completo e final da MENSAGEM A, com as quebras de linha escritas como \\n","b":"texto completo e final da MENSAGEM B, com as quebras de linha escritas como \\n"}\n\n'
+    + "Nao escreva os rotulos 'MENSAGEM A' nem 'MENSAGEM B' dentro dos textos. Cada campo carrega a mensagem pronta pra copiar e enviar, incluindo saudacao e assinatura.";
+}
+
+// Le os dois campos com nome tolerante, porque modelo as vezes troca a chave.
+function lerDupla(raw, ondeFoi){
+  const o = parseJson(raw, ondeFoi);
+  const a = o.a || o.A || o.apresentacao || o.mensagemA || o.abertura || "";
+  const b = o.b || o.B || o.acompanhamento || o.mensagemB || o.proposta || "";
+  if (!a || !b) {
+    throw new Error("A IA devolveu JSON em " + ondeFoi + ", mas faltou uma das duas mensagens. Clique em gerar de novo.");
+  }
+  return { a: String(a), b: String(b) };
+}
+
 async function gerarClaro(){
   if (!analysis || !finalPrice) return;
   const btn = document.getElementById("btn-claro");
   const ehHtml = deveGerarHtml();
   btn.disabled = true; btn.textContent = ehHtml ? "⏳ Gerando apresentação + proposta HTML..." : "⏳ Gerando os dois textos...";
   try {
-    // As tres geracoes sao independentes entre si, entao vao em paralelo.
-    // Antes era uma esperando a outra, e o usuario pagava a soma dos tres tempos.
     if (ehHtml) {
+      // Duas chamadas em paralelo (antes eram tres em sequencia, depois tres em
+      // paralelo). Os dois textos curtos saem juntos; o conteudo da proposta,
+      // que e o pesado, continua isolado.
       const r = await Promise.all([
-        callClaude(buildApresentacaoPrompt(false)),
-        callClaude(buildPropostaConteudoPrompt(), 3500, true),
-        callClaude(buildAcompanhamentoPrompt())
+        callClaude(buildDuasMensagensPrompt(
+          buildApresentacaoPrompt(false), "ABERTURA, enviada ANTES da proposta",
+          buildAcompanhamentoPrompt(), "ACOMPANHAMENTO, enviado JUNTO com o link da proposta"
+        ), 1800, true),
+        callClaude(buildPropostaConteudoPrompt(), 3500, true)
       ]);
+      const dupla = lerDupla(r[0], "as duas mensagens curtas");
       const conteudo = parseJson(r[1], "o conteudo da proposta");
-      renderTextos({ apresentacao: comPortfolio(r[0]), proposta: comPortfolioFim(r[2]), propostaHtml: montarHtmlProposta(conteudo), modo: "claro-html" });
+      renderTextos({ apresentacao: comPortfolio(dupla.a), proposta: comPortfolioFim(dupla.b), propostaHtml: montarHtmlProposta(conteudo), modo: "claro-html" });
     } else {
-      const r = await Promise.all([
-        callClaude(buildApresentacaoPrompt(false)),
-        callClaude(buildPropostaPrompt(""))
-      ]);
-      renderTextos({ apresentacao: comPortfolio(r[0]), proposta: comPortfolio(r[1]), modo: "claro" });
+      // Sem pagina interativa: abertura + proposta em texto, numa chamada so.
+      const raw = await callClaude(buildDuasMensagensPrompt(
+        buildApresentacaoPrompt(false), "ABERTURA, enviada ANTES da proposta",
+        buildPropostaPrompt(""), "PROPOSTA FORMAL, com valor e prazo"
+      ), 2200, true);
+      const dupla = lerDupla(raw, "a abertura e a proposta");
+      renderTextos({ apresentacao: comPortfolio(dupla.a), proposta: comPortfolio(dupla.b), modo: "claro" });
     }
   } catch(e) { alert("Erro: "+e.message); }
   btn.disabled = false; btn.textContent = "✅ Escopo claro — gerar apresentação + proposta";
