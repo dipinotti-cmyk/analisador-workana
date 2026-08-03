@@ -38,13 +38,29 @@ export const config = { runtime: 'edge' };
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
-// Cascata enxuta. Cada modelo a mais é latência a mais no pior caso, e o pior
-// caso é justamente o que estourava o tempo da Vercel.
+// 03/08/2026, fim da tarde — correção do "nenhum modelo respondeu a tempo".
+// A cascata anterior estava furada por dois motivos:
+//   - gemini-2.5-flash foi aposentado e devolve 404 para chave nova. Era uma
+//     posição da cascata jogada fora.
+//   - o 1º e o 3º candidato eram o MESMO modelo. Quando o erro é cota (429), a
+//     cota é POR MODELO: repetir o mesmo modelo dá 429 de novo, garantido.
+// Agora cada posição é um modelo diferente, com balde de cota separado, e os
+// dois "lite" existem justamente porque têm limite diário bem maior no plano
+// gratuito. Quando a cota do bom acabar, o analisador continua de pé no lite.
 const CANDIDATOS = [
   { model: 'gemini-3.5-flash', reasoning_effort: 'low' },
-  { model: 'gemini-2.5-flash', reasoning_effort: 'none' },
-  { model: 'gemini-3.5-flash' }
+  { model: 'gemini-3.5-flash-lite', reasoning_effort: 'none' },
+  { model: 'gemini-3.1-flash-lite', reasoning_effort: 'none' },
+  { model: 'gemini-3.6-flash', reasoning_effort: 'low' },
+  { model: 'gemini-3.5-flash-lite' }
 ];
+
+// Reconhece o 429 de cota estourada (o que fala em quota/billing) para não
+// insistir no mesmo modelo. Esperar 2,5s não resolve cota: ou é diária, e só
+// volta na virada, ou é por minuto, e precisaria de 60s. Nos dois casos o certo
+// é pular para o próximo modelo na hora.
+const ehCota = (txt) => /RESOURCE_EXHAUSTED|exceeded your current quota|billing details|quota/i.test(txt || '');
+const ehDiaria = (txt) => /PerDay|per day|FreeTier/i.test(txt || '');
 
 // Quanto cada nivel de reasoning_effort gasta pensando, segundo a doc da
 // Gemini. Esse valor e SOMADO ao teto de saida, nunca descontado dele.
@@ -123,8 +139,13 @@ export default async function handler(req) {
   };
 
   const tentativas = [];
-  const ESPERA_429_MS = 2500;
+  const ESPERA_5XX_MS = 1200;
   const PASSADAS = 2;
+
+  // Diagnóstico do motivo real da falha, para a mensagem final ser útil em vez
+  // de despejar JSON cru numa caixa de alerta.
+  let houveCota = false;
+  let houveDiaria = false;
 
   try {
     for (const candidato of fila) {
@@ -147,14 +168,22 @@ export default async function handler(req) {
         const corta = setTimeout(function(){ ctrl.abort(); }, Math.max(3000, restante() - 2500));
 
         try {
-          // So o 429 (limite por minuto) merece insistir no MESMO modelo, e uma
-          // espera so: duas custavam mais tempo do que valia o beneficio.
+          // 429 NUNCA repete no mesmo modelo: cota e por modelo, entao repetir
+          // da 429 de novo. So o 5xx (solucao da Gemini) merece uma segunda
+          // tentativa, e uma so.
           for (let tentativa = 0; tentativa < 2; tentativa++) {
             r = await chamar(candidato, tetoSaida, ctrl.signal);
             if (r.ok) break;
-            detalhe = (await r.text()).slice(0, 160);
-            if (r.status !== 429 || tentativa === 1 || restante() < 8000) break;
-            await espera(ESPERA_429_MS);
+            // 800 chars porque o "quotaId" que diz se e limite DIARIO ou por
+            // minuto vem la no fim do corpo do erro. Isso nao vai pra tela.
+            detalhe = (await r.text()).slice(0, 800);
+            if (r.status === 429) {
+              if (ehCota(detalhe)) houveCota = true;
+              if (ehDiaria(detalhe)) houveDiaria = true;
+              break;
+            }
+            if (r.status < 500 || tentativa === 1 || restante() < 8000) break;
+            await espera(ESPERA_5XX_MS);
           }
         } catch (e) {
           clearTimeout(corta);
@@ -165,7 +194,16 @@ export default async function handler(req) {
         clearTimeout(corta);
 
         if (!r || !r.ok) {
-          tentativas.push(candidato.model + ' -> ' + (r ? r.status : '?') + ' ' + detalhe);
+          // Rotulo curto de proposito. Despejar o JSON de erro inteiro so
+          // enchia a caixa de alerta e escondia a informacao que importa.
+          const st = r ? r.status : 0;
+          let rotulo = st + '';
+          if (st === 429) rotulo = '429 cota estourada';
+          else if (st === 404) rotulo = '404 modelo aposentado';
+          else if (st === 400) rotulo = '400 pedido recusado';
+          else if (st >= 500) rotulo = st + ' erro da Gemini';
+          else if (!r) rotulo = 'sem resposta';
+          tentativas.push(candidato.model + ' -> ' + rotulo);
           abortouCandidato = true;
           break;
         }
@@ -206,8 +244,22 @@ export default async function handler(req) {
       return json({ text: text, model: candidato.model, truncado: cortado }, 200);
     }
 
+    // Quando o motivo e cota, a mensagem tem que dizer o que fazer. A anterior
+    // dizia "nenhum modelo respondeu a tempo", que era ate mentira: os modelos
+    // responderam rapido, so que respondendo que a cota acabou.
+    if (houveCota) {
+      return json({
+        error: houveDiaria
+          ? 'A cota gratuita diaria da Gemini acabou. Ela vira a meia-noite do horario do Pacifico, o que aqui da por volta das 4h/5h da manha. Ate la, da pra trocar a chave em GEMINI_API_KEY por uma de outra conta Google, ou ativar faturamento no projeto.'
+          : 'A Gemini recusou por limite de uso em todos os modelos da cascata. Espere um minuto e tente de novo. Se continuar, e a cota do dia que acabou e ela volta na virada.',
+        codigo: 'cota',
+        tentativas: tentativas.join(' | ')
+      }, 429);
+    }
+
     return json({
-      error: 'Nenhum modelo da Gemini respondeu a tempo. Tentativas: ' + tentativas.join(' | ')
+      error: 'Nenhum modelo da Gemini respondeu. Tentativas: ' + tentativas.join(' | '),
+      tentativas: tentativas.join(' | ')
     }, 502);
   } catch (e) {
     return json({ error: 'Erro na chamada da Gemini: ' + e.message }, 500);
