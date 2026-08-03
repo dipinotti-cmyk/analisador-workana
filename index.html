@@ -453,19 +453,69 @@ function comPortfolioFim(texto){
   return partes.join("\n\n");
 }
 
-async function callClaude(prompt, maxTokens){
+async function callClaude(prompt, maxTokens, querJson){
   const res = await fetch("/api/chat", {
     method:"POST",
     headers:{"Content-Type":"application/json; charset=utf-8"},
-    body: JSON.stringify({ prompt: prompt, max_tokens: maxTokens || 1000 })
+    body: JSON.stringify({ prompt: prompt, max_tokens: maxTokens || 1000, json: querJson === true })
   });
   // decodifica explicitamente como UTF-8 para nao depender do palpite do navegador
   const buf = await res.arrayBuffer();
   const txt = new TextDecoder("utf-8").decode(buf);
   let data;
-  try { data = JSON.parse(txt); } catch(e) { throw new Error("Resposta invalida do servidor"); }
+  try {
+    data = JSON.parse(txt);
+  } catch(e) {
+    // Quando cai aqui, o corpo NAO era JSON. Na pratica isso significa que a
+    // Vercel matou a funcao por tempo e devolveu uma pagina HTML de erro.
+    // Mostrar o inicio do que veio economiza meia hora de adivinhacao.
+    const pista = txt.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 140);
+    throw new Error("O servidor demorou demais e nao devolveu JSON (HTTP " + res.status + "). Tente de novo. Inicio da resposta: " + (pista || "vazio"));
+  }
   if (!res.ok || data.error) { throw new Error(data.error || ("Erro "+res.status)); }
   return data.text || "";
+}
+
+// Le JSON vindo do modelo sem quebrar por causa de cerca de markdown, de um
+// "aqui esta o JSON:" antes do objeto ou de comentario depois. Extrai o
+// primeiro objeto balanceado, respeitando chaves dentro de string.
+function parseJson(raw, ondeFoi){
+  const bruto = String(raw == null ? "" : raw);
+  const limpo = bruto.replace(/```json/gi, "").replace(/```/g, "").trim();
+
+  const tentar = function(t){
+    try { return { ok:true, v: JSON.parse(t) }; } catch(e){ return { ok:false, e:e }; }
+  };
+
+  let r = tentar(limpo);
+  if (r.ok) return r.v;
+
+  const ini = limpo.indexOf("{");
+  if (ini !== -1) {
+    let prof = 0, emStr = false, escapa = false;
+    for (let i = ini; i < limpo.length; i++) {
+      const c = limpo[i];
+      if (escapa) { escapa = false; continue; }
+      if (c === "\\") { escapa = true; continue; }
+      if (c === '"') { emStr = !emStr; continue; }
+      if (emStr) continue;
+      if (c === "{") prof++;
+      else if (c === "}") {
+        prof--;
+        if (prof === 0) {
+          r = tentar(limpo.slice(ini, i + 1));
+          if (r.ok) return r.v;
+          break;
+        }
+      }
+    }
+    if (prof > 0) {
+      throw new Error("A IA devolveu um JSON incompleto em " + (ondeFoi || "uma etapa") + ". Isso e resposta cortada: clique em gerar de novo.");
+    }
+  }
+
+  const pista = limpo.slice(0, 120).replace(/\s+/g, " ");
+  throw new Error("A IA nao devolveu JSON valido em " + (ondeFoi || "uma etapa") + ". Clique em gerar de novo. Veio assim: " + (pista || "vazio"));
 }
 
 function setTipo(tipo){
@@ -526,8 +576,8 @@ async function avaliar(){
     + '{"complexidade":NUMERO de 0.5 a 5.0,"complexidadeTexto":"frase curta","risco":NUMERO de 0.5 a 5.0,"riscoTexto":"frase curta","comercial":NUMERO de 0.5 a 5.0,"comercialTexto":"frase curta","recomendacao":"ENVIAR ou CAUTELA ou PULAR","recomendacaoMotivo":"frase curta","tipoProjeto":"site|landing|loja|sistema|automacao|conteudo|consultoria|outro","prazoEstimado":"ex: 3 dias uteis","orcamentoCliente":"faixa que o cliente sinalizou ou nao informado","coerenciaOrcamento":"analise orcamento vs escopo em 1 ou 2 frases, alerte se ancora baixa","fatoresPreco":["fator com seta para cima ou para baixo","fator 2","fator 3"],"precoPiso":NUMERO inteiro,"precoCompetitivo":NUMERO inteiro,"precoAlto":NUMERO inteiro,"recomendacaoPreco":"recomendacao honesta em 1 ou 2 frases","escopoClaro":true ou false,"escopoFalta":["o que falta 1","o que falta 2"],"sensivel":' + hasSensitive + ',"sensivelMotivo":"texto ou vazio"}';
 
   try {
-    const raw = await callClaude(prompt);
-    analysis = JSON.parse(raw.replace(/```json|```/g,"").trim());
+    const raw = await callClaude(prompt, 2500, true);
+    analysis = parseJson(raw, "a avaliacao do projeto");
     renderAnalysis();
     renderDecisao();
     document.getElementById("preco-card").style.display = "block";
@@ -1219,15 +1269,22 @@ async function gerarClaro(){
   const ehHtml = deveGerarHtml();
   btn.disabled = true; btn.textContent = ehHtml ? "⏳ Gerando apresentação + proposta HTML..." : "⏳ Gerando os dois textos...";
   try {
-    const apresentacao = comPortfolio(await callClaude(buildApresentacaoPrompt(false)));
+    // As tres geracoes sao independentes entre si, entao vao em paralelo.
+    // Antes era uma esperando a outra, e o usuario pagava a soma dos tres tempos.
     if (ehHtml) {
-      const rawConteudo = await callClaude(buildPropostaConteudoPrompt(), 3000);
-      const conteudo = JSON.parse(rawConteudo.replace(/```json|```/g,"").trim());
-      const acomp = comPortfolioFim(await callClaude(buildAcompanhamentoPrompt()));
-      renderTextos({ apresentacao: apresentacao, proposta: acomp, propostaHtml: montarHtmlProposta(conteudo), modo: "claro-html" });
+      const r = await Promise.all([
+        callClaude(buildApresentacaoPrompt(false)),
+        callClaude(buildPropostaConteudoPrompt(), 3500, true),
+        callClaude(buildAcompanhamentoPrompt())
+      ]);
+      const conteudo = parseJson(r[1], "o conteudo da proposta");
+      renderTextos({ apresentacao: comPortfolio(r[0]), proposta: comPortfolioFim(r[2]), propostaHtml: montarHtmlProposta(conteudo), modo: "claro-html" });
     } else {
-      const proposta = comPortfolio(await callClaude(buildPropostaPrompt("")));
-      renderTextos({ apresentacao: apresentacao, proposta: proposta, modo: "claro" });
+      const r = await Promise.all([
+        callClaude(buildApresentacaoPrompt(false)),
+        callClaude(buildPropostaPrompt(""))
+      ]);
+      renderTextos({ apresentacao: comPortfolio(r[0]), proposta: comPortfolio(r[1]), modo: "claro" });
     }
   } catch(e) { alert("Erro: "+e.message); }
   btn.disabled = false; btn.textContent = "✅ Escopo claro — gerar apresentação + proposta";
@@ -1825,8 +1882,8 @@ async function gerarPropostaCRM(id){
 
   let sug = null;
   try {
-    const raw = await callClaude(promptRe);
-    sug = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    const raw = await callClaude(promptRe, 1800, true);
+    sug = parseJson(raw, "as sugestoes");
   } catch(e) { sug = null; }
 
   const vSug = (sug && sug.valor) ? parseInt(sug.valor, 10) : (r.valor||0);
