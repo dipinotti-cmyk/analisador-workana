@@ -3,44 +3,45 @@
 // não há cartão que passe). Usa a camada de compatibilidade OpenAI da Gemini,
 // então o formato de requisição e resposta continua idêntico ao anterior.
 //
-// 30/07/2026 — correção do 404. O gemini-2.5-flash foi retirado antes da data
-// de desligamento anunciada, e a camada de compatibilidade devolve 404 seco,
-// sem corpo de erro, quando o modelo não existe mais. Em vez de cravar um
-// modelo só, agora existe uma CASCATA: a chamada tenta os modelos na ordem e
-// pula pro próximo quando recebe 404 ou 400. Assim a próxima aposentadoria de
-// modelo do Google não derruba a ferramenta de novo.
+// 30/07/2026 — correção do 404, com CASCATA de modelos.
 //
-// 02/08/2026 — correção da MENSAGEM CORTADA PELA METADE.
-// Sintoma: o follow-up voltava truncado no meio da frase, com HTTP 200 e sem
-// erro nenhum. Causa: no Gemini o "thinking" consome o MESMO orçamento do
-// max_tokens. O reasoning_effort 'low' reserva 1.024 tokens só para pensar, e
-// o front manda 1.000 como padrão — ou seja, a cota de pensamento era maior
-// que o orçamento inteiro. O modelo pensava, estourava o teto e devolvia umas
-// quarenta palavras. Passou a acontecer justamente quando a cascata trocou o
-// 2.5-flash ('none', sem thinking) pelos 3.x ('low', com thinking).
-// Correção: a reserva de pensamento agora é somada POR CIMA do que o front
-// pediu, em vez de descontada dele. No free tier isso não custa nada.
-// Reforço: se mesmo assim a resposta vier cortada (finish_reason 'length'),
-// a chamada é repetida uma vez com o dobro de saída, e se ainda assim vier
-// truncada o texto volta com um aviso visível — nunca mais meia mensagem
-// passando por mensagem pronta.
+// 02/08/2026 — correção da MENSAGEM CORTADA PELA METADE. No Gemini o thinking
+// consome o MESMO orçamento do max_tokens; a reserva passou a ser somada por
+// cima do que o front pediu, em vez de descontada dele.
 //
-// Pra fixar um modelo específico sem mexer no código, basta criar a variável
-// de ambiente GEMINI_MODEL na Vercel — ela entra na frente da cascata.
+// 03/08/2026 — correção dos ERROS ALEATÓRIOS. São três causas distintas:
+//
+//   1. "Resposta invalida do servidor" nunca veio daqui. Vinha da Vercel
+//      matando a função por tempo e devolvendo uma PÁGINA HTML de erro, que o
+//      front tentava ler como JSON. A cascata de 4 modelos, com 3 tentativas
+//      cada, esperas de 2s e 5s e mais uma segunda passada, passava fácil do
+//      limite. Agora existe PRAZO GLOBAL: quando o tempo acaba, quem responde
+//      somos nós, em JSON, em vez de ser morto pela plataforma.
+//
+//   2. Erro citando JSON e uma linha específica. Quando o front pede JSON, o
+//      modelo às vezes devolve com cerca de markdown ou um "aqui está:" antes
+//      do objeto. Pior: quando a resposta vinha cortada, este arquivo GRUDAVA
+//      um aviso de texto no fim, o que quebrava o JSON em 100% dos casos.
+//      Agora, com json:true, a chamada usa response_format da Gemini (saída
+//      JSON pura) e o aviso NUNCA é concatenado — ele volta só no campo
+//      truncado, para o front decidir o que fazer.
+//
+//   3. Lentidão. Cascata encurtada, uma única espera no 429, e a segunda
+//      passada só acontece se ainda houver prazo.
+//
+// Pra fixar um modelo específico sem mexer no código, criar a variável de
+// ambiente GEMINI_MODEL na Vercel — ela entra na frente da cascata.
 //
 // A chave é lida de GEMINI_API_KEY e, se não existir, de OPENAI_API_KEY.
-//
-// Sobre reasoning_effort: no Gemini 2.5 o valor 'none' desliga o thinking. Na
-// família 3.x o mínimo aceito é 'low'. Cada candidato carrega o valor certo, e
-// o último da fila vai sem o parâmetro nenhum, como rede de segurança.
 
 export const config = { runtime: 'edge' };
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
+// Cascata enxuta. Cada modelo a mais é latência a mais no pior caso, e o pior
+// caso é justamente o que estourava o tempo da Vercel.
 const CANDIDATOS = [
   { model: 'gemini-3.5-flash', reasoning_effort: 'low' },
-  { model: 'gemini-3.1-flash-lite', reasoning_effort: 'low' },
   { model: 'gemini-2.5-flash', reasoning_effort: 'none' },
   { model: 'gemini-3.5-flash' }
 ];
@@ -49,8 +50,11 @@ const CANDIDATOS = [
 // Gemini. Esse valor e SOMADO ao teto de saida, nunca descontado dele.
 const FOLGA_THINKING = { none: 0, low: 1500, medium: 9000, high: 26000 };
 
-// Teto absoluto de tokens numa unica chamada, so pra nao mandar valor absurdo.
 const TETO_ABSOLUTO = 32000;
+
+// Prazo global. A Vercel corta a execucao em algum ponto acima disso e devolve
+// HTML; ficando abaixo, a resposta e sempre JSON, mesmo quando da errado.
+const PRAZO_MS = 42000;
 
 const json = (obj, status) => new Response(JSON.stringify(obj), {
   status,
@@ -60,15 +64,19 @@ const json = (obj, status) => new Response(JSON.stringify(obj), {
 const espera = (ms) => new Promise(res => setTimeout(res, ms));
 
 export default async function handler(req) {
+  const inicio = Date.now();
+  const restante = () => PRAZO_MS - (Date.now() - inicio);
+
   if (req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405);
   }
 
-  let prompt, maxTokens;
+  let prompt, maxTokens, querJson;
   try {
     const body = JSON.parse(await req.text());
     prompt = body.prompt;
     maxTokens = Math.min(Math.max(parseInt(body.max_tokens) || 1000, 100), 16000);
+    querJson = body.json === true;
   } catch (e) {
     return json({ error: 'Body invalido: ' + e.message }, 400);
   }
@@ -89,7 +97,7 @@ export default async function handler(req) {
   // tetoSaida = quanto de TEXTO a chamada precisa poder gerar. A reserva de
   // pensamento entra em cima disso, porque a Gemini cobra os dois do mesmo
   // orcamento e quem paga a conta quando falta e o texto.
-  const chamar = (candidato, tetoSaida) => {
+  const chamar = (candidato, tetoSaida, sinal) => {
     const reserva = FOLGA_THINKING[candidato.reasoning_effort] || 0;
     const corpo = {
       model: candidato.model,
@@ -98,22 +106,33 @@ export default async function handler(req) {
     };
     if (candidato.reasoning_effort) corpo.reasoning_effort = candidato.reasoning_effort;
 
+    // Modo JSON nativo. Acaba com cerca de markdown, com "aqui esta o JSON:"
+    // antes do objeto e com comentario depois. E a correcao de raiz do erro
+    // que citava linha e coluna.
+    if (querJson) corpo.response_format = { type: 'json_object' };
+
     return fetch(GEMINI_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
         'Authorization': 'Bearer ' + apiKey
       },
-      body: JSON.stringify(corpo)
+      body: JSON.stringify(corpo),
+      signal: sinal
     });
   };
 
   const tentativas = [];
-  const ESPERAS_MS = [2000, 5000];
-  const PASSADAS = 2; // segunda passada dobra o teto de saida se vier cortado
+  const ESPERA_429_MS = 2500;
+  const PASSADAS = 2;
 
   try {
     for (const candidato of fila) {
+      if (restante() < 6000) {
+        tentativas.push('sem tempo para tentar ' + candidato.model);
+        break;
+      }
+
       let resultado = null;
       let abortouCandidato = false;
 
@@ -122,22 +141,31 @@ export default async function handler(req) {
         let r = null;
         let detalhe = '';
 
-        // So o 429 (limite por minuto) merece insistir no MESMO modelo, porque
-        // e questao de esperar. 503 significa modelo sobrecarregado do lado do
-        // Google, e 404/400 sao definitivos: nos tres casos trocar de modelo e
-        // mais rapido que esperar, entao cai direto pro proximo da fila.
-        for (let tentativa = 0; tentativa <= ESPERAS_MS.length; tentativa++) {
-          r = await chamar(candidato, tetoSaida);
-          if (r.ok) break;
-          detalhe = (await r.text()).slice(0, 200);
-          const temporario = r.status === 429;
-          if (!temporario || tentativa === ESPERAS_MS.length) break;
-          await espera(ESPERAS_MS[tentativa]);
-        }
+        // Aborta a chamada sozinho quando o prazo global aperta, em vez de
+        // deixar a Vercel matar a funcao e devolver HTML.
+        const ctrl = new AbortController();
+        const corta = setTimeout(function(){ ctrl.abort(); }, Math.max(3000, restante() - 2500));
 
-        // Qualquer falha que sobreviveu as tentativas: proximo modelo da fila.
-        if (!r.ok) {
-          tentativas.push(candidato.model + ' -> ' + r.status + ' ' + detalhe);
+        try {
+          // So o 429 (limite por minuto) merece insistir no MESMO modelo, e uma
+          // espera so: duas custavam mais tempo do que valia o beneficio.
+          for (let tentativa = 0; tentativa < 2; tentativa++) {
+            r = await chamar(candidato, tetoSaida, ctrl.signal);
+            if (r.ok) break;
+            detalhe = (await r.text()).slice(0, 160);
+            if (r.status !== 429 || tentativa === 1 || restante() < 8000) break;
+            await espera(ESPERA_429_MS);
+          }
+        } catch (e) {
+          clearTimeout(corta);
+          tentativas.push(candidato.model + ' -> abortado (' + (e && e.name) + ')');
+          abortouCandidato = true;
+          break;
+        }
+        clearTimeout(corta);
+
+        if (!r || !r.ok) {
+          tentativas.push(candidato.model + ' -> ' + (r ? r.status : '?') + ' ' + detalhe);
           abortouCandidato = true;
           break;
         }
@@ -157,18 +185,21 @@ export default async function handler(req) {
 
         resultado = { texto: texto, motivo: motivo };
 
-        // Resposta inteira: pode sair. Cortada no limite: repete com o dobro.
+        // Resposta inteira: pode sair. Cortada no limite: repete com o dobro,
+        // mas so se ainda sobrar prazo para isso.
         if (motivo !== 'length') break;
-        tentativas.push(candidato.model + ' -> cortado no limite com teto ' + tetoSaida);
+        tentativas.push(candidato.model + ' -> cortado com teto ' + tetoSaida);
+        if (restante() < 12000) break;
       }
 
       if (abortouCandidato || !resultado) continue;
 
-      // Se depois das duas passadas ainda veio cortado, o texto volta com um
-      // aviso visivel. Melhor o Diogo ver o alerta na tela do que copiar meia
-      // mensagem e mandar pro cliente sem perceber.
       const cortado = resultado.motivo === 'length';
-      const text = cortado
+
+      // ATENCAO: em modo JSON o aviso NUNCA e concatenado ao texto. Concatenar
+      // era o que quebrava o JSON.parse do front em todos os casos. O front le
+      // o campo truncado e decide o que mostrar.
+      const text = (cortado && !querJson)
         ? resultado.texto + '\n\n[!] RESPOSTA CORTADA NO LIMITE DE TOKENS. Clique em Gerar de novo ou reduza o pedido antes de enviar.'
         : resultado.texto;
 
@@ -176,7 +207,7 @@ export default async function handler(req) {
     }
 
     return json({
-      error: 'Nenhum modelo da Gemini respondeu agora. Tentativas: ' + tentativas.join(' | ')
+      error: 'Nenhum modelo da Gemini respondeu a tempo. Tentativas: ' + tentativas.join(' | ')
     }, 502);
   } catch (e) {
     return json({ error: 'Erro na chamada da Gemini: ' + e.message }, 500);
