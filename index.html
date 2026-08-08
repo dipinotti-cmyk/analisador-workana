@@ -370,6 +370,11 @@ const APP_BASE = "https://analisador-workana.vercel.app";
 // Tipos de projeto que rendem pagina interativa publicada. Automacao pura,
 // script, consultoria e conteudo NAO geram pagina: nao ha o que mostrar.
 const TIPOS_COM_PAGINA = ["site","landing","loja","sistema"];
+// Dentro dos tipos com pagina, estes tres geram o ESBOCO COMPLETO do site do
+// cliente (foto real, pagina em tamanho real, proposta no rodape), no lugar
+// da maquete pequena dentro de cartao. "sistema" continua na maquete antiga:
+// nao ha o que fotografar num painel interno.
+const TIPOS_ESBOCO = ["site","landing","loja"];
 
 const fmt = n => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n||0);
 const fmtNum = n => new Intl.NumberFormat("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0);
@@ -809,6 +814,7 @@ function renderDecisao(){
   }
 
   const rende = tipoRendePagina();
+  const ehEsboco = tipoEhEsboco();
   const rotuloTipo = { site:"Site", landing:"Landing page", loja:"Loja", sistema:"Sistema com tela", automacao:"Automação", conteudo:"Conteúdo", consultoria:"Consultoria" }[tipoDetectado()] || "Outro";
   html += '<div style="margin-top:10px;background:var(--surface);border:1px solid '+(rende?"var(--accent)":"var(--border)")+';border-radius:8px;padding:10px 12px">'
     + '<label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer">'
@@ -819,15 +825,18 @@ function renderDecisao(){
     + '</span></span></label>'
     + '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'
     + '<label style="font-size:11.5px;color:var(--muted);display:block;margin-bottom:5px">Tipo da prévia — você viu o anúncio, o modelo não</label>'
-    + '<select id="sel-previa" style="width:100%">'
-    + '<option value="">Deixar a IA escolher</option>'
-    + '<option value="site">Site navegável — maquete com menu, listagem e detalhe</option>'
-    + '<option value="vitrine">Vitrine — só a grade de cards</option>'
-    + '<option value="agenda">Agenda — horários de um dia</option>'
-    + '<option value="conversa">Conversa — atendimento no WhatsApp</option>'
-    + '<option value="painel">Painel — números e registros</option>'
-    + '<option value="fluxo">Fluxo — passo a passo do processo</option>'
-    + '</select></div></div>';
+    + (ehEsboco
+        ? '<select id="sel-previa" disabled style="width:100%;opacity:.7"><option value="" selected>Esboço completo do site</option></select>'
+          + '<div style="margin-top:6px;font-size:11.5px;color:var(--accent)">Site, landing page e loja agora geram a página real do cliente em tamanho real, com foto de verdade — a proposta comercial entra no rodapé da mesma página.</div>'
+        : '<select id="sel-previa" style="width:100%">'
+          + '<option value="">Deixar a IA escolher</option>'
+          + '<option value="vitrine">Vitrine — só a grade de cards</option>'
+          + '<option value="agenda">Agenda — horários de um dia</option>'
+          + '<option value="conversa">Conversa — atendimento no WhatsApp</option>'
+          + '<option value="painel">Painel — números e registros</option>'
+          + '<option value="fluxo">Fluxo — passo a passo do processo</option>'
+          + '</select>')
+    + '</div></div>';
 
   document.getElementById("preco-decisao").innerHTML = html;
   const prazoInput = document.getElementById("in-prazo");
@@ -977,6 +986,9 @@ function tipoDetectado(){
 function tipoRendePagina(){
   return TIPOS_COM_PAGINA.indexOf(tipoDetectado()) !== -1;
 }
+function tipoEhEsboco(){
+  return TIPOS_ESBOCO.indexOf(tipoDetectado()) !== -1;
+}
 function deveGerarHtml(){
   const chk = document.getElementById("chk-pagina");
   if (chk) return chk.checked;
@@ -1045,6 +1057,610 @@ function buildPropostaConteudoPrompt(){
     + '"experiencia":"1 paragrafo conectando a experiencia REAL do Diogo (17 anos TI, sites e automacoes reais em producao) a ESTE tipo de projeto — PROIBIDO inventar experiencia setorial que ele nao tem (ex: ja atendi restaurantes/imobiliarias); a ponte e a habilidade tecnica, nao um case falso",'
     + '"pergunta":"a PERGUNTA DE DECISAO que fecha a pagina: uma escolha entre dois caminhos do NEGOCIO do cliente, que ele responde em 1 linha e que muda o que voce entrega. PROIBIDO pergunta de cartorio (dominio, hospedagem, acesso, logo, conteudo pronto, prazo dele, orcamento dele) e pergunta vazia (o que voce acha, podemos conversar, faz sentido). Ex bons: Voce prefere que o cliente agende a visita direto pela agenda ou que o contato caia no seu WhatsApp?",'
     + '"protecao":"frase de protecao de escopo citando o material/acesso especifico DESTE projeto que dispara o inicio do prazo — PROIBIDO citar qualquer numero de dias ou prazo aqui (o prazo ja aparece no bloco de investimento; citar outro numero gera contradicao)"}';
+}
+
+// =============================================================================
+// ESBOÇO COMPLETO DE SITE — site / landing / loja
+//
+// Substitui a maquete pequena dentro de cartão por uma landing page real do
+// cliente, em tamanho real, com foto de verdade (Unsplash/Pexels), e a
+// proposta comercial no rodapé da mesma página. Ver spec completa em
+// "Analisador Workana — trocar a maquete por esboço completo de site".
+//
+// Princípio mantido: a IA devolve SÓ JSON de conteúdo (buildEsbocoLandingPrompt
+// e buildEsbocoPropostaPrompt). O layout é o template fixo montarHtmlEsboco,
+// nunca fica na mão do modelo.
+// =============================================================================
+
+// Chamada A — conteúdo da landing (max_tokens: 2600).
+function buildEsbocoLandingPrompt(){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const desc = document.getElementById("in-desc").value;
+  const contexto = document.getElementById("in-contexto").value.trim();
+  const contextoTxt = contexto ? "\n\nInformacao adicional do Diogo (usar como prova de vivencia pratica): " + contexto : "";
+  const tipoTxt = "\n\nTIPO DE PROJETO JA DETECTADO NA ANALISE: " + tipoDetectado() + ".";
+  const schema = {
+    nicho: "1 ou 2 palavras em portugues: academia, restaurante, imobiliaria, clinica...",
+    fotoQuery: "2 a 4 palavras EM INGLES para buscar no banco de imagens",
+    tema: "claro | escuro",
+    accent: "#hex do acento, com contraste suficiente sobre o tema escolhido",
+    marca: "nome do negocio do cliente, se aparecer no anuncio; senao um nome ficticio plausivel do ramo e da cidade",
+    tagline: "linha curta abaixo do nome da marca no cabecalho",
+    menu: ["4 a 6 itens curtos de navegacao, correspondendo as secoes abaixo"],
+    hero: { olho: "linha curta acima do titulo, tipo etiqueta", titulo: "chamada principal, fala com o cliente final do cliente, nao com o cliente", sub: "1 a 2 linhas de apoio", cta: "texto do botao principal", cta2: "texto do botao secundario", numeros: [{ n: "150", r: "rotulo curto" }] },
+    sobre: { olho: "etiqueta da secao", titulo: "titulo da secao", paragrafos: ["1 a 2 paragrafos sobre o negocio, na voz da marca"], selo: { t: "titulo curto do destaque", d: "1 frase" } },
+    cards: { olho: "etiqueta", titulo: "titulo da secao", itens: [{ t: "nome do item", d: "1 a 2 frases", preco: "valor plausivel ou vazio" }] },
+    lista: { olho: "etiqueta", titulo: "titulo da secao", itens: [{ t: "titulo curto", d: "1 a 2 frases" }] },
+    blocos: { olho: "etiqueta", titulo: "titulo da secao", itens: [{ t: "titulo", d: "1 a 2 frases", bullets: ["2 a 4 itens"], cta: "texto do botao" }] },
+    prova: { olho: "etiqueta", titulo: "titulo da secao", texto: "1 paragrafo", galeria: true },
+    form: { olho: "etiqueta", titulo: "titulo do bloco de contato", texto: "1 paragrafo explicando o que acontece depois do envio", perfis: [{ nome: "rotulo do perfil, ex: Aluno", campoRotulo: "pergunta do campo de selecao", opcoes: ["3 a 6 opcoes"], textoRotulo: "pergunta do campo aberto", ok: "mensagem de confirmacao depois do envio" }], cta: "texto do botao de envio" },
+    rodape: [{ titulo: "titulo da coluna", itens: ["3 itens curtos"] }]
+  };
+  return "Voce escreve o CONTEUDO de uma landing page real do cliente do Diogo Pinotti, freelancer de TI no Brasil. O layout ja existe em codigo; sua tarefa e so o texto e as escolhas de conteudo, adaptados a ESTE anuncio.\n\n"
+    + "Cliente: " + cliente + "\n"
+    + "Projeto descrito pelo cliente: " + desc + contextoTxt + tipoTxt + "\n\n"
+    + "O QUE VOCE ESTA MONTANDO: nao e uma maquete pequena dentro de um cartao. E a landing page do cliente FINAL, em tamanho real — hero, secao sobre, cards de servico/produto, prova social, formulario de contato. Ela vai ser publicada e o cliente da Workana vai abrir o link achando que esta vendo o proprio site.\n\n"
+    + "RAMO DO CLIENTE (faca isto ANTES de escrever qualquer campo): identifique o ramo em 1 ou 2 palavras a partir do anuncio (academia, restaurante, imobiliaria, clinica, advocacia, oficina, loja de roupa, escola...). Se o ramo estiver CLARO, a pagina inteira mostra itens tipicos DESSE ramo, com nomes, caracteristicas e valores plausiveis do Brasil: imobiliaria mostra imoveis, restaurante mostra pratos, oficina mostra servicos. Cair no generico com o ramo declarado e o pior erro possivel — e a prova visual que faz o cliente entender o que esta comprando.\n\n"
+    + "REGRA ANTI-INVENCAO: nunca invente o ramo se o anuncio nao deixa claro (nesse caso mantenha os exemplos neutros e plausiveis), nunca apresente numero como se fosse dado real do cliente, e nunca cite empresa que nao apareceu no anuncio.\n\n"
+    + "LISTA NEGRA DE ADJETIVO VAZIO (se aparecer, reescreva por um fato): robusto, profissional, atraente, intuitivo, moderno, eficiente, escalavel, completo, otimizado, personalizado, de alta qualidade, sob medida, presenca digital, experiencia unica.\n\n"
+    + "SEM CARA DE IA: sem travessao, sem cadencia forcada, frases curtas, portugues com acentuacao completa. Nunca mencionar IA.\n\n"
+    + "SECOES OPCIONAIS: os campos 'blocos', 'lista' e 'prova' podem vir com 'itens' vazio ([]) ou 'galeria' false quando o anuncio nao pede publicos distintos, uma segunda grade de itens ou prova social. Pagina curta e certa e melhor que pagina comprida e enchida.\n\n"
+    + "PERFIS DO FORMULARIO: se o anuncio descreve publicos diferentes deste negocio (ex: aluno e instrutor; comprador e locador; paciente e convenio), gere um perfil de formulario para cada um, em 'form.perfis'. Se o publico e um so, gere um unico perfil.\n\n"
+    + "FOTOQUERY (CAMPO CRITICO): 2 a 4 palavras EM INGLES, concretas, do ramo, sem adjetivo de marketing, para buscar fotos no banco de imagens. 'crossfit gym training' funciona. 'modern beautiful business' nao funciona — nunca escreva assim.\n\n"
+    + "TEMA E COR: escolha 'claro' ou 'escuro' pelo que combina com o ramo, e um accent em hex de 6 digitos com contraste suficiente sobre esse tema.\n\n"
+    + "Responda SOMENTE em JSON valido, sem markdown e sem comentario, com EXATAMENTE esta forma (os valores abaixo sao a descricao do que escrever em cada campo, nao copie-os literalmente):\n"
+    + JSON.stringify(schema)
+    + "\n\n'cards.itens' com 3 a 4 itens quando usado. 'lista.itens', quando usado, com 6 itens. 'rodape' com exatamente 3 colunas.";
+}
+
+// Chamada B — conteúdo da proposta comercial que fecha a mesma página (max_tokens: 1800).
+// Recebe o resumo do que a chamada A decidiu, pra o texto conversar com o esboço acima dela.
+function buildEsbocoPropostaPrompt(landing){
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const desc = document.getElementById("in-desc").value;
+  const contexto = document.getElementById("in-contexto").value.trim();
+  const contextoTxt = contexto ? "\n\nInformacao adicional do Diogo (usar como prova de vivencia pratica): " + contexto : "";
+  const prazoUso = finalPrazo || (analysis ? analysis.prazoEstimado : "");
+  const valorFmt = fmtNum(finalPrice);
+  const valorLinha = tipoCobranca === "hora"
+    ? "Valor por hora: R$ " + valorFmt + "/hora. Estimativa: " + prazoUso
+    : "Valor da proposta: R$ " + valorFmt + ". Prazo estimado: " + prazoUso;
+  const plat = getPlataformaAtual();
+  const ehW = plataformaGrupo(plat) === "Workana";
+  const provaSocial = ehW
+    ? "entre os 0,01% mais bem classificados da Workana (posicao 333 de 14,59 milhoes de freelancers, nivel Gold), avaliacao 5.0 em " + profile.avaliacoes + " projetos, 17 anos em operacao critica de TI"
+    : "17 anos em operacao critica de TI, cases reais em lupixa.com";
+  const secoesEscolhidas = [];
+  if (landing) {
+    if (landing.cards && (landing.cards.itens||[]).length) secoesEscolhidas.push("cards de " + (landing.nicho||"servicos/produtos"));
+    if (landing.lista && (landing.lista.itens||[]).length) secoesEscolhidas.push("lista de itens");
+    if (landing.blocos && (landing.blocos.itens||[]).length) secoesEscolhidas.push("blocos por publico");
+    if (landing.prova && landing.prova.galeria) secoesEscolhidas.push("galeria de prova");
+  }
+  const resumoLanding = landing
+    ? "\n\nO ESBOCO DA PAGINA JA FOI MONTADO ACIMA DESTA PROPOSTA (fale como quem ja entregou, nao como quem vai entregar). Marca ficticia usada: " + (landing.marca||"") + ". Nicho: " + (landing.nicho||"") + ". Secoes desenhadas: " + (secoesEscolhidas.join(", ")||"as principais do anuncio") + "."
+    : "";
+  const schema = {
+    titulo: "objetivo especifico do projeto, para o H2 da proposta",
+    escopo: [{ t: "titulo do item", d: "explicacao especifica deste anuncio" }],
+    etapas: [{ t: "nome da etapa", d: "o que acontece nela", dias: "2 dias" }],
+    diferencial: ["2 a 3 frases sobre a decisao de projeto mais dificil deste caso e como o esboco acima resolve"],
+    travas: [{ t: "Ajustes | Contagem do prazo | O que fica com o cliente", d: "1 a 2 frases" }],
+    experiencia: "1 paragrafo ligando a experiencia real do Diogo a este tipo de projeto",
+    fecho: "1 paragrafo dizendo que o esboco acima ja e o projeto comecando e qual e o proximo passo concreto",
+    pergunta: "a pergunta de decisao que fecha a pagina"
+  };
+  return "Voce escreve o CONTEUDO da proposta comercial que fecha a mesma pagina de um esboco de site do Diogo Pinotti, freelancer de TI no Brasil. O layout ja existe em codigo; sua tarefa e so o texto.\n\n"
+    + "Cliente: " + cliente + "\n"
+    + "Projeto descrito pelo cliente: " + desc + contextoTxt + resumoLanding + "\n\n"
+    + valorLinha + ". Mantenha o valor e o prazo exatamente assim, ja formatados, nao altere.\n\n"
+    + "CRONOGRAMA (regra dura): a soma dos dias das etapas bate EXATAMENTE com o prazo total acima, sem sobrar nem faltar.\n\n"
+    + "Responda SOMENTE em JSON valido, sem markdown e sem comentario, com EXATAMENTE esta forma (os valores abaixo sao a descricao do que escrever em cada campo, nao copie-os literalmente):\n"
+    + JSON.stringify(schema)
+    + "\n\nREGRAS QUE VALEM PARA CADA CAMPO:\n"
+    + "- 'escopo': 3 a 5 itens que saem DESTE anuncio, nunca checklist generico.\n"
+    + "- 'travas': gere exatamente 3 itens, um para cada rotulo do exemplo acima ('Ajustes', 'Contagem do prazo', 'O que fica com o cliente'). O item 'Ajustes' diz que estao inclusas ate 2 rodadas sobre o que foi combinado e que mudanca de escopo depois da aprovacao e orcada a parte. O item 'Contagem do prazo' cita o material especifico deste projeto que dispara o inicio e NUNCA cita numero de dias (o prazo ja aparece no investimento; outro numero ali gera contradicao).\n"
+    + "- 'experiencia': PROIBIDO inventar experiencia setorial (ex: 'ja atendi academias'). A ponte e sempre a habilidade tecnica e os 17 anos em operacao critica de TI.\n"
+    + "- 'pergunta': uma escolha entre dois caminhos do NEGOCIO do cliente, respondivel em uma linha. PROIBIDO pergunta de cartorio (dominio, hospedagem, acesso, logo, prazo dele, orcamento dele) e pergunta vazia (o que voce acha, faz sentido, podemos conversar).\n\n"
+    + "PROVA SOCIAL (usar em 'diferencial' ou 'experiencia' apenas se o anuncio pediu comprovacao): " + provaSocial + ".\n\n"
+    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO. Segunda pessoa (voce). Frases curtas. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. NUNCA escrever os numeros nem os rotulos do modelo (sao so seu guia interno).";
+}
+
+// Busca as fotos do esboço via /api/foto (a Access Key nunca chega ao navegador).
+// Falha vira lista vazia — o template preenche o espaço com gradiente, nunca com img quebrada.
+async function buscarFotos(query, n){
+  try {
+    const r = await fetch("/api/foto?q=" + encodeURIComponent(query||"business") + "&n=" + (n||12));
+    const d = await r.json();
+    return Array.isArray(d.fotos) ? d.fotos : [];
+  } catch(e) { return []; }
+}
+
+// Dispara o download-trigger do Unsplash pras fotos efetivamente usadas na página
+// (obrigação de licença). Falha aqui é sempre silenciosa: nunca pode travar a geração.
+function dispararUsoFotos(fotos){
+  (fotos||[]).forEach(function(f){
+    if (f && f.fonte === "unsplash" && f.download) {
+      try { fetch("/api/foto-uso?u="+encodeURIComponent(f.download)).catch(function(){}); } catch(e) {}
+    }
+  });
+}
+
+function escEsb(s){
+  return String(s==null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// Três famílias de tema (seção 6.2 da spec), pra que duas prévias seguidas não
+// saiam iguais. "escuro" sempre vira Grafite; "claro" varia entre Areia e
+// Névoa, porque nada nesse esboço deve saber a hora nem gerar aleatoriedade
+// determinística — variar de verdade é o ponto.
+function temaEsboco(landing){
+  const t = String((landing && landing.tema) || "").toLowerCase();
+  const familias = {
+    areia: {
+      bg:"#F3EFE7", bg2:"#E7E1D5", text:"#171614",
+      painelBg:"#19140F", painelTexto:"#F3EFE7",
+      display:"'Archivo Black',sans-serif", corpo:"'Archivo',sans-serif",
+      fontsHref:"https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&display=swap"
+    },
+    grafite: {
+      bg:"#0F0E0D", bg2:"#1A1917", text:"#F2EFE9",
+      painelBg:"#000000", painelTexto:"#F2EFE9",
+      display:"'Space Grotesk',sans-serif", corpo:"'Inter',sans-serif",
+      fontsHref:"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap"
+    },
+    nevoa: {
+      bg:"#F7F8FA", bg2:"#ECEEF2", text:"#14171C",
+      painelBg:"#0F1620", painelTexto:"#F7F8FA",
+      display:"'Fraunces',serif", corpo:"'Inter',sans-serif",
+      fontsHref:"https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600&display=swap"
+    }
+  };
+  const escolha = (t === "escuro") ? "grafite" : (Math.random() < 0.5 ? "areia" : "nevoa");
+  return Object.assign({ nome: escolha }, familias[escolha]);
+}
+
+function hexParaRgb_esb(hex){
+  const h = String(hex||"").replace("#","");
+  return { r: parseInt(h.substr(0,2),16)||0, g: parseInt(h.substr(2,2),16)||0, b: parseInt(h.substr(4,2),16)||0 };
+}
+function luminancia_esb(hex){
+  const c = hexParaRgb_esb(hex);
+  const canal = function(v){ v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); };
+  return 0.2126*canal(c.r) + 0.7152*canal(c.g) + 0.0722*canal(c.b);
+}
+function contraste_esb(hexA, hexB){
+  const la = luminancia_esb(hexA)+0.05, lb = luminancia_esb(hexB)+0.05;
+  return la>lb ? la/lb : lb/la;
+}
+function misturar_esb(hex, alvoHex, quantidade){
+  const a = hexParaRgb_esb(hex), b = hexParaRgb_esb(alvoHex);
+  const canal = function(v1,v2){ return Math.max(0,Math.min(255,Math.round(v1 + (v2-v1)*quantidade))); };
+  const r = canal(a.r,b.r), g = canal(a.g,b.g), bch = canal(a.b,b.b);
+  return "#" + [r,g,bch].map(function(v){ return v.toString(16).padStart(2,"0"); }).join("");
+}
+// Valida o hex do accent vindo da IA e garante contraste mínimo contra o fundo
+// do tema, escurecendo ou clareando quando não passar (seção 6.2 da spec).
+function ajustarAccentEsboco(hex, bgHex){
+  let ac = /^#[0-9a-fA-F]{6}$/.test(hex||"") ? hex : "#2f6f4f";
+  const bgEscuro = luminancia_esb(bgHex) < 0.4;
+  let tentativas = 0;
+  while (contraste_esb(ac, bgHex) < 2.6 && tentativas < 10) {
+    ac = misturar_esb(ac, bgEscuro ? "#ffffff" : "#000000", 0.14);
+    tentativas++;
+  }
+  return ac;
+}
+
+function seloSvgEsboco(letra, cor){
+  return '<svg class="esb-selo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true" focusable="false">'
+    + '<rect x="1" y="1" width="32" height="32" rx="9" fill="'+cor+'"></rect>'
+    + '<text x="17" y="23" text-anchor="middle" font-size="15" font-weight="800" fill="#0b0d12">'+escEsb(letra)+'</text>'
+    + '</svg>';
+}
+
+function montarHtmlEsboco(landing, proposta, fotos){
+  const L = landing || {};
+  const P = proposta || {};
+  const cliente = document.getElementById("in-cliente").value||"cliente";
+  const prazoUso = finalPrazo || (analysis ? analysis.prazoEstimado : "");
+  const tema = temaEsboco(L);
+  const ac = ajustarAccentEsboco(L.accent, tema.bg);
+  const marca = L.marca || "Seu Negócio";
+  const inicial = (String(marca).trim()[0] || "S").toUpperCase();
+  const slugProp = slugCliente();
+  const trackUrl = APP_BASE + "/api/view?slug=" + encodeURIComponent("proposta-" + slugProp) + "&c=" + encodeURIComponent(cliente);
+
+  // ---- fotos: rodízio simples pelas 12 buscadas, com fallback em gradiente ----
+  const fotosDisp = (Array.isArray(fotos) ? fotos : []).filter(function(f){ return f && f.url; });
+  let cursorFoto = 0;
+  const proximaFoto = function(){
+    if (!fotosDisp.length) return null;
+    const f = fotosDisp[cursorFoto % fotosDisp.length];
+    cursorFoto++;
+    return f;
+  };
+  const fotosUsadas = [];
+  const marcarUsada = function(f){ if (f && fotosUsadas.indexOf(f) === -1) fotosUsadas.push(f); };
+  const blocoFoto = function(f, classe){
+    if (!f) return '<div class="'+classe+' esb-ph-vazio"><span>'+escEsb(inicial)+'</span></div>';
+    marcarUsada(f);
+    return '<img class="'+classe+'" src="'+escEsb(f.url)+'" alt="'+escEsb(f.alt||marca)+'" loading="lazy">';
+  };
+
+  // ---- cabeçalho fixo + faixa de contexto ----
+  const menuItens = (L.menu||[]).slice(0,6);
+  const idsSecao = ["esb-sobre","esb-cards","esb-lista","esb-blocos","esb-prova","esb-form"];
+  const menuHtml = menuItens.map(function(m,i){
+    return '<a href="#'+(idsSecao[i]||"esb-form")+'" class="esb-menu-a">'+escEsb(m)+'</a>';
+  }).join("");
+  const hero = L.hero || {};
+  const topoHtml = '<div class="esb-topbar">Esboço de site preparado para '+escEsb(cliente)+' — role até o fim para ver a proposta comercial. <a href="#proposta">Ir para a proposta ↓</a></div>'
+    + '<nav class="esb-navtop"><div class="esb-marca">'+seloSvgEsboco(inicial, ac)+'<span>'+escEsb(marca)+'</span></div>'
+    + '<div class="esb-menu">'+menuHtml+'<a href="#proposta" class="esb-menu-a esb-menu-prop">Proposta</a></div>'
+    + '<button class="esb-btn-primario esb-btn-nav" data-scroll="esb-form">'+escEsb(hero.cta||"Fazer contato")+'</button></nav>';
+
+  // ---- hero ----
+  const heroFoto = proximaFoto();
+  if (heroFoto) marcarUsada(heroFoto);
+  const heroNumeros = (hero.numeros||[]).slice(0,4).map(function(nu){
+    return '<div class="esb-h-num"><span class="esb-h-num-n">'+escEsb(nu.n||"")+'</span><span class="esb-h-num-r">'+escEsb(nu.r||"")+'</span></div>';
+  }).join("");
+  const heroBg = heroFoto
+    ? "linear-gradient(180deg, rgba(10,10,10,.30), "+tema.bg+" 94%), url('"+String(heroFoto.url).replace(/'/g,"%27")+"')"
+    : "linear-gradient(150deg,"+ac+"33,"+tema.bg2+")";
+  const heroHtml = '<header class="esb-hero" style="background-image:'+heroBg+'">'
+    + '<div class="esb-hero-in esb-rv">'
+    + (hero.olho ? '<span class="esb-olho">'+escEsb(hero.olho)+'</span>' : '')
+    + '<h1>'+escEsb(hero.titulo||marca)+'</h1>'
+    + (hero.sub ? '<p class="esb-hero-sub">'+escEsb(hero.sub)+'</p>' : '')
+    + '<div class="esb-hero-cta">'
+    + '<button class="esb-btn-primario" data-scroll="esb-form">'+escEsb(hero.cta||"Fazer contato")+'</button>'
+    + (hero.cta2 ? '<button class="esb-btn-secundario" data-scroll="esb-sobre">'+escEsb(hero.cta2)+'</button>' : '')
+    + '</div>'
+    + (heroNumeros ? '<div class="esb-hero-nums">'+heroNumeros+'</div>' : '')
+    + '</div></header>';
+
+  // ---- sobre ----
+  const sobre = L.sobre || {};
+  const sobreFoto = proximaFoto();
+  const sobreParas = (sobre.paragrafos||[]).map(function(p){ return '<p>'+escEsb(p)+'</p>'; }).join("");
+  const sobreHtml = '<section id="esb-sobre" class="esb-sec esb-sobre esb-rv">'
+    + '<div class="esb-sobre-txt">'
+    + (sobre.olho ? '<span class="esb-olho">'+escEsb(sobre.olho)+'</span>' : '')
+    + '<h2>'+escEsb(sobre.titulo||"Sobre")+'</h2>'
+    + (sobreParas || '<p></p>')
+    + '</div>'
+    + '<div class="esb-sobre-foto-wrap">'
+    + blocoFoto(sobreFoto, "esb-sobre-foto")
+    + (sobre.selo ? '<div class="esb-selo-flut"><b>'+escEsb(sobre.selo.t||"")+'</b><span>'+escEsb(sobre.selo.d||"")+'</span></div>' : '')
+    + '</div></section>';
+
+  // ---- cards ----
+  const cardsObj = L.cards || {};
+  const cardsItens = (cardsObj.itens||[]).slice(0,4);
+  const cardsHtml = !cardsItens.length ? "" : (
+    '<section id="esb-cards" class="esb-sec esb-cards-sec esb-rv">'
+    + (cardsObj.olho ? '<span class="esb-olho esb-center">'+escEsb(cardsObj.olho)+'</span>' : '')
+    + '<h2 class="esb-center">'+escEsb(cardsObj.titulo||"O que oferecemos")+'</h2>'
+    + '<div class="esb-cards-grid">'
+    + cardsItens.map(function(it){
+        const f = proximaFoto();
+        return '<div class="esb-card-item">'+blocoFoto(f,"esb-card-foto")
+          + '<div class="esb-card-body"><h3>'+escEsb(it.t||"")+'</h3><p>'+escEsb(it.d||"")+'</p>'
+          + (it.preco ? '<span class="esb-card-preco">'+escEsb(it.preco)+'</span>' : '')
+          + '</div></div>';
+      }).join("")
+    + '</div></section>'
+  );
+
+  // ---- lista ----
+  const listaObj = L.lista || {};
+  const listaItens = (listaObj.itens||[]).slice(0,6);
+  const listaHtml = !listaItens.length ? "" : (
+    '<section id="esb-lista" class="esb-sec esb-lista-sec esb-rv">'
+    + (listaObj.olho ? '<span class="esb-olho esb-center">'+escEsb(listaObj.olho)+'</span>' : '')
+    + '<h2 class="esb-center">'+escEsb(listaObj.titulo||"")+'</h2>'
+    + '<div class="esb-lista-grid">'
+    + listaItens.map(function(it,i){
+        return '<div class="esb-lista-item"><span class="esb-lista-n">'+(i+1<10?"0":"")+(i+1)+'</span><h4>'+escEsb(it.t||"")+'</h4><p>'+escEsb(it.d||"")+'</p></div>';
+      }).join("")
+    + '</div></section>'
+  );
+
+  // ---- blocos (opcional, públicos distintos) ----
+  const blocosObj = L.blocos || {};
+  const blocosItens = (blocosObj.itens||[]).slice(0,4);
+  const blocosHtml = !blocosItens.length ? "" : (
+    '<section id="esb-blocos" class="esb-sec esb-blocos-sec esb-rv">'
+    + (blocosObj.olho ? '<span class="esb-olho esb-center esb-inv">'+escEsb(blocosObj.olho)+'</span>' : '')
+    + '<h2 class="esb-center esb-inv">'+escEsb(blocosObj.titulo||"")+'</h2>'
+    + '<div class="esb-blocos-grid">'
+    + blocosItens.map(function(it){
+        const bullets = (it.bullets||[]).map(function(b){ return '<li>'+escEsb(b)+'</li>'; }).join("");
+        return '<div class="esb-bloco-item"><h3>'+escEsb(it.t||"")+'</h3><p>'+escEsb(it.d||"")+'</p>'
+          + (bullets ? '<ul>'+bullets+'</ul>' : '')
+          + (it.cta ? '<button class="esb-btn-secundario esb-inv" data-scroll="esb-form">'+escEsb(it.cta)+'</button>' : '')
+          + '</div>';
+      }).join("")
+    + '</div></section>'
+  );
+
+  // ---- prova social + galeria ----
+  const provaObj = L.prova || {};
+  const provaFotos = provaObj.galeria ? [proximaFoto(),proximaFoto(),proximaFoto(),proximaFoto()].filter(Boolean) : [];
+  const provaHtml = (!provaObj.texto && !provaFotos.length) ? "" : (
+    '<section id="esb-prova" class="esb-sec esb-prova-sec esb-rv">'
+    + (provaObj.olho ? '<span class="esb-olho esb-center">'+escEsb(provaObj.olho)+'</span>' : '')
+    + '<h2 class="esb-center">'+escEsb(provaObj.titulo||"")+'</h2>'
+    + (provaObj.texto ? '<p class="esb-prova-txt">'+escEsb(provaObj.texto)+'</p>' : '')
+    + (provaFotos.length ? '<div class="esb-galeria">'+provaFotos.map(function(f){ return blocoFoto(f,"esb-galeria-foto"); }).join("")+'</div>' : '')
+    + '</section>'
+  );
+
+  // ---- formulário (perfis em chips, envio simulado) ----
+  const formObj = L.form || {};
+  const perfis = (formObj.perfis && formObj.perfis.length) ? formObj.perfis
+    : [{ nome:"Contato", campoRotulo:"O que você procura?", opcoes:["Orçamento","Dúvida","Outro"], textoRotulo:"Conte em poucas palavras", ok:"Recebemos seu contato — te respondemos em breve." }];
+  const chipsHtml = perfis.length <= 1 ? "" : (
+    '<div class="esb-form-chips">'+perfis.map(function(p,i){
+      return '<button type="button" class="esb-chip-perfil'+(i===0?" on":"")+'" data-perfil="'+i+'">'+escEsb(p.nome||"")+'</button>';
+    }).join("")+'</div>'
+  );
+  const camposHtml = perfis.map(function(p,i){
+    const opcoes = (p.opcoes||[]).map(function(o){ return '<option>'+escEsb(o)+'</option>'; }).join("");
+    return '<div class="esb-form-campos'+(i===0?" on":"")+'" data-campos="'+i+'">'
+      + (opcoes ? '<label>'+escEsb(p.campoRotulo||"")+'<select>'+opcoes+'</select></label>' : '')
+      + '<label>'+escEsb(p.textoRotulo||"Conte em poucas palavras")+'<textarea rows="3" placeholder="Escreva aqui"></textarea></label>'
+      + '<p class="esb-form-ok" data-ok hidden>'+escEsb(p.ok||"Recebemos seu contato — te respondemos em breve.")+'</p>'
+      + '</div>';
+  }).join("");
+  const formHtml = '<section id="esb-form" class="esb-sec esb-form-sec esb-rv">'
+    + (formObj.olho ? '<span class="esb-olho esb-center esb-inv">'+escEsb(formObj.olho)+'</span>' : '')
+    + '<h2 class="esb-center esb-inv">'+escEsb(formObj.titulo||"Fale com a gente")+'</h2>'
+    + (formObj.texto ? '<p class="esb-form-txt">'+escEsb(formObj.texto)+'</p>' : '')
+    + chipsHtml
+    + '<div class="esb-form-corpo">'
+    + '<label>Nome<input type="text" placeholder="Seu nome"></label>'
+    + camposHtml
+    + '<button type="button" class="esb-btn-primario" data-enviar>'+escEsb(formObj.cta||"Enviar")+'</button>'
+    + '<p class="esb-form-demo">Esboço: o envio aqui é demonstrativo. Na versão final, os dados caem direto no seu WhatsApp, e-mail ou CRM.</p>'
+    + '</div></section>';
+
+  // ---- rodapé do site fictício + atribuição das fotos (obrigação de licença) ----
+  const rodapeCols = (Array.isArray(L.rodape) ? L.rodape : []).slice(0,3);
+  const rodapeGrid = rodapeCols.map(function(col){
+    const itens2 = (col.itens||[]).slice(0,4).map(function(it){ return '<li>'+escEsb(it)+'</li>'; }).join("");
+    return '<div class="esb-rodape-col"><b>'+escEsb(col.titulo||"")+'</b><ul>'+itens2+'</ul></div>';
+  }).join("");
+  const porAutorU = {}, porAutorP = {};
+  fotosUsadas.forEach(function(f){
+    if (!f.autor) return;
+    if (f.fonte === "unsplash") porAutorU[f.autor] = f.perfil || "";
+    else if (f.fonte === "pexels") porAutorP[f.autor] = f.perfil || "";
+  });
+  const linkNome = function(nome, url){ return url ? '<a href="'+escEsb(url)+'" target="_blank" rel="noopener">'+escEsb(nome)+'</a>' : escEsb(nome); };
+  const nomesU = Object.keys(porAutorU), nomesP = Object.keys(porAutorP);
+  let attrTxt = "";
+  if (nomesU.length) attrTxt += "Fotos ilustrativas de " + nomesU.map(function(n){ return linkNome(n, porAutorU[n]); }).join(", ") + ' no <a href="https://unsplash.com/?utm_source=analisador_workana&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>';
+  if (nomesP.length) attrTxt += (attrTxt ? ", e de " : "Fotos ilustrativas de ") + nomesP.map(function(n){ return linkNome(n, porAutorP[n]); }).join(", ") + ' no <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a>';
+  if (attrTxt) attrTxt += ".";
+  const rodapeHtml = '<footer class="esb-rodape">'
+    + (rodapeGrid ? '<div class="esb-rodape-grid">'+rodapeGrid+'</div>' : '')
+    + (attrTxt ? '<p class="esb-rodape-attr">'+attrTxt+'</p>' : '')
+    + '<p class="esb-rodape-copy">© '+new Date().getFullYear()+' '+escEsb(marca)+' — esboço preparado por Diogo Pinotti.</p>'
+    + '</footer>';
+
+  // ---- proposta comercial (rodapé da mesma página, seção 6.1.11) ----
+  const escopoHtml = (P.escopo||[]).map(function(i){ return '<li><b>'+escEsb(i.t||"")+'</b> — '+escEsb(i.d||"")+'</li>'; }).join("");
+  const etapasHtml = (P.etapas||[]).map(function(e,i){
+    return '<div class="esb-etapa"><span class="esb-etapa-n">'+(i+1)+'</span><span class="esb-etapa-b"><span class="esb-etapa-t">'+escEsb(e.t||"")+'</span><span class="esb-etapa-d">'+escEsb(e.d||"")+'</span></span><span class="esb-etapa-dias">'+escEsb(e.dias||"")+'</span></div>';
+  }).join("");
+  const diferencialHtml = (P.diferencial||[]).map(function(p){ return '<p>'+escEsb(p)+'</p>'; }).join("");
+  const travasHtml = (P.travas||[]).map(function(t){ return '<div class="esb-trava"><b>'+escEsb(t.t||"")+'</b><p>'+escEsb(t.d||"")+'</p></div>'; }).join("");
+  const propostaHtmlSec = '<section id="proposta" class="esb-sec esb-proposta-sec">'
+    + '<div class="esb-proposta-divisor"></div>'
+    + '<span class="esb-badge-prop">Proposta técnica</span>'
+    + '<h2 class="esb-prop-titulo">'+escEsb(P.titulo||"Proposta")+'</h2>'
+    + '<p class="esb-prop-sub">Preparada para '+escEsb(cliente)+'</p>'
+    + (escopoHtml ? '<div class="esb-prop-bloco"><h3>Como pretendo estruturar</h3><ul>'+escopoHtml+'</ul></div>' : '')
+    + (etapasHtml ? '<div class="esb-prop-bloco"><h3>Etapas e prazos</h3><div class="esb-etapas">'+etapasHtml+'</div></div>' : '')
+    + (diferencialHtml ? '<div class="esb-prop-bloco"><h3>Por que este caminho</h3>'+diferencialHtml+'</div>' : '')
+    + '<div class="esb-oferta"><div class="esb-oferta-price">R$ '+fmtNum(finalPrice)+'</div><div class="esb-oferta-term">Prazo de entrega: '+escEsb(prazoUso)+'</div></div>'
+    + (travasHtml ? '<div class="esb-prop-bloco esb-travas-wrap">'+travasHtml+'</div>' : '')
+    + (P.experiencia ? '<div class="esb-prop-bloco"><h3>Quem executa</h3><p>'+escEsb(P.experiencia)+'</p>'
+        + '<div class="esb-prop-stats"><div class="esb-prop-stat"><b>17 anos</b><span>de experiência em TI, incluindo operação crítica</span></div>'
+        + '<div class="esb-prop-stat"><b>5.0</b><span>avaliação na Workana, projetos entregues com nota máxima</span></div></div></div>' : '')
+    + '<div class="esb-cta-final"><p class="esb-cta-final-q">'+escEsb(P.pergunta||"Você prefere começar por qual parte?")+'</p>'
+    + '<p class="esb-cta-final-a">Me responda essa única linha por aqui mesmo, pela plataforma, e eu já começo a preparar o início.</p></div>'
+    + (P.fecho ? '<p class="esb-prop-fecho">'+escEsb(P.fecho)+'</p>' : '')
+    + '<div class="esb-assinatura">Combinado?<span>Diogo Pinotti</span></div>'
+    + '</section>';
+
+  // ---- CSS ----
+  const css = ':root{--esb-bg:'+tema.bg+';--esb-bg2:'+tema.bg2+';--esb-text:'+tema.text+';--esb-accent:'+ac+';--esb-painel:'+tema.painelBg+';--esb-painel-texto:'+tema.painelTexto+';}\n'
+    + '*{box-sizing:border-box;}\n'
+    + 'html{scroll-behavior:smooth;}\n'
+    + 'body{margin:0;background:var(--esb-bg);color:var(--esb-text);font-family:'+tema.corpo+';line-height:1.6;}\n'
+    + 'h1,h2,h3,h4{font-family:'+tema.display+';margin:0;}\n'
+    + 'img{max-width:100%;display:block;}\n'
+    + 'a{color:inherit;}\n'
+    + ':focus-visible{outline:2px solid var(--esb-accent);outline-offset:2px;}\n'
+    + '.esb-topbar{background:var(--esb-painel);color:var(--esb-painel-texto);font-size:12.5px;text-align:center;padding:8px 16px;}\n'
+    + '.esb-topbar a{color:var(--esb-accent);text-decoration:none;font-weight:600;margin-left:6px;}\n'
+    + '.esb-navtop{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 5vw;background:var(--esb-bg);border-bottom:1px solid '+tema.bg2+';flex-wrap:wrap;}\n'
+    + '.esb-marca{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;}\n'
+    + '.esb-selo{border-radius:9px;flex:0 0 auto;}\n'
+    + '.esb-menu{display:flex;gap:22px;flex-wrap:wrap;}\n'
+    + '.esb-menu-a{font-size:13.5px;font-weight:600;text-decoration:none;opacity:.82;}\n'
+    + '.esb-menu-a:hover{opacity:1;}\n'
+    + '.esb-menu-prop{color:var(--esb-accent);}\n'
+    + '.esb-btn-primario{font-family:'+tema.corpo+';font-size:13.5px;font-weight:700;background:var(--esb-accent);color:#0b0d12;border:0;border-radius:9px;padding:11px 20px;cursor:pointer;}\n'
+    + '.esb-btn-secundario{font-family:'+tema.corpo+';font-size:13.5px;font-weight:700;background:transparent;color:inherit;border:1.5px solid currentColor;border-radius:9px;padding:10px 19px;cursor:pointer;}\n'
+    + '.esb-btn-secundario.esb-inv{border-color:var(--esb-painel-texto);color:var(--esb-painel-texto);}\n'
+    + '.esb-btn-nav{display:none;}\n'
+    + '.esb-hero{background-size:cover;background-position:center;padding:min(16vh,140px) 5vw 70px;min-height:60vh;display:flex;align-items:flex-end;}\n'
+    + '.esb-hero-in{max-width:640px;}\n'
+    + '.esb-olho{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--esb-accent);margin-bottom:10px;}\n'
+    + '.esb-hero h1{font-size:clamp(30px,5vw,52px);line-height:1.12;letter-spacing:-.01em;margin-bottom:14px;}\n'
+    + '.esb-hero-sub{font-size:17px;opacity:.86;max-width:520px;margin-bottom:26px;}\n'
+    + '.esb-hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:30px;}\n'
+    + '.esb-hero-nums{display:flex;gap:28px;flex-wrap:wrap;}\n'
+    + '.esb-h-num{display:flex;flex-direction:column;}\n'
+    + '.esb-h-num-n{font-family:'+tema.display+';font-size:26px;font-weight:700;color:var(--esb-accent);}\n'
+    + '.esb-h-num-r{font-size:12px;opacity:.75;}\n'
+    + '.esb-sec{padding:70px 5vw;max-width:1180px;margin:0 auto;}\n'
+    + '.esb-center{display:block;text-align:center;}\n'
+    + '.esb-sec h2{font-size:clamp(22px,3vw,32px);margin-bottom:26px;}\n'
+    + '.esb-sobre{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;}\n'
+    + '.esb-sobre-txt p{font-size:15.5px;opacity:.88;margin:0 0 14px;}\n'
+    + '.esb-sobre-foto-wrap{position:relative;}\n'
+    + '.esb-sobre-foto{border-radius:18px;aspect-ratio:4/3;object-fit:cover;width:100%;}\n'
+    + '.esb-selo-flut{position:absolute;bottom:-18px;left:-18px;background:var(--esb-painel);color:var(--esb-painel-texto);border-radius:14px;padding:16px 20px;max-width:220px;box-shadow:0 12px 30px rgba(0,0,0,.25);}\n'
+    + '.esb-selo-flut b{display:block;font-size:15px;margin-bottom:4px;}\n'
+    + '.esb-selo-flut span{font-size:12.5px;opacity:.82;}\n'
+    + '.esb-cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px;}\n'
+    + '.esb-card-item{background:var(--esb-bg2);border-radius:16px;overflow:hidden;}\n'
+    + '.esb-card-foto{width:100%;aspect-ratio:16/10;object-fit:cover;}\n'
+    + '.esb-card-body{padding:18px 20px 22px;}\n'
+    + '.esb-card-body h3{font-size:17px;margin-bottom:8px;}\n'
+    + '.esb-card-body p{font-size:14px;opacity:.82;margin:0 0 10px;}\n'
+    + '.esb-card-preco{font-weight:700;color:var(--esb-accent);font-size:16px;}\n'
+    + '.esb-lista-sec{background:var(--esb-bg2);}\n'
+    + '.esb-lista-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:26px 22px;}\n'
+    + '.esb-lista-n{display:block;font-family:'+tema.display+';font-size:22px;font-weight:700;color:var(--esb-accent);margin-bottom:8px;}\n'
+    + '.esb-lista-item h4{font-size:15.5px;margin-bottom:6px;}\n'
+    + '.esb-lista-item p{font-size:13.5px;opacity:.8;margin:0;}\n'
+    + '.esb-blocos-sec{background:var(--esb-painel);color:var(--esb-painel-texto);}\n'
+    + '.esb-blocos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;}\n'
+    + '.esb-bloco-item{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:24px 26px;}\n'
+    + '.esb-bloco-item h3{font-size:18px;margin-bottom:8px;}\n'
+    + '.esb-bloco-item p{font-size:14px;opacity:.82;margin:0 0 12px;}\n'
+    + '.esb-bloco-item ul{margin:0 0 16px;padding-left:18px;font-size:13.5px;opacity:.85;}\n'
+    + '.esb-bloco-item li{margin-bottom:6px;}\n'
+    + '.esb-prova-txt{max-width:640px;font-size:15px;opacity:.85;margin:0 0 26px;}\n'
+    + '.esb-galeria{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}\n'
+    + '.esb-galeria-foto{border-radius:12px;aspect-ratio:1/1;object-fit:cover;width:100%;}\n'
+    + '.esb-form-sec{background:var(--esb-painel);color:var(--esb-painel-texto);text-align:center;}\n'
+    + '.esb-form-txt{max-width:520px;margin:0 auto 22px;font-size:15px;opacity:.85;}\n'
+    + '.esb-form-chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:22px;}\n'
+    + '.esb-chip-perfil{font-family:'+tema.corpo+';font-size:13px;font-weight:600;background:transparent;border:1.5px solid rgba(255,255,255,.28);color:inherit;border-radius:100px;padding:8px 16px;cursor:pointer;}\n'
+    + '.esb-chip-perfil.on{background:var(--esb-accent);border-color:var(--esb-accent);color:#0b0d12;}\n'
+    + '.esb-form-corpo{max-width:440px;margin:0 auto;text-align:left;}\n'
+    + '.esb-form-corpo label{display:block;font-size:12.5px;font-weight:600;opacity:.85;margin-bottom:16px;}\n'
+    + '.esb-form-corpo input,.esb-form-corpo select,.esb-form-corpo textarea{width:100%;margin-top:6px;font-family:'+tema.corpo+';font-size:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.22);border-radius:9px;padding:10px 12px;color:inherit;resize:vertical;}\n'
+    + '.esb-form-campos{display:none;}\n.esb-form-campos.on{display:block;}\n'
+    + '.esb-form-ok{color:var(--esb-accent);font-weight:600;font-size:13.5px;}\n'
+    + '.esb-form-corpo .esb-btn-primario{width:100%;margin-top:6px;padding:13px;}\n'
+    + '.esb-form-demo{margin-top:14px;font-size:11.5px;opacity:.6;text-align:center;}\n'
+    + '.esb-rodape{padding:56px 5vw 30px;max-width:1180px;margin:0 auto;}\n'
+    + '.esb-rodape-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid '+tema.bg2+';}\n'
+    + '.esb-rodape-col b{display:block;font-size:13.5px;margin-bottom:10px;}\n'
+    + '.esb-rodape-col ul{list-style:none;margin:0;padding:0;}\n'
+    + '.esb-rodape-col li{font-size:13px;opacity:.72;padding:4px 0;}\n'
+    + '.esb-rodape-attr{font-size:11px;opacity:.55;margin:0 0 6px;}\n'
+    + '.esb-rodape-attr a{color:var(--esb-accent);}\n'
+    + '.esb-rodape-copy{font-size:11px;opacity:.5;margin:0;}\n'
+    + '.esb-ph-vazio{background:linear-gradient(135deg,'+ac+'40,var(--esb-bg2));display:flex;align-items:center;justify-content:center;color:'+ac+';font-family:'+tema.display+';font-weight:700;}\n'
+    + '.esb-ph-vazio span{font-size:34px;}\n'
+    + '.esb-proposta-sec{padding-top:0;}\n'
+    + '.esb-proposta-divisor{height:6px;background:var(--esb-accent);margin-bottom:46px;border-radius:100px;}\n'
+    + '.esb-badge-prop{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--esb-accent);border:1px solid var(--esb-accent);border-radius:100px;padding:5px 13px;margin-bottom:18px;}\n'
+    + '.esb-prop-titulo{font-size:clamp(22px,3vw,30px);margin-bottom:6px;}\n'
+    + '.esb-prop-sub{opacity:.72;font-size:14.5px;margin:0 0 34px;}\n'
+    + '.esb-prop-bloco{margin-bottom:30px;}\n'
+    + '.esb-prop-bloco h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--esb-accent);margin-bottom:14px;font-weight:700;}\n'
+    + '.esb-prop-bloco ul{margin:0;padding-left:20px;}\n.esb-prop-bloco li{margin-bottom:9px;font-size:15px;}\n'
+    + '.esb-prop-bloco p{font-size:15px;opacity:.88;margin:0 0 10px;}\n'
+    + '.esb-etapas{display:flex;flex-direction:column;gap:9px;}\n'
+    + '.esb-etapa{display:grid;grid-template-columns:26px 1fr auto;gap:12px;align-items:flex-start;background:var(--esb-bg2);border-radius:12px;padding:14px 16px;}\n'
+    + '.esb-etapa-n{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:var(--esb-accent);color:#0b0d12;}\n'
+    + '.esb-etapa-t{display:block;font-size:15px;font-weight:650;}\n.esb-etapa-d{display:block;font-size:13px;opacity:.72;margin-top:3px;}\n'
+    + '.esb-etapa-dias{font-size:13px;font-weight:700;color:var(--esb-accent);white-space:nowrap;}\n'
+    + '.esb-oferta{background:var(--esb-painel);color:var(--esb-painel-texto);border-radius:18px;padding:34px 26px;text-align:center;margin-bottom:30px;}\n'
+    + '.esb-oferta-price{font-family:'+tema.display+';font-size:38px;font-weight:700;}\n'
+    + '.esb-oferta-term{font-size:14.5px;opacity:.78;margin-top:8px;}\n'
+    + '.esb-travas-wrap{display:flex;flex-direction:column;gap:14px;}\n'
+    + '.esb-trava{background:var(--esb-bg2);border-left:3px solid var(--esb-accent);border-radius:10px;padding:14px 18px;}\n'
+    + '.esb-trava b{display:block;font-size:13.5px;margin-bottom:4px;}\n'
+    + '.esb-trava p{margin:0;font-size:14px;opacity:.85;}\n'
+    + '.esb-prop-stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;}\n'
+    + '.esb-prop-stat{background:var(--esb-bg2);border-radius:12px;padding:16px 18px;}\n'
+    + '.esb-prop-stat b{display:block;font-family:'+tema.display+';font-size:20px;color:var(--esb-accent);}\n'
+    + '.esb-prop-stat span{font-size:12.5px;opacity:.72;}\n'
+    + '.esb-cta-final{background:linear-gradient(135deg,'+ac+'22,var(--esb-bg2));border:1px solid '+ac+'55;border-radius:16px;padding:28px 26px;margin:36px 0 18px;}\n'
+    + '.esb-cta-final-q{font-size:19px;font-weight:650;margin:0 0 10px;}\n'
+    + '.esb-cta-final-a{font-size:14px;opacity:.78;margin:0;}\n'
+    + '.esb-prop-fecho{opacity:.85;}\n'
+    + '.esb-assinatura{margin-top:30px;font-size:15px;opacity:.72;}\n'
+    + '.esb-assinatura span{display:block;font-weight:700;font-size:18px;opacity:1;margin-top:4px;color:var(--esb-text);}\n'
+    + '.esb-rv{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease;}\n'
+    + '.esb-rv.on{opacity:1;transform:none;}\n'
+    + '@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto;}.esb-rv{opacity:1!important;transform:none!important;transition:none!important;}}\n'
+    + '@media (max-width:980px){.esb-sobre{grid-template-columns:1fr;}.esb-galeria{grid-template-columns:repeat(2,1fr);}.esb-rodape-grid{grid-template-columns:1fr 1fr;}.esb-prop-stats{grid-template-columns:1fr;}}\n'
+    + '@media (max-width:560px){.esb-menu{display:none;}.esb-btn-nav{display:inline-block;}.esb-sec{padding:52px 6vw;}.esb-hero{padding-top:120px;min-height:52vh;}.esb-rodape-grid{grid-template-columns:1fr;}.esb-hero-nums{gap:20px;}}\n';
+
+  // ---- JS embutido (rastreamento, reveal, chips do form, scroll suave) ----
+  const jsEsboco = "(function(){\n"
+    + "  try { var _t = fetch(\"__TRACK__\", { mode: \"no-cors\", keepalive: true, cache: \"no-store\" }); if (_t && _t.catch) _t.catch(function(){}); } catch (e) {}\n"
+    + "  var reduz = window.matchMedia && window.matchMedia(\"(prefers-reduced-motion: reduce)\").matches;\n"
+    + "  var scrollSuave = function(id){ var el = document.getElementById(id); if (!el) return; el.scrollIntoView({ behavior: reduz ? \"auto\" : \"smooth\" }); };\n"
+    + "  document.addEventListener(\"click\", function(ev){\n"
+    + "    var n = ev.target;\n"
+    + "    while (n && n.nodeType === 1) {\n"
+    + "      if (n.hasAttribute && n.hasAttribute(\"data-scroll\")) { scrollSuave(n.getAttribute(\"data-scroll\")); return; }\n"
+    + "      if (n.tagName === \"A\" && n.getAttribute(\"href\") && n.getAttribute(\"href\").charAt(0) === \"#\") {\n"
+    + "        var id = n.getAttribute(\"href\").slice(1);\n"
+    + "        if (document.getElementById(id)) { ev.preventDefault(); scrollSuave(id); return; }\n"
+    + "      }\n"
+    + "      n = n.parentElement;\n"
+    + "    }\n"
+    + "  });\n"
+    + "  if (reduz) {\n"
+    + "    Array.prototype.forEach.call(document.querySelectorAll(\".esb-rv\"), function(el){ el.classList.add(\"on\"); });\n"
+    + "  } else if (window.IntersectionObserver) {\n"
+    + "    var io = new IntersectionObserver(function(entries){\n"
+    + "      entries.forEach(function(en){ if (en.isIntersecting) { en.target.classList.add(\"on\"); io.unobserve(en.target); } });\n"
+    + "    }, { threshold: 0.14 });\n"
+    + "    Array.prototype.forEach.call(document.querySelectorAll(\".esb-rv\"), function(el){ io.observe(el); });\n"
+    + "  } else {\n"
+    + "    Array.prototype.forEach.call(document.querySelectorAll(\".esb-rv\"), function(el){ el.classList.add(\"on\"); });\n"
+    + "  }\n"
+    + "  var chips = document.querySelectorAll(\"[data-perfil]\");\n"
+    + "  Array.prototype.forEach.call(chips, function(btn){\n"
+    + "    btn.addEventListener(\"click\", function(){\n"
+    + "      Array.prototype.forEach.call(chips, function(b){ b.classList.remove(\"on\"); });\n"
+    + "      btn.classList.add(\"on\");\n"
+    + "      var idx = btn.getAttribute(\"data-perfil\");\n"
+    + "      Array.prototype.forEach.call(document.querySelectorAll(\"[data-campos]\"), function(c){ c.classList.toggle(\"on\", c.getAttribute(\"data-campos\") === idx); });\n"
+    + "    });\n"
+    + "  });\n"
+    + "  var enviar = document.querySelector(\"[data-enviar]\");\n"
+    + "  if (enviar) enviar.addEventListener(\"click\", function(){\n"
+    + "    enviar.disabled = true;\n"
+    + "    enviar.textContent = \"Enviado \\u2713\";\n"
+    + "    var ativo = document.querySelector(\".esb-form-campos.on\") || document.querySelector(\".esb-form-campos\");\n"
+    + "    if (ativo) { var ok = ativo.querySelector(\"[data-ok]\"); if (ok) ok.hidden = false; }\n"
+    + "  });\n"
+    + "})();\n";
+  const jsEsbocoFinal = jsEsboco.replace("__TRACK__", trackUrl);
+
+  return '<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
+    + '<title>'+escEsb(marca)+' — '+escEsb(L.tagline||"esboço do site")+'</title>\n'
+    + '<meta name="description" content="'+escEsb(hero.sub || ("Site de "+marca+", preparado por Diogo Pinotti."))+'">\n'
+    + '<meta name="theme-color" content="'+ac+'">\n'
+    + '<meta property="og:type" content="website">\n'
+    + '<meta property="og:title" content="'+escEsb(marca)+' — '+escEsb(hero.titulo||"esboço do site")+'">\n'
+    + '<meta property="og:description" content="'+escEsb(hero.sub || "Prévia do site preparada por Diogo Pinotti — role até o fim para ver a proposta.")+'">\n'
+    + '<meta property="og:site_name" content="Diogo Pinotti · lupixa.com">\n'
+    + '<meta name="twitter:card" content="summary_large_image">\n'
+    + '<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+    + '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+    + '<link rel="stylesheet" href="'+tema.fontsHref+'">\n'
+    + '<style>\n'+css+'</style>\n</head>\n<body>\n'
+    + topoHtml + heroHtml + sobreHtml + cardsHtml + listaHtml + blocosHtml + provaHtml + formHtml + rodapeHtml + propostaHtmlSec
+    + '\n<script>'+jsEsbocoFinal+'<\/script>\n</body>\n</html>';
 }
 
 function montarHtmlProposta(c){
@@ -1455,9 +2071,38 @@ async function gerarClaro(){
   if (!analysis || !finalPrice) return;
   const btn = document.getElementById("btn-claro");
   const ehHtml = deveGerarHtml();
-  btn.disabled = true; btn.textContent = ehHtml ? "⏳ Gerando apresentação + proposta HTML..." : "⏳ Gerando os dois textos...";
+  const ehEsboco = ehHtml && tipoEhEsboco();
+  btn.disabled = true;
+  btn.textContent = ehEsboco ? "⏳ Gerando esboço completo do site..." : (ehHtml ? "⏳ Gerando apresentação + proposta HTML..." : "⏳ Gerando os dois textos...");
   try {
-    if (ehHtml) {
+    if (ehEsboco) {
+      // Site / landing / loja: esboço completo da página do cliente, com foto
+      // real, e a proposta comercial no rodapé da mesma página. Ver secao 6.5
+      // da spec ("Analisador Workana — trocar a maquete por esboço completo
+      // de site"). Os dois textos curtos saem juntos com a chamada A (conteudo
+      // da landing); a chamada B (conteudo da proposta) so acontece depois,
+      // porque ela conversa com o que a A decidiu.
+      const r = await Promise.all([
+        callClaude(buildDuasMensagensPrompt(
+          buildApresentacaoPrompt(false), "ABERTURA, enviada ANTES da proposta",
+          buildAcompanhamentoPrompt(), "ACOMPANHAMENTO, enviado JUNTO com o link da proposta"
+        ), 1800, true),
+        callClaude(buildEsbocoLandingPrompt(), 2600, true)
+      ]);
+      const dupla = lerDupla(r[0], "as duas mensagens curtas");
+      const landing = parseJson(r[1], "o conteudo da landing do esboço");
+
+      btn.textContent = "⏳ Buscando fotos reais...";
+      const fotos = await buscarFotos(landing.fotoQuery || landing.nicho || "business", 12);
+      dispararUsoFotos(fotos);
+
+      btn.textContent = "⏳ Gerando a proposta comercial...";
+      const propostaRaw = await callClaude(buildEsbocoPropostaPrompt(landing), 1800, true);
+      const proposta = parseJson(propostaRaw, "o conteudo da proposta do esboço");
+
+      const html = montarHtmlEsboco(landing, proposta, fotos);
+      renderTextos({ apresentacao: comPortfolio(dupla.a), proposta: comPortfolioFim(dupla.b), propostaHtml: html, modo: "claro-html" });
+    } else if (ehHtml) {
       // Duas chamadas em paralelo (antes eram tres em sequencia, depois tres em
       // paralelo). Os dois textos curtos saem juntos; o conteudo da proposta,
       // que e o pesado, continua isolado.
@@ -1481,7 +2126,8 @@ async function gerarClaro(){
       renderTextos({ apresentacao: comPortfolio(dupla.a), proposta: comPortfolio(dupla.b), modo: "claro" });
     }
   } catch(e) { alert("Erro: "+e.message); }
-  btn.disabled = false; btn.textContent = "✅ Escopo claro — gerar apresentação + proposta";
+  btn.disabled = false;
+  btn.textContent = ehEsboco ? "✅ Escopo claro — gerar esboço + proposta" : "✅ Escopo claro — gerar apresentação + proposta";
 }
 
 function baixarPropostaHtml(){
