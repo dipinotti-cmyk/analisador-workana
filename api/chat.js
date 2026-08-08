@@ -70,7 +70,7 @@ const TETO_ABSOLUTO = 32000;
 
 // Prazo global. A Vercel corta a execucao em algum ponto acima disso e devolve
 // HTML; ficando abaixo, a resposta e sempre JSON, mesmo quando da errado.
-const PRAZO_MS = 42000;
+const PRAZO_MS = 18000;
 
 const json = (obj, status) => new Response(JSON.stringify(obj), {
   status,
