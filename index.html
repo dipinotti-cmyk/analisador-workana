@@ -138,10 +138,7 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
             <label>Plataforma</label>
             <div style="display:flex;gap:8px">
               <button type="button" class="btn btn-sm btn-primary" id="plat-workana" onclick="setPlataforma('Workana')" style="flex:1">Workana</button>
-              <button type="button" class="btn btn-sm btn-ghost" id="plat-getninjas" onclick="setPlataforma('GetNinjas')" style="flex:1">GetNinjas</button>
-              <button type="button" class="btn btn-sm btn-ghost" id="plat-outras" onclick="setPlataforma('Outras')" style="flex:1">Outras</button>
             </div>
-            <input id="plat-outra-nome" placeholder="Nome da plataforma" style="display:none;margin-top:8px">
           </div>
           <div class="field">
             <label>Tipo de cobrança</label>
@@ -236,12 +233,9 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
           </select>
         </div>
         <div class="field"><label>Plataforma</label>
-          <select id="m-plataforma" onchange="document.getElementById('m-plat-outra').style.display = this.value==='Outras' ? 'block' : 'none'">
+          <select id="m-plataforma">
             <option value="Workana">Workana</option>
-            <option value="GetNinjas">GetNinjas</option>
-            <option value="Outras">Outras</option>
           </select>
-          <input id="m-plat-outra" placeholder="Nome da plataforma" style="display:none;margin-top:8px">
         </div>
       </div>
       <div class="field"><label>Descrição</label><textarea rows="2" id="m-descricao" placeholder="Descreva brevemente o projeto..."></textarea></div>
@@ -2487,31 +2481,21 @@ let plataformaSel = "Workana";
 let crmPlatFiltro = "todas";
 let dashPlatFiltro = "todas";
 
+// Versao so-Workana: a plataforma e sempre Workana. As funcoes continuam
+// existindo porque o resto do codigo as chama, mas nao ha mais outras opcoes.
 function setPlataforma(p){
-  plataformaSel = p;
-  const map = {"Workana":"plat-workana","GetNinjas":"plat-getninjas","Outras":"plat-outras"};
-  Object.keys(map).forEach(function(k){
-    const b = document.getElementById(map[k]);
-    if (b) b.className = k === p ? "btn btn-sm btn-primary" : "btn btn-sm btn-ghost";
-  });
-  const inp = document.getElementById("plat-outra-nome");
-  if (inp) inp.style.display = p === "Outras" ? "block" : "none";
+  plataformaSel = "Workana";
 }
 
 function getPlataformaAtual(){
-  if (plataformaSel === "Outras") {
-    const inp = document.getElementById("plat-outra-nome");
-    const n = inp ? (inp.value||"").trim() : "";
-    return n || "Outras";
-  }
-  return plataformaSel;
+  return "Workana";
 }
 
 function plataformaGrupo(p){
-  p = (p||"Workana").trim().toLowerCase();
-  if (p === "workana") return "Workana";
-  if (p === "getninjas") return "GetNinjas";
-  return "Outras";
+  // App agora e so Workana: todo registro e agrupado como Workana (registros
+  // antigos de outras plataformas, se houver, continuam no banco e aparecem
+  // normalmente, sem sumir do CRM).
+  return "Workana";
 }
 
 function ehAtivo(status){
@@ -2552,9 +2536,7 @@ function renderFiltroBotoes(){
   const contP = document.getElementById("crm-filtro-plataforma");
   if (contP) {
     const nW = crm.filter(function(r){ return plataformaGrupo(r.plataforma)==="Workana"; }).length;
-    const nG = crm.filter(function(r){ return plataformaGrupo(r.plataforma)==="GetNinjas"; }).length;
-    const nO = crm.filter(function(r){ return plataformaGrupo(r.plataforma)==="Outras"; }).length;
-    const plats = [["todas","🌐 Todas",crm.length],["Workana","Workana",nW],["GetNinjas","GetNinjas",nG],["Outras","Outras",nO]];
+    const plats = [["todas","🌐 Todas",crm.length],["Workana","Workana",nW]];
     contP.innerHTML = plats.map(function(f){
       const ativo = crmPlatFiltro === f[0];
       const cls = ativo ? "btn btn-sm btn-gold" : "btn btn-sm btn-ghost";
@@ -2935,11 +2917,7 @@ function toggleManual(){
 async function salvarManual(){
   const cliente = document.getElementById("m-cliente").value.trim();
   if (!cliente) { alert("Informe o nome do cliente"); return; }
-  let plat = document.getElementById("m-plataforma").value;
-  if (plat === "Outras") {
-    const nomeP = (document.getElementById("m-plat-outra").value||"").trim();
-    plat = nomeP || "Outras";
-  }
+  const plat = document.getElementById("m-plataforma").value || "Workana";
   await addCRMItem({
     id: Date.now().toString(),
     cliente: cliente,
@@ -2963,9 +2941,7 @@ function renderDashboard(){
   const contP = document.getElementById("dash-plat-filtro");
   if (contP) {
     const nW = crm.filter(function(r){ return plataformaGrupo(r.plataforma)==="Workana"; }).length;
-    const nG = crm.filter(function(r){ return plataformaGrupo(r.plataforma)==="GetNinjas"; }).length;
-    const nO = crm.filter(function(r){ return plataformaGrupo(r.plataforma)==="Outras"; }).length;
-    const plats = [["todas","🌐 Todas",crm.length],["Workana","Workana",nW],["GetNinjas","GetNinjas",nG],["Outras","Outras",nO]];
+    const plats = [["todas","🌐 Todas",crm.length],["Workana","Workana",nW]];
     contP.innerHTML = plats.map(function(f){
       const ativo = dashPlatFiltro === f[0];
       const cls = ativo ? "btn btn-sm btn-gold" : "btn btn-sm btn-ghost";
