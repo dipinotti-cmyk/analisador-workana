@@ -960,6 +960,11 @@ function confirmarValor(){
 // so, e sempre a forte.
 var REGRA_ACENTO = "ESCREVA EM PORTUGUÊS DO BRASIL CORRETO, COM TODA A ACENTUAÇÃO E A CEDILHA — OBRIGATÓRIO E CRÍTICO. NUNCA omita acento em nenhuma palavra: escreva sempre não, você, também, então, página, serviço, solução, negócio, proposta, informação, automação, avaliação, integração, operação, experiência, análise, três, já, só, até — NUNCA as formas sem acento (nao, voce, servico, solucao, negocio, informacao). Texto sem acento é ERRO e não pode sair, mesmo que estas instruções estejam escritas sem acento. Revise cada palavra antes de finalizar.";
 
+// Regra reutilizavel: a proposta tem que DEVOLVER exatamente o que o anuncio
+// pediu. O erro que mais faz perder vaga e sair generico quando o cliente listou
+// funcionalidades e pediu escopo detalhado, sugestao de tecnologia e etapas.
+var REGRA_ESPELHO = "ESPELHO DO PEDIDO (CRITICO — o cliente precisa se reconhecer na proposta e ver que voce respondeu o que ele pediu): se o anuncio LISTA funcionalidades ou requisitos (ex: cadastro de X, geracao automatica de Y, painel de Z, notificacoes, historico, area do usuario, confirmacao), o escopo TEM QUE cobrir TODAS elas, agrupando as relacionadas num mesmo item — nao deixe de fora nenhuma funcao que ele citou. Se o anuncio pede SUGESTAO DE TECNOLOGIA ou cita stack (Flutter, React Native, PWA, web app, Node, banco de dados, SaaS), UM item NOMEIA a tecnologia recomendada e diz em uma linha por que ela serve para ESTE caso. Se o anuncio fala em MVP, entrega por etapas ou futuro SaaS, deixe claro o limite do MVP e, em uma frase, o caminho de escala depois. Escopo raso quando o cliente pediu escopo detalhado e o pior erro possivel.";
+
 function buildApresentacaoPrompt(comPerguntas){
   const cliente = document.getElementById("in-cliente").value||"cliente";
   const desc = document.getElementById("in-desc").value;
@@ -1125,12 +1130,13 @@ function buildPropostaConteudoPrompt(){
     + "LEITURA DO ANUNCIO (faca ANTES de escrever, e deixe isso visivel no texto): 1) o que o cliente JA TEM ou JA VAI FORNECER (arte, layout, conteudo, sistema, conta) — reconheca isso explicitamente, porque muda o trabalho e mostra que voce leu; 2) o que ficou EM ABERTO ou indefinido no anuncio — esse e o maior risco do projeto e precisa aparecer, seja num item da estrutura, seja na frase de protecao; 3) a restricao tecnica que mais pesa aqui.\n\n"
     + "CRONOGRAMA (campo etapas): quebre o prazo total em 2 ou 3 etapas reais DESTE projeto, com a quantidade de dias de cada uma. A soma tem que bater com o prazo total, sem sobrar nem faltar. Etapa nao e checklist generico: e o caminho concreto deste trabalho.\n\n"
     + "ESTRUTURA (regra dura): os itens saem DESTE anuncio, nao de um checklist padrao. PROIBIDO incluir item que o cliente nao pediu so pra encher (SEO, redes sociais, blog, newsletter, analytics) — so entra se o anuncio citar ou se for consequencia direta do que ele pediu. PELO MENOS UM item precisa tratar do ponto em aberto identificado na leitura. Cada explicacao cita algo concreto do anuncio; se a explicacao serviria pra qualquer site, ela esta errada.\n\n"
+    + REGRA_ESPELHO + "\n\n"
     + "Responda SOMENTE em JSON valido, sem markdown, com EXATAMENTE estes campos:\n"
     + '{"titulo":"objetivo especifico do projeto para o H1 (sem o nome do cliente)",'
     + '"accent":"#hex de acento adequado ao nicho",'
     + '"animar":true ou false,'
     + '"sobre":["paragrafo 1 provando leitura real do anuncio","paragrafo 2 com a abordagem geral (opcional, senao lista com 1 item)"],'
-    + '"estrutura":[{"t":"titulo curto do item tecnico","d":"explicacao curta especifica deste projeto"} com 4 a 5 itens],'
+    + '"estrutura":[{"t":"titulo curto do item tecnico","d":"explicacao especifica deste projeto, citando as funcoes reais que o item cobre"} com 4 a 7 itens — use MAIS itens quando o anuncio lista muitas funcionalidades, cobrindo TODAS as que o cliente citou, sem deixar nenhuma de fora],'
     + '"demo":{"tipo":"vitrine|agenda|conversa|painel|fluxo","rotulo":"titulo curto da secao falando com o cliente (ex: Como sua agenda vai ficar, Uma previa de como seus imoveis aparecem, O que seu cliente recebe no WhatsApp)","dia":"rotulo do topo da simulacao (ex: Terca, 12 de agosto / WhatsApp / Painel do mes)","resumo":"informacao curta no canto do topo (ex: 6 de 9 horarios ocupados / respondido em 4 segundos)",'
     + 'e MAIS os campos do tipo escolhido: '
     + 'site -> "site":{"marca":"nome ficticio plausivel do negocio, no estilo do ramo e da cidade citados","menu":["3 a 4 itens curtos, o primeiro sempre a home, o segundo sempre a listagem"],"hero":{"titulo":"chamada da home, fala do cliente final","sub":"1 linha de apoio","cta":"texto curto do botao"},"filtros":["2 a 4 filtros tipicos do ramo, ex: Bairro, Tipo, Ate R$ 400 mil"],"itens":[{"titulo":"nome do item","chips":["2 a 3 caracteristicas"],"preco":"valor plausivel"} com 4 a 6 itens],"detalhe":{"titulo":"um dos itens acima","preco":"o preco dele","specs":[{"k":"rotulo","v":"valor"} com 4],"texto":"1 paragrafo descrevendo o item","cta":"texto do botao de contato"},"paginas":[{"nome":"nome igual ao item do menu","titulo":"titulo da pagina","texto":"1 paragrafo"} com 1 a 2, correspondendo aos itens 3 e 4 do menu],"rodape":"1 linha curta de rodape com telefone ficticio"}, '
@@ -1245,7 +1251,7 @@ function buildEsbocoPropostaPrompt(landing){
     + "Responda SOMENTE em JSON valido, sem markdown e sem comentario, com EXATAMENTE esta forma (os valores abaixo sao a descricao do que escrever em cada campo, nao copie-os literalmente):\n"
     + JSON.stringify(schema)
     + "\n\nREGRAS QUE VALEM PARA CADA CAMPO:\n"
-    + "- 'escopo': 3 a 5 itens que saem DESTE anuncio, nunca checklist generico.\n"
+    + "- 'escopo': 4 a 7 itens que saem DESTE anuncio, nunca checklist generico; use mais itens quando o anuncio lista muitas funcionalidades, cobrindo TODAS as que o cliente citou. " + REGRA_ESPELHO + "\n"
     + "- 'travas': gere exatamente 3 itens, um para cada rotulo do exemplo acima ('Ajustes', 'Contagem do prazo', 'O que fica com o cliente'). O item 'Ajustes' diz que estao inclusas ate 2 rodadas sobre o que foi combinado e que mudanca de escopo depois da aprovacao e orcada a parte. O item 'Contagem do prazo' cita o material especifico deste projeto que dispara o inicio e NUNCA cita numero de dias (o prazo ja aparece no investimento; outro numero ali gera contradicao).\n"
     + "- 'experiencia': PROIBIDO inventar experiencia setorial (ex: 'ja atendi academias'). A ponte e sempre a habilidade tecnica e os 17 anos em operacao critica de TI.\n"
     + "- 'pergunta': uma escolha entre dois caminhos do NEGOCIO do cliente, respondivel em uma linha. PROIBIDO pergunta de cartorio (dominio, hospedagem, acesso, logo, prazo dele, orcamento dele) e pergunta vazia (o que voce acha, faz sentido, podemos conversar).\n\n"
