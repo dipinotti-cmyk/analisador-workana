@@ -125,8 +125,14 @@ export default async function handler(req) {
     return json({ error: 'Prompt vazio' }, 400);
   }
 
-  const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  // Duas chaves gratuitas = duas cotas diarias. A 2a (GEMINI_API_KEY_2) e
+  // OPCIONAL: se existir, o servidor vira pra ela sozinho quando a 1a estoura a
+  // cota. Sem ela, funciona igual a antes, so com a 1a chave.
+  const chaves = [
+    process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY,
+    process.env.GEMINI_API_KEY_2
+  ].filter(Boolean);
+  if (!chaves.length) {
     return json({ error: 'Chave nao configurada no servidor (GEMINI_API_KEY)' }, 500);
   }
 
@@ -137,7 +143,7 @@ export default async function handler(req) {
   // tetoSaida = quanto de TEXTO a chamada precisa poder gerar. A reserva de
   // pensamento entra em cima disso, porque a Gemini cobra os dois do mesmo
   // orcamento e quem paga a conta quando falta e o texto.
-  const chamar = (candidato, tetoSaida, sinal) => {
+  const chamar = (candidato, tetoSaida, sinal, apiKey) => {
     const reserva = FOLGA_THINKING[candidato.reasoning_effort] || 0;
     const corpo = {
       model: candidato.model,
@@ -172,7 +178,16 @@ export default async function handler(req) {
   let houveDiaria = false;
 
   try {
-    for (const candidato of fila) {
+    // Laco por CHAVE: roda a cascata inteira com a 1a chave; se ela nao
+    // entregar (tipicamente cota estourada, que falha rapido) e ainda houver
+    // tempo, repete a cascata com a chave reserva. O sucesso retorna na hora.
+    for (let ki = 0; ki < chaves.length; ki++) {
+     const apiKey = chaves[ki];
+     if (ki > 0) {
+       if (restante() < 5000) break;
+       tentativas.push('--- trocando para a chave reserva ---');
+     }
+     for (const candidato of fila) {
       // 5000 (nao mais 6000) porque com o teto por modelo um "lite", que
       // responde em 2-4s, ainda cabe no que sobra e vale a pena tentar.
       if (restante() < 5000) {
@@ -202,7 +217,7 @@ export default async function handler(req) {
           // da 429 de novo. So o 5xx (solucao da Gemini) merece uma segunda
           // tentativa, e uma so.
           for (let tentativa = 0; tentativa < 2; tentativa++) {
-            r = await chamar(candidato, tetoSaida, ctrl.signal);
+            r = await chamar(candidato, tetoSaida, ctrl.signal, apiKey);
             if (r.ok) break;
             // 800 chars porque o "quotaId" que diz se e limite DIARIO ou por
             // minuto vem la no fim do corpo do erro. Isso nao vai pra tela.
@@ -272,6 +287,7 @@ export default async function handler(req) {
         : resultado.texto;
 
       return json({ text: text, model: candidato.model, truncado: cortado }, 200);
+     }
     }
 
     // Quando o motivo e cota, a mensagem tem que dizer o que fazer. A anterior
