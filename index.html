@@ -604,10 +604,14 @@ async function chamarApi(prompt, maxTokens, querJson){
   return data.text || "";
 }
 
-// Erro de cota não adianta repetir: o próximo pedido vai dar igual. Erro de
-// rede ou soluço do servidor, sim. Só o segundo caso merece nova tentativa.
+// So a cota DIARIA nao adianta repetir (volta so na virada da meia-noite). Erro
+// de rede, modelo lento ou limite POR MINUTO da Gemini costumam passar sozinhos
+// numa nova tentativa — esses SIM merecem retry.
 function ehErroDeCota(msg){
   return /cota|quota|429|limite de uso/i.test(String(msg||""));
+}
+function ehCotaDiaria(msg){
+  return /di[aá]ria|meia-noite|virada/i.test(String(msg||""));
 }
 
 var _sosFila = [];
@@ -615,13 +619,19 @@ var _sosAtual = null;
 
 async function callClaude(prompt, maxTokens, querJson){
   let ultimo = null;
-  for (let t = 0; t < 2; t++) {
+  // Auto-retry com pausa crescente ANTES de cair no modo manual. Objetivo: o
+  // "erro da primeira tentativa" (funcao fria, solucao de rede, limite por
+  // minuto da Gemini) se recuperar SOZINHO, sem o usuario ver. Passou de 2 para
+  // 3 tentativas, com pausas de 1,2s e 3s. So a cota do DIA pula direto pro
+  // manual, porque insistir nela nao muda nada.
+  const esperas = [1200, 3000];
+  for (let t = 0; t < 3; t++) {
     try {
       return await chamarApi(prompt, maxTokens, querJson);
     } catch(e) {
       ultimo = e;
-      if (ehErroDeCota(e.message)) break;
-      if (t === 0) await new Promise(function(r){ setTimeout(r, 900); });
+      if (ehCotaDiaria(e.message)) break;
+      if (t < esperas.length) await new Promise(function(r){ setTimeout(r, esperas[t]); });
     }
   }
   return sosAbrir(prompt, maxTokens, querJson, ultimo ? ultimo.message : "sem detalhe", querJson === true);
