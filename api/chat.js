@@ -29,6 +29,18 @@
 //   3. Lentidão. Cascata encurtada, uma única espera no 429, e a segunda
 //      passada só acontece se ainda houver prazo.
 //
+// 14/08/2026 — correção do "abortado (AbortError) | sem tempo para tentar o
+// próximo". A cascata de 5 modelos era uma FICÇÃO sempre que o 1º modelo
+// demorava. O timer de abort dava ao PRIMEIRO modelo quase TODO o prazo global
+// (restante - 2500 ≈ 15,5s de 18s), então um único modelo lento consumia o
+// orçamento inteiro e nunca sobrava tempo para os "lite" da cascata. O erro
+// da tela era isso: gemini-3.5-flash (que PENSA, é o mais lento) liderando,
+// estourava o teto e abortava, deixando "sem tempo" para o resto. Agora cada
+// modelo tem TETO PRÓPRIO (TETO_MODELO_MS): o prazo é REPARTIDO, então quando o
+// primeiro trava a cascata cai de verdade para o próximo. O prazo global também
+// subiu para perto do limite real da Vercel (25s), dando espaço para 2 ou 3
+// tentativas de verdade dentro da mesma requisição.
+//
 // Pra fixar um modelo específico sem mexer no código, criar a variável de
 // ambiente GEMINI_MODEL na Vercel — ela entra na frente da cascata.
 //
@@ -68,9 +80,21 @@ const FOLGA_THINKING = { none: 0, low: 1500, medium: 9000, high: 26000 };
 
 const TETO_ABSOLUTO = 32000;
 
-// Prazo global. A Vercel corta a execucao em algum ponto acima disso e devolve
-// HTML; ficando abaixo, a resposta e sempre JSON, mesmo quando da errado.
-const PRAZO_MS = 18000;
+// Prazo global. A Edge Function da Vercel precisa COMECAR a responder em 25s
+// (doc oficial); passando disso, ela e morta e devolve HTML. Ficamos abaixo com
+// folga, para a resposta ser sempre JSON, mesmo quando da errado. Subiu de 18s
+// para 23s porque os 7s ociosos que sobravam eram justamente o que faltava para
+// a cascata tentar um segundo modelo.
+const PRAZO_MS = 23000;
+
+// Teto de tempo POR MODELO. Sem isso, o primeiro candidato herdava quase todo o
+// PRAZO_MS e, se travasse, nao sobrava nada para os proximos — a cascata inteira
+// virava enfeite. Com um teto por modelo o prazo e REPARTIDO. 13s deixa o modelo
+// bom TERMINAR uma geracao pesada normal (a landing tem 2600 tokens e leva uns
+// 10-13s), sem rebaixar a qualidade a toa; passando disso ele aborta e o lite
+// (rapido) ainda pega a vez com os ~7,5s que sobram. Um 429 de cota nao consome
+// esse tempo — volta na hora — entao a cascata continua fluindo rapido nesse caso.
+const TETO_MODELO_MS = 13000;
 
 const json = (obj, status) => new Response(JSON.stringify(obj), {
   status,
@@ -149,7 +173,9 @@ export default async function handler(req) {
 
   try {
     for (const candidato of fila) {
-      if (restante() < 6000) {
+      // 5000 (nao mais 6000) porque com o teto por modelo um "lite", que
+      // responde em 2-4s, ainda cabe no que sobra e vale a pena tentar.
+      if (restante() < 5000) {
         tentativas.push('sem tempo para tentar ' + candidato.model);
         break;
       }
@@ -162,10 +188,14 @@ export default async function handler(req) {
         let r = null;
         let detalhe = '';
 
-        // Aborta a chamada sozinho quando o prazo global aperta, em vez de
-        // deixar a Vercel matar a funcao e devolver HTML.
+        // Aborta a chamada sozinho quando o tempo aperta, em vez de deixar a
+        // Vercel matar a funcao e devolver HTML. O teto e o MENOR entre o teto
+        // por modelo (para a cascata poder cair para o proximo) e o que sobra do
+        // prazo global menos a folga de 2,5s para devolver o JSON. O piso de 3s
+        // garante que ate o ultimo candidato tenha uma chance real.
         const ctrl = new AbortController();
-        const corta = setTimeout(function(){ ctrl.abort(); }, Math.max(3000, restante() - 2500));
+        const limiteModelo = Math.min(TETO_MODELO_MS, restante() - 2500);
+        const corta = setTimeout(function(){ ctrl.abort(); }, Math.max(3000, limiteModelo));
 
         try {
           // 429 NUNCA repete no mesmo modelo: cota e por modelo, entao repetir
