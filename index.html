@@ -873,6 +873,16 @@ function confirmarValor(){
   }
 }
 
+// Regra de acentuacao UNICA para todos os prompts de geracao de texto. Escrita
+// COM acento de proposito: o modelo espelha o registro ortografico do que le, e
+// o resto do prompt e todo ASCII — entao mostrar as palavras certas acentuadas,
+// com os exemplos do que NAO fazer, e o sinal mais forte que existe. Antes cada
+// prompt tinha a sua: uns fortes (apresentacao, proposta, parceria), e os de
+// CONTEUDO/JSON com um fraco "acentuacao completa" sem acento nenhum — eram
+// justamente esses que voltavam sem acento nas propostas publicadas. Agora e uma
+// so, e sempre a forte.
+var REGRA_ACENTO = "ESCREVA EM PORTUGUÊS DO BRASIL CORRETO, COM TODA A ACENTUAÇÃO E A CEDILHA — OBRIGATÓRIO E CRÍTICO. NUNCA omita acento em nenhuma palavra: escreva sempre não, você, também, então, página, serviço, solução, negócio, proposta, informação, automação, avaliação, integração, operação, experiência, análise, três, já, só, até — NUNCA as formas sem acento (nao, voce, servico, solucao, negocio, informacao). Texto sem acento é ERRO e não pode sair, mesmo que estas instruções estejam escritas sem acento. Revise cada palavra antes de finalizar.";
+
 function buildApresentacaoPrompt(comPerguntas){
   const cliente = document.getElementById("in-cliente").value||"cliente";
   const desc = document.getElementById("in-desc").value;
@@ -1033,7 +1043,7 @@ function buildPropostaConteudoPrompt(){
     + "RAMO DO CLIENTE (faca isto ANTES de escolher a simulacao): identifique o ramo em 1 ou 2 palavras a partir do anuncio (imobiliaria, restaurante, barbearia, clinica, advocacia, loja de roupa, oficina, escola...). Se o ramo estiver CLARO, a simulacao TEM QUE mostrar itens tipicos DESSE ramo, com nomes, caracteristicas e valores plausiveis do Brasil: imobiliaria mostra imoveis, restaurante mostra pratos, oficina mostra servicos. Isso nao e inventar, e ilustrar — a propria pagina avisa embaixo que o exemplo e ilustrativo. Cair no fluxo generico quando o ramo esta claro e o pior erro possivel: e justamente a prova visual que faz o cliente entender o que esta comprando.\n"
     + "REGRA ANTI-INVENCAO (o que de fato e proibido): nunca invente o RAMO do cliente, nunca apresente numeros como se fossem dados reais dele, e nunca cite nome de empresa que nao apareceu no anuncio. Se o anuncio nao deixar claro nem o ramo, ai sim troque a vitrine por fluxo, agenda, conversa ou painel.\n"
     + "Invente exemplos realistas do ramo, da cidade e do publico citados no anuncio, com nomes, servicos e valores plausiveis do Brasil. Essa e a PROVA VISUAL da proposta: sem ela o cliente nao ve o que esta comprando.\n\n"
-    + "CONTEUDO: portugues correto com acentuacao completa. Segunda pessoa (voce). Frases curtas. Nunca mencionar IA.\n\n"
+    + "CONTEUDO: Segunda pessoa (voce). Frases curtas. Nunca mencionar IA. " + REGRA_ACENTO + "\n\n"
     + "LISTA NEGRA DE ADJETIVO VAZIO (se aparecer, reescreva): robusto, profissional, atraente, intuitivo, moderno, eficiente, escalavel, completo, otimizado, personalizado, de alta qualidade, sob medida, presenca digital, experiencia unica. Adjetivo nao prova nada. Troque por FATO: o que o sistema faz, com o que ele conversa, o que acontece quando o cliente clica.\n\n"
     + "LEITURA DO ANUNCIO (faca ANTES de escrever, e deixe isso visivel no texto): 1) o que o cliente JA TEM ou JA VAI FORNECER (arte, layout, conteudo, sistema, conta) — reconheca isso explicitamente, porque muda o trabalho e mostra que voce leu; 2) o que ficou EM ABERTO ou indefinido no anuncio — esse e o maior risco do projeto e precisa aparecer, seja num item da estrutura, seja na frase de protecao; 3) a restricao tecnica que mais pesa aqui.\n\n"
     + "CRONOGRAMA (campo etapas): quebre o prazo total em 2 ou 3 etapas reais DESTE projeto, com a quantidade de dias de cada uma. A soma tem que bater com o prazo total, sem sobrar nem faltar. Etapa nao e checklist generico: e o caminho concreto deste trabalho.\n\n"
@@ -1103,7 +1113,7 @@ function buildEsbocoLandingPrompt(){
     + "RAMO DO CLIENTE (faca isto ANTES de escrever qualquer campo): identifique o ramo em 1 ou 2 palavras a partir do anuncio (academia, restaurante, imobiliaria, clinica, advocacia, oficina, loja de roupa, escola...). Se o ramo estiver CLARO, a pagina inteira mostra itens tipicos DESSE ramo, com nomes, caracteristicas e valores plausiveis do Brasil: imobiliaria mostra imoveis, restaurante mostra pratos, oficina mostra servicos. Cair no generico com o ramo declarado e o pior erro possivel — e a prova visual que faz o cliente entender o que esta comprando.\n\n"
     + "REGRA ANTI-INVENCAO: nunca invente o ramo se o anuncio nao deixa claro (nesse caso mantenha os exemplos neutros e plausiveis), nunca apresente numero como se fosse dado real do cliente, e nunca cite empresa que nao apareceu no anuncio.\n\n"
     + "LISTA NEGRA DE ADJETIVO VAZIO (se aparecer, reescreva por um fato): robusto, profissional, atraente, intuitivo, moderno, eficiente, escalavel, completo, otimizado, personalizado, de alta qualidade, sob medida, presenca digital, experiencia unica.\n\n"
-    + "SEM CARA DE IA: sem travessao, sem cadencia forcada, frases curtas, portugues com acentuacao completa. Nunca mencionar IA.\n\n"
+    + "SEM CARA DE IA: sem travessao, sem cadencia forcada, frases curtas. Nunca mencionar IA. " + REGRA_ACENTO + "\n\n"
     + "SECOES OPCIONAIS: os campos 'blocos', 'lista' e 'prova' podem vir com 'itens' vazio ([]) ou 'galeria' false quando o anuncio nao pede publicos distintos, uma segunda grade de itens ou prova social. Pagina curta e certa e melhor que pagina comprida e enchida.\n\n"
     + "PERFIS DO FORMULARIO: se o anuncio descreve publicos diferentes deste negocio (ex: aluno e instrutor; comprador e locador; paciente e convenio), gere um perfil de formulario para cada um, em 'form.perfis'. Se o publico e um so, gere um unico perfil.\n\n"
     + "FOTOQUERY (CAMPO CRITICO): 2 a 4 palavras EM INGLES, concretas, do ramo, sem adjetivo de marketing, para buscar fotos no banco de imagens. 'crossfit gym training' funciona. 'modern beautiful business' nao funciona — nunca escreva assim.\n\n"
@@ -1163,7 +1173,7 @@ function buildEsbocoPropostaPrompt(landing){
     + "- 'experiencia': PROIBIDO inventar experiencia setorial (ex: 'ja atendi academias'). A ponte e sempre a habilidade tecnica e os 17 anos em operacao critica de TI.\n"
     + "- 'pergunta': uma escolha entre dois caminhos do NEGOCIO do cliente, respondivel em uma linha. PROIBIDO pergunta de cartorio (dominio, hospedagem, acesso, logo, prazo dele, orcamento dele) e pergunta vazia (o que voce acha, faz sentido, podemos conversar).\n\n"
     + "PROVA SOCIAL (usar em 'diferencial' ou 'experiencia' apenas se o anuncio pediu comprovacao): " + provaSocial + ".\n\n"
-    + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO. Segunda pessoa (voce). Frases curtas. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. NUNCA escrever os numeros nem os rotulos do modelo (sao so seu guia interno).";
+    + "REGRAS: Segunda pessoa (voce). Frases curtas. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. NUNCA escrever os numeros nem os rotulos do modelo (sao so seu guia interno). " + REGRA_ACENTO;
 }
 
 // Busca as fotos do esboço via /api/foto (a Access Key nunca chega ao navegador).
@@ -2026,7 +2036,7 @@ function buildAcompanhamentoPrompt(){
     + "'Sistema de agendamento costuma travar num detalhe: o cliente marca, some, e ninguem avisa. Por isso o lembrete automatico entra desde a primeira versao, e nao como extra depois.'\n\n"
     + "LISTA NEGRA — se qualquer uma aparecer, reescreva antes de responder: 'chamou minha atencao', 'estou confiante', 'tenho certeza de que posso', 'alinhado a minha experiencia', 'caracteristicas alinhadas', 'solucao robusta', 'solucao eficiente', 'plataforma intuitiva', 'sob medida para suas necessidades', 'atender suas expectativas', 'sou especialista em', 'com certeza posso ajudar', 'ira solucionar esse problema', 'permitindo aos clientes', 'experiencia frustrante', 'de forma eficiente'. Proibido comecar a mensagem com 'Hoje,', 'Atualmente', 'Muitos', 'No mercado atual', 'Com o crescimento'. Proibido adjetivo empilhado: robusto, eficiente, intuitivo, escalavel, completo, moderno, personalizado, otimizado.\n\n"
     + "PROIBICOES: NUNCA citar valor nem prazo aqui (estao no link, o objetivo e forcar a abertura). NUNCA 'fico a disposicao'. NUNCA se apresentar com 'Sou o Diogo'. NUNCA falar de 'usuarios' ou 'clientes' em terceira pessoa abstrata — fale com 'voce' e 'seu'. NUNCA INVENTAR experiencia setorial que o Diogo nao tem.\n\n"
-    + "REGRAS: portugues correto com acentuacao completa. Sem emojis. Nunca mencionar IA. Tom de mensagem de WhatsApp bem escrita, nao de carta formal.";
+    + "REGRAS: Sem emojis. Nunca mencionar IA. Tom de mensagem de WhatsApp bem escrita, nao de carta formal. " + REGRA_ACENTO;
 }
 
 // Junta os DOIS textos curtos numa unica chamada, devolvendo um JSON com um
@@ -2053,7 +2063,7 @@ function buildDuasMensagensPrompt(promptA, rotuloA, promptB, rotuloB){
     + "================ FORMATO DA SUA RESPOSTA ================\n\n"
     + "Responda SOMENTE em JSON valido, sem markdown e sem comentario, com EXATAMENTE dois campos:\n"
     + '{"a":"texto completo e final da MENSAGEM A, com as quebras de linha escritas como \\n","b":"texto completo e final da MENSAGEM B, com as quebras de linha escritas como \\n"}\n\n'
-    + "Nao escreva os rotulos 'MENSAGEM A' nem 'MENSAGEM B' dentro dos textos. Cada campo carrega a mensagem pronta pra copiar e enviar, incluindo saudacao e assinatura.";
+    + "Nao escreva os rotulos 'MENSAGEM A' nem 'MENSAGEM B' dentro dos textos. Cada campo carrega a mensagem pronta pra copiar e enviar, incluindo saudacao e assinatura.\n\n" + REGRA_ACENTO;
 }
 
 // Le os dois campos com nome tolerante, porque modelo as vezes troca a chave.
