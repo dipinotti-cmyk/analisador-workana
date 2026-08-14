@@ -3068,23 +3068,31 @@ async function carregarAberturas(){
   }
 }
 
-// A partir da SEGUNDA abertura, o registro em "proposta enviada" vira
-// "visualizada" sozinho. A primeira quase sempre e o proprio Diogo conferindo
-// o link antes de mandar, por isso ela nao conta.
+// Uma "proposta enviada" vira "visualizada" sozinha quando o CLIENTE abre o
+// link. A regra que decide "foi o cliente" e temporal: so conta abertura que
+// aconteceu DEPOIS do registro no CRM (aberto_em > criado_em). As conferidas do
+// proprio Diogo antes de mandar — inclusive a aba anonima que o proprio app
+// manda abrir pra revisar — sao anteriores ao registro e ficam de fora. Uma
+// unica abertura do cliente ja basta, como funcionava antes.
+//
+// (A contagem anterior somava TODAS as aberturas por nome de cliente e virava
+// no >= 2. Como o Diogo abre o link 2x so pra conferir antes de enviar, a
+// proposta ja nascia "visualizada" no ato do registro. Dai o bug.)
 async function sincronizarVisualizadas(){
   try {
-    const dados = await sbFetch("/rest/v1/proposta_views?select=cliente,slug&limit=1000");
+    const dados = await sbFetch("/rest/v1/proposta_views?select=cliente,slug,aberto_em&limit=1000");
     if (!dados || !dados.length) return;
-    const contagem = {};
-    dados.forEach(function(v){
-      const chave = (v.cliente || v.slug || "").toLowerCase().trim();
-      if (!chave) return;
-      contagem[chave] = (contagem[chave] || 0) + 1;
-    });
     const alvos = crm.filter(function(r){
       if (r.status !== "proposta enviada") return false;
       const c = (r.cliente || "").toLowerCase().trim();
-      return c && (contagem[c] || 0) >= 2;
+      if (!c || !r.criado_em) return false;
+      const desde = new Date(r.criado_em).getTime();
+      // abertura do cliente = mesmo cliente E depois do registro da proposta
+      return dados.some(function(v){
+        if ((v.cliente || "").toLowerCase().trim() !== c) return false;
+        const t = new Date(v.aberto_em).getTime();
+        return isFinite(t) && t > desde;
+      });
     });
     if (!alvos.length) return;
     for (const r of alvos) { await updateCRMItem(r.id, { status: "visualizada" }); }
