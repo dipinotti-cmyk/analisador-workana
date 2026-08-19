@@ -2298,7 +2298,7 @@ async function publicarVercel(){
     const res = await fetch("/api/deploy", {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ name: "proposta-"+slugCliente(), html: window._propostaHtml })
+      body: JSON.stringify({ name: "proposta-"+slugCliente(), cliente: (document.getElementById("in-cliente")?.value || "").trim() || null, html: window._propostaHtml })
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || "Erro "+res.status);
@@ -2310,6 +2310,7 @@ async function publicarVercel(){
     st.innerHTML = '✅ <strong style="color:var(--green)">Publicado:</strong> <a href="'+data.url+'" target="_blank" style="color:var(--accent)">'+data.url+'</a>'
       + ' <button class="btn btn-sm btn-success" style="margin-left:6px" onclick="copyText(window._linkProposta, this)">📋 Copiar link</button>'
       + '<div style="margin-top:4px;color:var(--muted)">Link já inserido no texto de acompanhamento abaixo. Abra numa aba anônima pra conferir antes de enviar.</div>';
+    if (data.aviso) st.innerHTML += '<div style="margin-top:6px;color:var(--gold)">⚠️ '+data.aviso+'</div>';
     btn.textContent = "✓ Publicado";
   } catch(e) {
     st.innerHTML = '⚠️ <span style="color:var(--gold)">'+e.message+'</span><div style="margin-top:4px;color:var(--muted)">Alternativa: use ⬇️ Baixar e publique manualmente no Vercel, trocando o LINK_DA_PROPOSTA no texto.</div>';
