@@ -370,6 +370,12 @@ const WA_REGRA_PROPOSTA = "\n\nREGRA WHATSAPP (OBRIGATORIA — este job envolve 
   + "Declare tambem, em 1 frase, que o custo de plataforma (Meta/BSP, cobrado por conversa de 24h) e pago direto pelo cliente e nao esta incluido no valor do servico.\n"
   + "Nao ultrapasse o limite de palavras da proposta por causa disso: corte o menos essencial.\n";
 
+const WA_REGRA_CURTA = "\n\nREGRA WHATSAPP (OBRIGATORIA — este job envolve WhatsApp):\n"
+  + "A Lupixa SO trabalha com a API Oficial do WhatsApp (Cloud API, da Meta). Esta mensagem e curta, entao a regra cabe em UMA frase enxuta, escrita como DIFERENCIAL e sem alarmismo: voce usa a API oficial da Meta, que e o que mantem o numero da empresa fora de risco de bloqueio — as solucoes que simulam o WhatsApp Web funcionam por um tempo e depois derrubam o numero.\n"
+  + "Varie a construcao dessa frase a cada mensagem. Isso NAO conta como se apresentar nem como credencial.\n"
+  + "PROIBIDO propor, citar ou aceitar Baileys, WPPConnect, Venom, Evolution API ou qualquer solucao nao oficial.\n"
+  + "A frase entra DENTRO do limite de palavras da mensagem: corte o menos essencial pra caber.\n";
+
 let profile = { avaliacoes: 3, habilidades: "" };
 let crm = [];
 let analysis = null;
@@ -536,6 +542,23 @@ function _aplicarCaso(orig, acc){
   if (orig.charAt(0) === orig.charAt(0).toUpperCase()) return acc.charAt(0).toUpperCase() + acc.slice(1);
   return acc;
 }
+// A experiencia do Diogo e um numero FIXO: 17 anos. Mesmo com a regra escrita
+// no prompt, o modelo as vezes inventa outro numero ("doze anos", "dez anos").
+// Prompt e probabilistico; isto aqui e deterministico e roda depois da geracao.
+// So mexe em frase de primeira pessoa, pra nunca reescrever o tempo de mercado
+// do CLIENTE ("sua empresa tem 20 anos" continua intacto).
+var _ANOS_EXTENSO = "um|dois|duas|tres|tr\u00eas|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte";
+var _RE_EU_ANOS = /\b(trabalho|atuo|entrego|entregando|tenho|carrego|venho|passei|rodo|opero|minha|meu|sou|estou|fa\u00e7o|faco)\b/i;
+function _reAnos(){
+  return new RegExp("\\b(?:mais\\s+de\\s+|quase\\s+|cerca\\s+de\\s+)?(?:" + _ANOS_EXTENSO + "|\\d{1,2})\\s+anos\\b", "gi");
+}
+function fixarAnosExperiencia(txt){
+  if (!txt) return txt;
+  return String(txt).split(/([.!?\n])/).map(function(parte){
+    if (!_RE_EU_ANOS.test(parte)) return parte;
+    return parte.replace(_reAnos(), "17 anos");
+  }).join("");
+}
 function repararAcentos(txt){
   if (!txt) return txt;
   return String(txt).replace(/[A-Za-z]+/g, function(w){
@@ -556,7 +579,7 @@ function repararAcentos(txt){
 // foto em ingles, nome do tema).
 function repararObj(v, skip){
   skip = skip || {};
-  if (typeof v === "string") return repararAcentos(v);
+  if (typeof v === "string") return fixarAnosExperiencia(repararAcentos(v));
   if (Array.isArray(v)) return v.map(function(x){ return repararObj(x, skip); });
   if (v && typeof v === "object"){
     var o = {};
@@ -568,7 +591,7 @@ function repararObj(v, skip){
 
 function comPortfolio(texto){
   if (!texto) return texto;
-  texto = repararAcentos(texto);
+  texto = fixarAnosExperiencia(repararAcentos(texto));
   if (texto.indexOf("lupixa.com") !== -1) return texto;
   const partes = texto.split(/\n\s*\n/);
   partes.splice(1, 0, LINHA_PORTFOLIO);
@@ -580,7 +603,7 @@ function comPortfolio(texto){
 // linha entra junto da credencial, no fim, sem roubar a pergunta final.
 function comPortfolioFim(texto){
   if (!texto) return texto;
-  texto = repararAcentos(texto);
+  texto = fixarAnosExperiencia(repararAcentos(texto));
   if (texto.indexOf("lupixa.com") !== -1) return texto;
   const partes = texto.split(/\n\s*\n/);
   partes.splice(Math.max(1, partes.length - 1), 0, LINHA_PORTFOLIO);
@@ -1029,7 +1052,8 @@ function buildApresentacaoPrompt(comPerguntas){
     + "PROIBICOES ABSOLUTAS: NUNCA se apresente nem fale de credenciais. NUNCA escreva 'fico a disposicao' nem 'se fizer sentido para voce' nem qualquer fecho passivo. NUNCA mencione anexos. Depois da finalizacao, NADA.\n\n"
     + "REGRAS: ESCREVA EM PORTUGUES CORRETO COM ACENTUACAO COMPLETA — OBRIGATORIO E CRITICO. NUNCA omita acentos em nenhuma palavra. Escreva sempre: não, você, também, então, página, avaliação, integração, operação, crítica — NUNCA as formas sem acento. Tom humano e direto. Sem emojis. Sem excesso de hifens. Nunca mencionar IA. Nunca dizer que analisou tecnicamente. Sem 'Atenciosamente'. Mantenha cada paragrafo curto. NAO escreva os numeros nem os rotulos do modelo (eles sao so seu guia interno). Separe todos os paragrafos com uma linha em branco entre eles.\n\n"
     + "VOZ (REGRA CRITICA): fale DIRETAMENTE com o cliente, sempre em segunda pessoa (voce, seu, sua). NUNCA use terceira pessoa (ele, ela, o cliente). As vezes o anuncio foi escrito em terceira pessoa ou de forma impessoal; mesmo assim voce SEMPRE se dirige ao cliente como 'voce'.\n\n"
-    + "ANTI-MODELO (CRITICO): esta abertura NAO pode ter cara de modelo padrao. Proibido frases genericas de preenchimento. Capture um detalhe especifico DESTE projeto e varie a construcao das frases a cada mensagem.";
+    + "ANTI-MODELO (CRITICO): esta abertura NAO pode ter cara de modelo padrao. Proibido frases genericas de preenchimento. Capture um detalhe especifico DESTE projeto e varie a construcao das frases a cada mensagem."
+    + (ehJobWhatsApp(desc) ? WA_REGRA_CURTA : "");
   return p;
 }
 
@@ -2126,7 +2150,7 @@ function buildAcompanhamentoPrompt(){
     + "2. UMA a DUAS frases seguindo o angulo acima, em segunda pessoa (voce, seu, sua), citando um detalhe concreto DESTE anuncio.\n"
     + "3. 1 frase curta apresentando a proposta + o marcador LINK_DA_PROPOSTA sozinho em sua propria linha.\n"
     + "4. 1 frase curta e natural dizendo o que tem no link (escopo, valor e prazo). Varie a construcao.\n"
-    + "5. Credencial em UMA frase MUITO curta e objetiva sobre a experiencia do Diogo (ex de forma, nao copie literal: '17 anos entregando sistemas de TI em producao'). PROIBIDO citar ranking, posicao, porcentagem, numero de freelancers, nivel Gold ou numero de projetos da Workana. So a experiencia dele, numa linha enxuta, variando a construcao a cada mensagem.\n"
+    + "5. Credencial em UMA frase MUITO curta e objetiva sobre a experiencia do Diogo. O NUMERO E FIXO E LITERAL: 17 anos. Varie a CONSTRUCAO da frase a cada mensagem, NUNCA o numero. PROIBIDO escrever 'doze anos', 'dez anos', 'quinze anos', 'mais de 15 anos', o numero por extenso ou qualquer valor diferente de 17 — sempre em algarismos, '17 anos'. Formas de exemplo (varie, nao copie): '17 anos entregando sistemas de TI em producao'; '17 anos em operacao critica de TI'. PROIBIDO citar ranking, posicao, porcentagem, numero de freelancers, nivel Gold ou numero de projetos da Workana. So a experiencia dele, numa linha enxuta, variando a construcao a cada mensagem.\n"
     + "6. PERGUNTA FINAL (OBRIGATORIA, ULTIMA linha da mensagem, em paragrafo proprio): a mensagem TERMINA numa pergunta. Pergunta puxa resposta, e resposta abre a conversa que fecha o negocio. Ela e uma DECISAO DO NEGOCIO DELE: uma escolha entre dois caminhos que faz o cliente imaginar o projeto pronto e funcionando do jeito dele.\n"
     + "CRITERIOS: responde-se em 1 linha (uma escolha entre duas opcoes, um numero, sim ou nao). E sobre PRIORIDADE, PUBLICO, RESULTADO ou REGRA DE FUNCIONAMENTO do negocio dele. A resposta muda o que voce entrega. E ela precisa soar como conversa de quem ja esta tocando o projeto, nao como formulario de cadastro.\n"
     + "PROIBIDO — PERGUNTA DE CARTORIO (mata o clima, lembra o cliente de custo e burocracia, e nao vende nada): dominio, hospedagem, servidor, e-mail, acesso, senha, logotipo, identidade visual, se o texto/foto/conteudo ja esta pronto, prazo dele, orcamento dele, quando ele quer comecar, o que ele ja tem contratado. TUDO ISSO voce pergunta DEPOIS que ele fechar, nunca na mensagem que precisa despertar vontade.\n"
@@ -2147,7 +2171,8 @@ function buildAcompanhamentoPrompt(){
     + "'Sistema de agendamento costuma travar num detalhe: o cliente marca, some, e ninguem avisa. Por isso o lembrete automatico entra desde a primeira versao, e nao como extra depois.'\n\n"
     + "LISTA NEGRA — se qualquer uma aparecer, reescreva antes de responder: 'chamou minha atencao', 'estou confiante', 'tenho certeza de que posso', 'alinhado a minha experiencia', 'caracteristicas alinhadas', 'solucao robusta', 'solucao eficiente', 'plataforma intuitiva', 'sob medida para suas necessidades', 'atender suas expectativas', 'sou especialista em', 'com certeza posso ajudar', 'ira solucionar esse problema', 'permitindo aos clientes', 'experiencia frustrante', 'de forma eficiente'. Proibido comecar a mensagem com 'Hoje,', 'Atualmente', 'Muitos', 'No mercado atual', 'Com o crescimento'. Proibido adjetivo empilhado: robusto, eficiente, intuitivo, escalavel, completo, moderno, personalizado, otimizado.\n\n"
     + "PROIBICOES: NUNCA citar valor nem prazo aqui (estao no link, o objetivo e forcar a abertura). NUNCA 'fico a disposicao'. NUNCA se apresentar com 'Sou o Diogo'. NUNCA falar de 'usuarios' ou 'clientes' em terceira pessoa abstrata — fale com 'voce' e 'seu'. NUNCA INVENTAR experiencia setorial que o Diogo nao tem.\n\n"
-    + "REGRAS: Sem emojis. Nunca mencionar IA. Tom de mensagem de WhatsApp bem escrita, nao de carta formal. " + REGRA_ACENTO;
+    + "REGRAS: Sem emojis. Nunca mencionar IA. Tom de mensagem de WhatsApp bem escrita, nao de carta formal. " + REGRA_ACENTO
+    + (ehJobWhatsApp(desc) ? WA_REGRA_CURTA : "");
 }
 
 // Junta os DOIS textos curtos numa unica chamada, devolvendo um JSON com um
