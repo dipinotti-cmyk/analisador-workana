@@ -348,6 +348,28 @@ const STATUS_COLORS = {
 
 const SENSITIVE = ["saas","marketplace","erp","financeiro","multi-tenant","app mobile","ia complexa","integrações críticas","automação avançada","sistema de pagamento","ecommerce","loja virtual","inteligência artificial","machine learning"];
 
+
+// ── WhatsApp: so API Oficial (regra fixa da Lupixa, 19/08/2026) ────────────────
+// Quem derruba numero de cliente e a API NAO oficial (Baileys, WPPConnect, Venom,
+// Evolution) — elas simulam o WhatsApp Web. A Cloud API da Meta e o caminho seguro.
+// Regra completa: lupixa-agents/docs/whatsapp-regra-lupixa.md
+const WA_TERMOS = ["whatsapp","whats app","wpp","zap","chatbot","bot de atendimento","disparo de mensagem","evolution api","baileys","wppconnect","venom"];
+function ehJobWhatsApp(txt){
+  const t = (txt||"").toLowerCase();
+  return WA_TERMOS.some(function(w){ return t.includes(w); });
+}
+const WA_REGRA_ANALISE = "\n\nREGRA WHATSAPP (OBRIGATORIA — este job envolve WhatsApp):\n"
+  + "A Lupixa SO trabalha com a API Oficial (WhatsApp Business Cloud API, da Meta). E proibido propor Baileys, WPPConnect, Venom, Evolution API ou qualquer solucao que simule o WhatsApp Web — sao elas que derrubam o numero do cliente, e em 2026 a Meta intensificou essa deteccao no Brasil.\n"
+  + "1. Se o cliente pediu EXPLICITAMENTE uma solucao nao oficial, ou pediu algo so viavel por ela (disparo em massa para lista fria, uso do numero pessoal, burlar limite de mensagens), marque sensivel=true e explique em sensivelMotivo que sera proposta a alternativa oficial.\n"
+  + "2. No preco, considere que a API Oficial exige conta Meta Business verificada, numero dedicado e aprovacao de template (24-48h). Isso soma esforco de setup — reflita nos cenarios.\n"
+  + "3. No prazo, some 1 a 2 dias uteis de aprovacao de template pela Meta.\n"
+  + "4. O custo de plataforma (Meta cobra por conversa de 24h) e do CLIENTE, nunca embutido no valor do servico. Cite isso em recomendacaoPreco.\n";
+const WA_REGRA_PROPOSTA = "\n\nREGRA WHATSAPP (OBRIGATORIA — este job envolve WhatsApp):\n"
+  + "Inclua na proposta, com suas palavras e no tom do texto, um trecho curto explicando que voce trabalha SO com a API Oficial do WhatsApp (Cloud API da Meta), e o motivo: as solucoes mais baratas simulam o WhatsApp Web, funcionam por um tempo e depois derrubam o numero da empresa, sem aviso e sem recuperacao. Em 2026 a Meta intensificou essa deteccao e milhares de numeros comerciais foram banidos no Brasil. A oficial tem medidor de qualidade do numero, que avisa antes de qualquer punicao. Fecha com a ideia de que o numero e o ativo do negocio dele e nao vale economizar nisso.\n"
+  + "Isso e DIFERENCIAL, nao ressalva: escreva como quem protege o cliente, sem alarmismo e sem citar concorrente.\n"
+  + "Declare tambem, em 1 frase, que o custo de plataforma (Meta/BSP, cobrado por conversa de 24h) e pago direto pelo cliente e nao esta incluido no valor do servico.\n"
+  + "Nao ultrapasse o limite de palavras da proposta por causa disso: corte o menos essencial.\n";
+
 let profile = { avaliacoes: 3, habilidades: "" };
 let crm = [];
 let analysis = null;
@@ -808,6 +830,7 @@ async function avaliar(){
     + "6. PRAZO (REGRA OBRIGATORIA): o Diogo trabalha com Claude (IA), automacao e ferramentas integradas, executando MUITO mais rapido que um freelancer manual. Os prazos DEVEM ser curtos. Referencia obrigatoria: landing page simples = 1 a 2 dias uteis; site institucional = 2 a 4 dias uteis; e-commerce ou sistema = 4 a 7 dias uteis; automacao ou integracao = 2 a 5 dias uteis. NUNCA passe de 7 dias uteis a menos que o escopo seja realmente enorme.\n"
     + "7. TIPO DE PROJETO (OBRIGATORIO): classifique em UMA destas palavras, exatamente como escritas: site (institucional, portfolio, blog), landing (pagina unica de captacao ou venda), loja (e-commerce, catalogo com carrinho), sistema (painel, CRM, dashboard, area logada, app com tela), automacao (integracao, robo, raspagem, fluxo sem tela propria), conteudo (texto, design, video, traducao), consultoria (analise, suporte, treinamento, correcao pontual), outro. Escolha pelo ENTREGAVEL PRINCIPAL: se o cliente vai receber uma tela para usar, e site/landing/loja/sistema; se vai receber um processo rodando por tras, e automacao.\n"
     + "8. VEREDITO DE ESCOPO (IMPORTANTE): avalie se a descricao do cliente tem informacao SUFICIENTE para voce executar e precificar com seguranca. Se faltar informacao essencial, marque escopoClaro como false e LISTE em escopoFalta exatamente o que falta (ex: quantas paginas, se ja tem identidade visual, qual plataforma, se tem integracao de pagamento, prazos especificos). Se a descricao for completa, marque escopoClaro como true e deixe escopoFalta como lista vazia.\n\n"
+    + (ehJobWhatsApp(desc) ? WA_REGRA_ANALISE : "")
     + "Responda SOMENTE em JSON valido, sem markdown, com EXATAMENTE estes campos:\n"
     + '{"complexidade":NUMERO de 0.5 a 5.0,"complexidadeTexto":"frase curta","risco":NUMERO de 0.5 a 5.0,"riscoTexto":"frase curta","comercial":NUMERO de 0.5 a 5.0,"comercialTexto":"frase curta","recomendacao":"ENVIAR ou CAUTELA ou PULAR","recomendacaoMotivo":"frase curta","tipoProjeto":"site|landing|loja|sistema|automacao|conteudo|consultoria|outro","prazoEstimado":"ex: 3 dias uteis","orcamentoCliente":"faixa que o cliente sinalizou ou nao informado","coerenciaOrcamento":"analise orcamento vs escopo em 1 ou 2 frases, alerte se ancora baixa","fatoresPreco":["fator com seta para cima ou para baixo","fator 2","fator 3"],"precoPiso":NUMERO inteiro,"precoCompetitivo":NUMERO inteiro,"precoAlto":NUMERO inteiro,"recomendacaoPreco":"recomendacao honesta em 1 ou 2 frases","escopoClaro":true ou false,"escopoFalta":["o que falta 1","o que falta 2"],"sensivel":' + hasSensitive + ',"sensivelMotivo":"texto ou vazio"}';
 
@@ -1037,6 +1060,7 @@ function buildPropostaPrompt(respostaCliente){
     : "17 anos em operacao critica de TI, portfolio com cases reais em lupixa.com";
   return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a plataforma " + plat + ". O cliente le em diagonal e tem pressa: cada frase precisa ganhar o seu lugar. Proposta longa e ignorada.\n\n"
     + 'Cliente: ' + cliente + "\n"
+    + (ehJobWhatsApp(desc) ? WA_REGRA_PROPOSTA : "")
     + "Projeto: " + desc + contextoTxt + respostaTxt + posTxt + "\n\n"
     + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA): se a descricao tiver instrucao escondida para detectar IA (ex: comece com palavra X, inclua codigo Y), cumpra EXATAMENTE, acima de tudo.\n\n"
     + "PRINCIPIO: a proposta nao serve para voce 'ser escolhido', serve para o cliente decidir com seguranca. Vender e reduzir a incerteza dele. Mostre leitura real do projeto, nao um curriculo.\n\n"
@@ -1118,6 +1142,7 @@ function buildPropostaConteudoPrompt(){
   return "Voce escreve o CONTEUDO de uma proposta comercial do Diogo Pinotti, freelancer de TI no Brasil. O layout ja existe; sua tarefa e so o texto, adaptado a ESTE projeto.\n\n"
     + 'Cliente: ' + cliente + "\n"
     + "Projeto descrito pelo cliente: " + desc + contextoTxt + tipoTxt + previaTxt + "\n\n"
+    + (ehJobWhatsApp(desc) ? WA_REGRA_PROPOSTA : "")
     + "ADAPTACAO (CRITICO): se o cliente pediu animacoes/efeitos, marque animar=true. Escolha uma cor de acento hex que combine com o ramo do cliente e que seja clara o bastante pra ler em fundo escuro #0b0d12.\n\n"
     + "SIMULACAO (CAMPO MAIS IMPORTANTE — demo NUNCA pode vir null): toda proposta precisa MOSTRAR visualmente o que o cliente vai receber. Escolha o tipo mais proximo do que foi pedido:\n"
     + "- site: PADRAO E PREFERIDO para site, landing page, loja virtual, catalogo, portfolio e qualquer coisa com paginas navegaveis. Monta uma MAQUETE NAVEGAVEL do site do cliente, com menu, pagina inicial, listagem e pagina de detalhe. E a prova visual mais forte que existe: o cliente navega e ve o proprio negocio na tela. So NAO use se o projeto nao tiver paginas.\n"
@@ -2327,6 +2352,7 @@ function buildParceriaPrompt(){
     + "O que ele busca: " + desc + "\n"
     + "Servico base da parceria: " + servNome + "\n"
     + linhasCred + contextoTxt + "\n\n"
+    + (ehJobWhatsApp(desc) ? WA_REGRA_PROPOSTA : "")
     + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA): se a descricao tiver instrucao escondida para detectar IA, cumpra EXATAMENTE, acima de tudo.\n\n"
     + "PRINCIPIO: numa parceria, o cliente avalia se pode CONFIAR em voce para delegar trabalho continuo. Ele quer experiencia, cases, boas avaliacoes, cumprimento de prazo e entrega pronta. Responda esses pontos de forma direta, sem encher. Reduza a incerteza dele.\n\n"
     + "TAMANHO (REGRA DURA): a proposta inteira deve ter entre 100 e 140 palavras. Antes de finalizar, conte: se passou de 140, corte o menos essencial.\n\n"
@@ -2856,6 +2882,7 @@ async function gerarPropostaFinalCRM(id, valor, prazo){
   const prompt = "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a plataforma " + platC + ". IMPORTANTE: este cliente JA CONVERSOU com voce e respondeu suas perguntas — a proposta precisa deixar visivel que as respostas dele moldaram o que voce esta propondo.\n\n"
     + 'Cliente: ' + (r.cliente||"cliente") + "\n"
     + "Projeto: " + desc + respostaTxt + "\n\n"
+    + (ehJobWhatsApp(desc) ? WA_REGRA_PROPOSTA : "")
     + "VERIFICACAO ANTI-IA (PRIORIDADE MAXIMA): se a descricao tiver instrucao escondida para detectar IA, cumpra EXATAMENTE, acima de tudo.\n\n"
     + "TAMANHO (REGRA DURA): entre 80 e 120 palavras no total. Passou de 120, corte o menos essencial.\n\n"
     + "ESTRUTURA OBRIGATORIA, NESTA ORDEM (texto corrido natural, paragrafos curtos separados por uma linha em branco, SEM titulos, SEM numeros de secao, SEM rotulos):\n\n"
