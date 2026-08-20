@@ -44,7 +44,7 @@
 // Pra fixar um modelo específico sem mexer no código, criar a variável de
 // ambiente GEMINI_MODEL na Vercel — ela entra na frente da cascata.
 //
-// A chave é lida de GEMINI_API_KEY e, se não existir, de OPENAI_API_KEY.
+// A chave é lida de GEMINI_API_KEY, e de GEMINI_API_KEY_2 como reserva.
 
 export const config = { runtime: 'edge' };
 
@@ -128,12 +128,19 @@ export default async function handler(req) {
   // Duas chaves gratuitas = duas cotas diarias. A 2a (GEMINI_API_KEY_2) e
   // OPCIONAL: se existir, o servidor vira pra ela sozinho quando a 1a estoura a
   // cota. Sem ela, funciona igual a antes, so com a 1a chave.
+  //
+  // 19/08/2026: o fallback pra OPENAI_API_KEY saiu daqui. Ele existia como
+  // ponte na migracao de julho, mas OPENAI_API_KEY no projeto guarda uma chave
+  // da OpenAI DE VERDADE (comeca com sk-proj-). Se GEMINI_API_KEY sumisse por
+  // engano, o codigo mandava uma chave da OpenAI pro endpoint da Gemini e o
+  // erro que aparecia era de autenticacao — que manda procurar no lugar errado.
+  // Faltando a chave, agora ele diz que falta a chave.
   const chaves = [
-    process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY,
+    process.env.GEMINI_API_KEY,
     process.env.GEMINI_API_KEY_2
   ].filter(Boolean);
   if (!chaves.length) {
-    return json({ error: 'Chave nao configurada no servidor (GEMINI_API_KEY)' }, 500);
+    return json({ error: 'GEMINI_API_KEY nao esta configurada no projeto (Settings > Environment Variables). OPENAI_API_KEY nao serve: e chave de outro servico.' }, 500);
   }
 
   const fila = process.env.GEMINI_MODEL
