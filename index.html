@@ -172,7 +172,7 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
             </select>
           </div>
           <div class="field"><label>Valor base por entrega (R$) — ajuste se quiser</label><input type="number" id="parc-valor" placeholder="Ex: 250"></div>
-          <div class="field"><label>Informação adicional (opcional)</label><textarea id="parc-contexto" rows="2" placeholder="Cole cases, diferenciais ou detalhes que reforcem a parceria..."></textarea></div>
+          <div class="field"><label>Informação adicional (opcional)</label><textarea id="parc-contexto" rows="2" placeholder="Case seu, diferencial, ou uma ordem pra proposta (&quot;detalhe as ferramentas que eu uso&quot;)."></textarea></div>
           <button class="btn btn-gold btn-lg" style="width:100%" onclick="gerarParceria()" id="btn-parceria">🤝 Gerar proposta de parceria</button>
         </div>
 
@@ -186,7 +186,7 @@ label{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spa
 
           <div id="caminho-wrap" style="display:none">
             <div class="divider"></div>
-            <div class="field"><label>Informação adicional (opcional)</label><textarea id="in-contexto" rows="3" placeholder="Ex: já fui dono de loja na Nuvemshop com 200 produtos. Cole cases, links de portfólio ou detalhes relevantes..."></textarea></div>
+            <div class="field"><label>Informação adicional (opcional)</label><textarea id="in-contexto" rows="3" placeholder="Vale case seu (&quot;já fui dono de loja na Nuvemshop com 200 produtos&quot;) e vale ordem pra proposta (&quot;detalhe a metodologia e as tecnologias&quot;, &quot;não fale de prazo&quot;). Pode misturar."></textarea></div>
             <label>Como você quer abordar este cliente?</label>
             <div id="escopo-hint" style="font-size:12px;line-height:1.5;margin-bottom:10px;padding:10px 12px;border-radius:8px"></div>
             <button class="btn btn-purple btn-lg" style="width:100%;margin-bottom:6px" onclick="gerarIncerto()" id="btn-incerto">💬 Fazer uma pergunta — abrir a conversa</button>
@@ -1020,7 +1020,7 @@ function buildApresentacaoPrompt(comPerguntas){
   const desc = document.getElementById("in-desc").value;
   const contexto = document.getElementById("in-contexto").value.trim();
   const contextoTxt = contexto
-    ? "\n\nINFORMACAO ADICIONAL fornecida pelo Diogo (USE OBRIGATORIAMENTE na apresentacao, como prova concreta de vivencia pratica com o tema — nao e opcional, nao ignore): " + contexto
+    ? "\n\nINFORMACAO ADICIONAL escrita pelo Diogo (OBRIGATORIO usar, nao ignore). Antes de usar, decida o que ela e:\n(a) FATO sobre ele ou sobre o projeto — experiencia, case, ferramenta que ele domina, detalhe combinado com o cliente. Nesse caso, use como prova concreta em na apresentacao.\n(b) INSTRUCAO de como escrever esta proposta — comeca com verbo no imperativo (\"detalhe\", \"cite\", \"foque em\", \"nao fale de\", \"inclua\"). Nesse caso NAO e prova de nada: e uma ORDEM sobre o conteudo, e voce CUMPRE. Se ele pede detalhar metodologia e tecnologias, o texto passa a nomear as tecnologias e descrever o passo a passo do trabalho.\n(c) as duas coisas juntas — cumpra a ordem E use o fato.\nE PROIBIDO repetir a frase dele dentro da proposta como se fosse texto pronto.\nTexto do Diogo: " + contexto
     : "";
   const faltaTxt = (comPerguntas && analysis && analysis.escopoFalta && analysis.escopoFalta.length)
     ? "\n\nINFORMACOES QUE FALTAM (gere as perguntas a partir disto): " + analysis.escopoFalta.join("; ")
@@ -1062,7 +1062,7 @@ function buildPropostaPrompt(respostaCliente){
   const desc = document.getElementById("in-desc").value;
   const contexto = document.getElementById("in-contexto").value.trim();
   const contextoTxt = contexto
-    ? "\n\nINFORMACAO ADICIONAL do Diogo (USE OBRIGATORIAMENTE no bloco de metodo/seguranca, como prova concreta de vivencia pratica — nao e opcional, nao ignore): " + contexto
+    ? "\n\nINFORMACAO ADICIONAL escrita pelo Diogo (OBRIGATORIO usar, nao ignore). Antes de usar, decida o que ela e:\n(a) FATO sobre ele ou sobre o projeto — experiencia, case, ferramenta que ele domina, detalhe combinado com o cliente. Nesse caso, use como prova concreta em no bloco de metodo/seguranca.\n(b) INSTRUCAO de como escrever esta proposta — comeca com verbo no imperativo (\"detalhe\", \"cite\", \"foque em\", \"nao fale de\", \"inclua\"). Nesse caso NAO e prova de nada: e uma ORDEM sobre o conteudo, e voce CUMPRE. Se ele pede detalhar metodologia e tecnologias, o texto passa a nomear as tecnologias e descrever o passo a passo do trabalho.\n(c) as duas coisas juntas — cumpra a ordem E use o fato.\nE PROIBIDO repetir a frase dele dentro da proposta como se fosse texto pronto.\nTexto do Diogo: " + contexto
     : "";
   const respostaTxt = respostaCliente
     ? "\n\nO CLIENTE RESPONDEU AS PERGUNTAS (use estas informacoes para ajustar a proposta a realidade dele): " + respostaCliente
@@ -1189,7 +1189,7 @@ function buildPropostaConteudoPrompt(){
     + '"accent":"#hex de acento adequado ao nicho",'
     + '"animar":true ou false,'
     + '"sobre":["paragrafo 1 provando leitura real do anuncio","paragrafo 2 com a abordagem geral (opcional, senao lista com 1 item)"],'
-    + '"estrutura":[{"t":"titulo curto do item tecnico","d":"explicacao especifica deste projeto, citando as funcoes reais que o item cobre"} com 4 a 7 itens — use MAIS itens quando o anuncio lista muitas funcionalidades, cobrindo TODAS as que o cliente citou, sem deixar nenhuma de fora],'
+    + '"estrutura":[{"t":"titulo curto do item tecnico","d":"explicacao especifica deste projeto, citando as funcoes reais que o item cobre"} — as chaves sao LITERALMENTE "t" e "d", nao troque por "titulo"/"descricao" com 4 a 7 itens — use MAIS itens quando o anuncio lista muitas funcionalidades, cobrindo TODAS as que o cliente citou, sem deixar nenhuma de fora],'
     + '"demo":{"tipo":"vitrine|agenda|conversa|painel|fluxo","rotulo":"titulo curto da secao falando com o cliente (ex: Como sua agenda vai ficar, Uma previa de como seus imoveis aparecem, O que seu cliente recebe no WhatsApp)","dia":"rotulo do topo da simulacao (ex: Terca, 12 de agosto / WhatsApp / Painel do mes)","resumo":"informacao curta no canto do topo (ex: 6 de 9 horarios ocupados / respondido em 4 segundos)",'
     + 'e MAIS os campos do tipo escolhido: '
     + 'site -> "site":{"marca":"nome ficticio plausivel do negocio, no estilo do ramo e da cidade citados","menu":["3 a 4 itens curtos, o primeiro sempre a home, o segundo sempre a listagem"],"hero":{"titulo":"chamada da home, fala do cliente final","sub":"1 linha de apoio","cta":"texto curto do botao"},"filtros":["2 a 4 filtros tipicos do ramo, ex: Bairro, Tipo, Ate R$ 400 mil"],"itens":[{"titulo":"nome do item","chips":["2 a 3 caracteristicas"],"preco":"valor plausivel"} com 4 a 6 itens],"detalhe":{"titulo":"um dos itens acima","preco":"o preco dele","specs":[{"k":"rotulo","v":"valor"} com 4],"texto":"1 paragrafo descrevendo o item","cta":"texto do botao de contato"},"paginas":[{"nome":"nome igual ao item do menu","titulo":"titulo da pagina","texto":"1 paragrafo"} com 1 a 2, correspondendo aos itens 3 e 4 do menu],"rodape":"1 linha curta de rodape com telefone ficticio"}, '
@@ -1837,7 +1837,21 @@ function montarHtmlProposta(c){
   const travaHtml = c.trava
     ? '<div class="trava"><span class="trava-i">\u2713</span><p>'+c.trava+'</p></div>'
     : "";
-  const itens = (c.estrutura||[]).map(function(i){ return '<li><b>'+i.t+'</b> — '+i.d+'</li>'; }).join("");
+  // O schema pede {"t","d"}, mas chave de uma letra e o tipo de coisa que o
+  // modelo "melhora" pra titulo/descricao sozinho. Quando fazia isso, a secao
+  // saia com "undefined — undefined" em toda linha e ia assim pro cliente.
+  // Le com nome tolerante, aceita item que veio como texto puro, e descarta o
+  // que sobrar vazio.
+  const estrutura = (c.estrutura||[]).map(function(i){
+    if (typeof i === "string") return { t: i, d: "" };
+    return {
+      t: i.t || i.titulo || i.nome || i.item || i.title || "",
+      d: i.d || i.descricao || i.desc || i.detalhe || i.description || ""
+    };
+  }).filter(function(i){ return i.t || i.d; });
+  const itens = estrutura.map(function(i){
+    return '<li>' + (i.t ? '<b>'+i.t+'</b>' : '') + (i.t && i.d ? ' — ' : '') + (i.d || '') + '</li>';
+  }).join("");
   let demo = "";
   if (c.demo) {
     const d = c.demo;
@@ -2103,7 +2117,7 @@ function montarHtmlProposta(c){
     + '<p class="sub rv">Preparada para '+cliente+'</p>\n'
     + '<p class="greeting rv">Oi '+cliente+', tudo bem?</p>\n'
     + '<section class="rv"><h2>Sobre o projeto</h2>'+sobre+'</section>\n'
-    + '<section class="rv"><h2>Como pretendo estruturar</h2><div class="card"><ul>'+itens+'</ul></div></section>\n'
+    + (itens ? '<section class="rv"><h2>Como pretendo estruturar</h2><div class="card"><ul>'+itens+'</ul></div></section>\n' : '')
     + demo
     + etapasHtml
     + '<section class="rv"><h2>Experiência</h2><p>'+(c.experiencia||"")+'</p></section>\n'
@@ -2358,7 +2372,7 @@ function buildParceriaPrompt(){
   const base = PARCERIA_BASE[serv] || PARCERIA_BASE.outro;
   const servNome = base.nome;
   const contextoTxt = contexto
-    ? "\n\nINFORMACAO ADICIONAL do Diogo (USE OBRIGATORIAMENTE no bloco de confianca, como prova concreta de vivencia pratica — nao e opcional, nao ignore): " + contexto
+    ? "\n\nINFORMACAO ADICIONAL escrita pelo Diogo (OBRIGATORIO usar, nao ignore). Antes de usar, decida o que ela e:\n(a) FATO sobre ele ou sobre o projeto — experiencia, case, ferramenta que ele domina, detalhe combinado com o cliente. Nesse caso, use como prova concreta em no bloco de confianca.\n(b) INSTRUCAO de como escrever esta proposta — comeca com verbo no imperativo (\"detalhe\", \"cite\", \"foque em\", \"nao fale de\", \"inclua\"). Nesse caso NAO e prova de nada: e uma ORDEM sobre o conteudo, e voce CUMPRE. Se ele pede detalhar metodologia e tecnologias, o texto passa a nomear as tecnologias e descrever o passo a passo do trabalho.\n(c) as duas coisas juntas — cumpra a ordem E use o fato.\nE PROIBIDO repetir a frase dele dentro da proposta como se fosse texto pronto.\nTexto do Diogo: " + contexto
     : "";
 
   let precoTxt;
