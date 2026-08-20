@@ -495,7 +495,7 @@ async function deleteCRMItem(id){
 
 // Assinatura de portfolio: entra sempre logo depois da saudacao inicial,
 // por codigo e nao por prompt, pra sair sempre igual e nunca ser esquecida.
-const LINHA_PORTFOLIO = "Você pode verificar meu portfólio completo em diogopinotti.dev.br";
+const LINHA_PORTFOLIO = "Você pode verificar meu portfólio completo em diogopinotti-dev.vercel.app";
 
 // -------- Rede de seguranca de acentuacao --------
 // O modelo, mesmo instruido pelo REGRA_ACENTO, as vezes devolve o texto sem
@@ -592,7 +592,7 @@ function repararObj(v, skip){
 function comPortfolio(texto){
   if (!texto) return texto;
   texto = fixarAnosExperiencia(repararAcentos(texto));
-  if (texto.indexOf("diogopinotti.dev.br") !== -1) return texto;
+  if (texto.indexOf("diogopinotti-dev.vercel.app") !== -1) return texto;
   const partes = texto.split(/\n\s*\n/);
   partes.splice(1, 0, LINHA_PORTFOLIO);
   return partes.join("\n\n");
@@ -604,7 +604,7 @@ function comPortfolio(texto){
 function comPortfolioFim(texto){
   if (!texto) return texto;
   texto = fixarAnosExperiencia(repararAcentos(texto));
-  if (texto.indexOf("diogopinotti.dev.br") !== -1) return texto;
+  if (texto.indexOf("diogopinotti-dev.vercel.app") !== -1) return texto;
   const partes = texto.split(/\n\s*\n/);
   partes.splice(Math.max(1, partes.length - 1), 0, LINHA_PORTFOLIO);
   return partes.join("\n\n");
@@ -1080,8 +1080,8 @@ function buildPropostaPrompt(respostaCliente){
   const plat = getPlataformaAtual();
   const ehW = plataformaGrupo(plat) === "Workana";
   const provaSocial = ehW
-    ? "17 anos em operacao critica de TI, com sistemas reais em producao e portfolio em diogopinotti.dev.br"
-    : "17 anos em operacao critica de TI, portfolio com cases reais em diogopinotti.dev.br";
+    ? "17 anos em operacao critica de TI, com sistemas reais em producao e portfolio em diogopinotti-dev.vercel.app"
+    : "17 anos em operacao critica de TI, portfolio com cases reais em diogopinotti-dev.vercel.app";
   return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a plataforma " + plat + ". O cliente le em diagonal e tem pressa: cada frase precisa ganhar o seu lugar. Proposta longa e ignorada.\n\n"
     + 'Cliente: ' + cliente + "\n"
     + (ehJobWhatsApp(desc) ? WA_REGRA_PROPOSTA : "")
@@ -1274,8 +1274,8 @@ function buildEsbocoPropostaPrompt(landing){
   const plat = getPlataformaAtual();
   const ehW = plataformaGrupo(plat) === "Workana";
   const provaSocial = ehW
-    ? "17 anos em operacao critica de TI, com sistemas reais em producao e portfolio em diogopinotti.dev.br"
-    : "17 anos em operacao critica de TI, cases reais em diogopinotti.dev.br";
+    ? "17 anos em operacao critica de TI, com sistemas reais em producao e portfolio em diogopinotti-dev.vercel.app"
+    : "17 anos em operacao critica de TI, cases reais em diogopinotti-dev.vercel.app";
   const secoesEscolhidas = [];
   if (landing) {
     if (landing.cards && (landing.cards.itens||[]).length) secoesEscolhidas.push("cards de " + (landing.nicho||"servicos/produtos"));
@@ -1799,7 +1799,7 @@ function montarHtmlEsboco(landing, proposta, fotos){
     + '<meta property="og:type" content="website">\n'
     + '<meta property="og:title" content="'+escEsb(marca)+' — '+escEsb(hero.titulo||"esboço do site")+'">\n'
     + '<meta property="og:description" content="'+escEsb(hero.sub || "Prévia do site preparada por Diogo Pinotti — role até o fim para ver a proposta.")+'">\n'
-    + '<meta property="og:site_name" content="Diogo Pinotti · diogopinotti.dev.br">\n'
+    + '<meta property="og:site_name" content="Diogo Pinotti · diogopinotti-dev.vercel.app">\n'
     + '<meta name="twitter:card" content="summary_large_image">\n'
     + '<link rel="preconnect" href="https://fonts.googleapis.com">\n'
     + '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
@@ -1978,7 +1978,7 @@ function montarHtmlProposta(c){
     + '<meta property="og:type" content="website">\n'
     + '<meta property="og:title" content="Proposta — '+(c.titulo||"Projeto")+'">\n'
     + '<meta property="og:description" content="Escopo, etapas, prazo e valor. Com uma prévia interativa do que você recebe.">\n'
-    + '<meta property="og:site_name" content="Diogo Pinotti · diogopinotti.dev.br">\n'
+    + '<meta property="og:site_name" content="Diogo Pinotti · diogopinotti-dev.vercel.app">\n'
     + '<meta name="twitter:card" content="summary">\n'
     + '<style>\n'
     + ':root{--bg:#0b0d12;--bg-elev:#12151c;--bg-elev-2:#171b24;--border:#242938;--text:#eef1f7;--text-dim:#a6adbb;--accent:#7c9cff;--accent-2:'+ac+';}\n'
@@ -2129,7 +2129,7 @@ function montarHtmlProposta(c){
     + '<p style="margin-top:18px;color:var(--text-dim);font-size:14.5px;">'+(c.protecao||"Prazo contado a partir do acesso ao material necessário. Ajustes fora do escopo descrito aqui são orçados à parte.")+'</p></section>\n'
     + '<div class="ranking rv"><span class="icon">🏆</span><p><b>17 anos em operação crítica de TI</b>, com sistemas reais em produção.</p></div>\n'
     + '<section class="rv"><h2>Outros trabalhos</h2><div class="card port"><p>Cases reais, com prints e demonstrações de projetos parecidos com o seu.</p>'
-    + '<a class="port-link" href="https://diogopinotti.dev.br" target="_blank" rel="noopener">diogopinotti.dev.br</a></div></section>\n'
+    + '<a class="port-link" href="https://diogopinotti-dev.vercel.app" target="_blank" rel="noopener">diogopinotti-dev.vercel.app</a></div></section>\n'
     + '<section class="rv"><h2>Próximo passo</h2><div class="cta-box"><p class="cta-q">'+(c.pergunta||"Você prefere começar por qual parte?")+'</p>'
     + '<p class="cta-a">Me responda essa única linha por aqui mesmo, pela plataforma, e eu já começo a preparar o início. Se preferir ajustar algo da proposta, é só dizer o que muda.</p></div></section>\n'
     + '<div class="signoff rv">Combinado?<span class="name">Diogo Pinotti</span></div>\n'
@@ -2385,8 +2385,8 @@ function buildParceriaPrompt(){
   const plat = getPlataformaAtual();
   const ehW = plataformaGrupo(plat) === "Workana";
   const linhasCred = ehW
-    ? "Credenciais: 17 anos em operacao critica de TI, com sistemas reais em producao e cases em diogopinotti.dev.br"
-    : "Credenciais: 17 anos em operacao critica de TI, cases reais em diogopinotti.dev.br";
+    ? "Credenciais: 17 anos em operacao critica de TI, com sistemas reais em producao e cases em diogopinotti-dev.vercel.app"
+    : "Credenciais: 17 anos em operacao critica de TI, cases reais em diogopinotti-dev.vercel.app";
   return "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA DE PARCERIA CURTA para a plataforma " + plat + ". Aqui o cliente NAO quer um projeto unico: ele busca um PARCEIRO FIXO/RECORRENTE para atender os clientes dele. Voce esta se candidatando a fornecedor de confianca.\n\n"
     + "Cliente: " + cliente + "\n"
     + "O que ele busca: " + desc + "\n"
@@ -2400,7 +2400,7 @@ function buildParceriaPrompt(){
     + "1. Saudacao isolada: Ola, " + cliente + "! Tudo bem?\n\n"
     + "2. OBJETIVO DIRETO (1 frase curta, SEM anunciar que entendeu): va direto ao objetivo da parceria. Comece com 'Para [objetivo especifico desta parceria], proponho:' — onde [objetivo especifico] captura o PROPOSITO REAL e um detalhe UNICO DESTE anuncio. NUNCA use 'Entendi que', 'Entendo que', 'Vejo que', 'Percebi que', 'Notei que' ou qualquer frase que anuncia que voce leu o anuncio. NUNCA adicione qualificadores genericos como 'parceria solida', 'servico de qualidade', 'atendimento diferenciado' — so o proposito concreto desta parceria.\n\n"
     + "3. O QUE VOCE OFERECE: a frase 'proponho:' do item 2 JA introduz a lista. Entao coloque DIRETAMENTE 3 a 4 itens concretos do que voce entrega como parceiro, cada um em sua linha comecando com hifen, 4 a 7 palavras cada. Foque no que ele pediu neste anuncio especifico.\n\n"
-    + "4. CONFIANCA (1 paragrafo curto): ancore com os 17 anos em operacao critica de TI (prazo curto e zero erro) e cases reais que ele pode ver em diogopinotti.dev.br. Se houver INFORMACAO ADICIONAL do Diogo, USE-A AQUI como prova concreta. Amarre ao que reduz o risco dele: entrega pronta, sem atraso, sem retrabalho.\n\n"
+    + "4. CONFIANCA (1 paragrafo curto): ancore com os 17 anos em operacao critica de TI (prazo curto e zero erro) e cases reais que ele pode ver em diogopinotti-dev.vercel.app. Se houver INFORMACAO ADICIONAL do Diogo, USE-A AQUI como prova concreta. Amarre ao que reduz o risco dele: entrega pronta, sem atraso, sem retrabalho.\n\n"
     + "5. PRECO DE PARCERIA: " + precoTxt + " Deixe claro que volume de parceria tem condicao diferente de projeto avulso.\n\n"
     + "6. PERGUNTA NO MEIO-FIM (1 linha): a duvida que, dependendo da resposta, MUDA como voce estrutura esta parceria. Criterios obrigatorios: o cliente responde em 1 linha (numero, sim ou nao, nome de ferramenta, escolha simples); a resposta altera a operacao ou a tabela de valores; NUNCA pergunte o que o anuncio ja responde. Deve ser sobre OPERACAO desta parceria especifica (ferramentas usadas, como chegam os briefings, o que ele ja tem estruturado, quem aprova as entregas). PROIBIDO: perguntas genericas que servem para qualquer anuncio. A pergunta deve provar que voce leu ESTE anuncio.\n\n"
     + "7. PROXIMO PASSO QUE CONDUZ (1 linha, OBRIGATORIO ser personalizado para ESTE anuncio): NAO termine de forma passiva. Proponha uma acao CONCRETA e ESPECIFICA que faca sentido para esta parceria — algo que o cliente pode responder em 30 segundos. NUNCA use exemplos fixos como 'me indica um projeto atual' ou frases que serviriam para qualquer parceria. VARIE conforme o anuncio real e seja especifico.\n\n"
@@ -2917,8 +2917,8 @@ async function gerarPropostaFinalCRM(id, valor, prazo){
   const platC = r.plataforma || "Workana";
   const ehWC = plataformaGrupo(platC) === "Workana";
   const provaSocial = ehWC
-    ? "17 anos em operacao critica de TI, com sistemas reais em producao e portfolio em diogopinotti.dev.br"
-    : "17 anos em operacao critica de TI, portfolio com cases reais em diogopinotti.dev.br";
+    ? "17 anos em operacao critica de TI, com sistemas reais em producao e portfolio em diogopinotti-dev.vercel.app"
+    : "17 anos em operacao critica de TI, portfolio com cases reais em diogopinotti-dev.vercel.app";
   const prompt = "Voce e o Diogo Pinotti, freelancer de TI no Brasil. Escreva uma PROPOSTA CURTA e PERSONALIZADA para a plataforma " + platC + ". IMPORTANTE: este cliente JA CONVERSOU com voce e respondeu suas perguntas — a proposta precisa deixar visivel que as respostas dele moldaram o que voce esta propondo.\n\n"
     + 'Cliente: ' + (r.cliente||"cliente") + "\n"
     + "Projeto: " + desc + respostaTxt + "\n\n"
